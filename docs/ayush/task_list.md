@@ -77,5 +77,5 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 | Metric | Value |
 |--------|-------|
-| Total tasks | 28 |
-| Total estimated hours | ~20.75h |
+| Total tasks | 29 |
+| Total estimated hours | 21.5h |
