@@ -64,7 +64,7 @@
     <text x="225" y="254" text-anchor="middle" class="tiny">cached by seed for training stability</text>
 
     <rect x="410" y="170" width="270" height="92" rx="12" fill="#24160a" stroke="#fbbf24" stroke-width="1"/>
-    <text x="545" y="198" text-anchor="middle" class="label">LLM Lab Manager</text>
+    <text x="545" y="198" text-anchor="middle" class="label">Model-backed Lab Manager</text>
     <text x="545" y="220" text-anchor="middle" class="body">Optional live language layer</text>
     <text x="545" y="238" text-anchor="middle" class="small">narrates grounded feasibility output</text>
     <text x="545" y="254" text-anchor="middle" class="tiny">never overrides deterministic constraint truth</text>
@@ -169,6 +169,6 @@
     Training mode: cached Oracle scenarios, deterministic reward, optional Oracle features disabled by default.
   </text>
   <text x="760" y="958" class="tiny">
-    Demo mode: live Oracle world-building, optional LLM Lab Manager, optional event injection, deterministic reward still canonical.
+    Demo mode: live Oracle world-building, optional model-backed Lab Manager, optional event injection, deterministic reward still canonical.
   </text>
 </svg>

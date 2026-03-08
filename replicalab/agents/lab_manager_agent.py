@@ -1,4 +1,4 @@
-"""Optional LLM-backed Lab Manager narration layer."""
+"""Optional model-backed Lab Manager narration layer."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from replicalab.prompts import load_prompt_asset
 
 
 class LabManagerAgent:
-    """LLM-based Lab Manager driven by Oracle-generated constraints.
+    """Model-backed Lab Manager driven by Oracle-generated constraints.
 
     This is additive to the deterministic feasibility checker. The current
     env can use this agent to narrate or enrich responses while keeping

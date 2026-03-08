@@ -51,7 +51,7 @@ ReplicaLab uses a **hybrid Oracle architecture**:
 - The **Oracle layer** is optional and powers world-building and narrative intelligence:
   - richer scenario generation
   - optional event injection
-  - optional LLM Lab Manager narration
+  - optional model-backed Lab Manager narration
   - optional post-mortem analysis
 - The **deterministic core** remains canonical for RL:
   - environment transitions
@@ -59,7 +59,7 @@ ReplicaLab uses a **hybrid Oracle architecture**:
   - grounded Lab Manager feasibility
   - judge scoring and reward math
 
-This satisfies the sponsor-facing “LLM as environment intelligence” direction without making reward noisy or irreproducible.
+This satisfies the sponsor-facing “model-driven environment intelligence” direction without making reward noisy or irreproducible.
 
 ---
 
@@ -258,7 +258,7 @@ replicalab-ai/
 │   ├── agents/
 │   │   ├── scientist_policy.py
 │   │   ├── lab_manager_policy.py
-│   │   ├── lab_manager_agent.py # Optional LLM Lab Manager wrapper
+│   │   ├── lab_manager_agent.py # Optional model-backed Lab Manager wrapper
 │   │   └── judge_policy.py
 │   ├── env/
 │   │   └── replicalab_env.py    # Real env with optional Oracle hooks

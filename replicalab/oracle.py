@@ -98,7 +98,7 @@ def _invoke_client(client: Any, *, model: str, system: str, user: str) -> str:
             response = client(system, user)
         return _extract_response_text(response)
 
-    raise TypeError("Unsupported Oracle client: expected Anthropic/OpenAI-style client or callable")
+    raise TypeError("Unsupported Oracle client: expected provider-style client or callable")
 
 
 def call_json_model(
