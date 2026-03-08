@@ -308,17 +308,49 @@ class Observation(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Reward breakdown and step metadata
+# ---------------------------------------------------------------------------
+
+
+class RewardBreakdown(BaseModel):
+    """Component scores and adjustments produced by the judge rubric engine."""
+
+    rigor: float = Field(default=0.0, ge=0, le=1)
+    feasibility: float = Field(default=0.0, ge=0, le=1)
+    fidelity: float = Field(default=0.0, ge=0, le=1)
+    efficiency_bonus: float = 0.0
+    communication_bonus: float = 0.0
+    penalties: dict[str, float] = Field(default_factory=dict)
+
+
+class StepInfo(BaseModel):
+    """Typed metadata returned alongside each step result.
+
+    Reserved keys from the frozen contract are typed fields.
+    Additional debug or runtime metadata is allowed via extra="allow".
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    agreement_reached: bool = False
+    error: Optional[str] = None
+    reward_breakdown: Optional[RewardBreakdown] = None
+    judge_notes: Optional[str] = None
+    verdict: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
 # Step result
 # ---------------------------------------------------------------------------
 
 class StepResult(BaseModel):
     """Returned by env.step(). Contains the next observation, reward,
-    termination flag, and optional info dict."""
+    termination flag, and typed step info."""
 
     observation: Optional[Observation] = None
     reward: float = 0.0
     done: bool = False
-    info: dict = Field(default_factory=dict)
+    info: StepInfo = Field(default_factory=StepInfo)
 
 
 # ---------------------------------------------------------------------------
