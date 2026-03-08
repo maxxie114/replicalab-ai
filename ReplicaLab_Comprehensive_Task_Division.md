@@ -233,14 +233,18 @@ Create a stable shared codebase, contracts, and development workflow so all work
 - `FND 01` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
 - `FND 04` status: completed on 2026-03-08
 - `FND 04` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `FND 08` status: partial on 2026-03-08
+- `FND 08` draft completed by: `Person B (Ayush)`; Person A sign-off is still pending
 - `FND 10` status: completed on 2026-03-07
 - `FND 10` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
 - Completed scope for `FND 01`: created the agreed repo scaffold for `replicalab/`, `server/`, `frontend/`, `notebooks/`, and `tests/`, including the initial `replicalab/*` and `frontend/src/*` subfolders from the planned layout
 - Completed scope for `FND 04`: added importable empty Pydantic model stubs in `replicalab/models.py` for the shared action, observation, step, state, and log contracts
+- Completed scope for `FND 08` draft: added `docs/fnd08_frozen_json_contract.md` with field semantics, enums, nested object schemas, null-vs-empty rules, and canonical JSON examples for all 8 shared models
 - Completed scope for `FND 10`: created `replicalab/outputs/` with tracked `logs/`, `replays/`, and `plots/` subdirectories
 - Remaining work now unblocked by `FND 01`: `FND 02`, `FND 03`, `FND 05`, `FND 06`, `FND 07`
 - Newly unblocked by `FND 04`: `FND 08`, `FND 09`
 - Remaining Epic E01 work still gated by follow-on dependencies: `FND 11`, `FND 12`, `FND 13`
+- Remaining completion item for `FND 08`: Person A review and sign-off
 
 ### User stories
 
@@ -261,7 +265,7 @@ As a team, we want agreed schemas and coding rules so integration risk stays low
 | FND 05 | E01.2 | Person C | `.gitignore` and `.dockerignore` | Add ignore rules for Python, Node, logs, notebooks, and build artifacts. `.dockerignore` must explicitly exclude `.git`, `node_modules`, `notebooks/`, `tests/`, `__pycache__`, `.venv`, and output files to keep the Docker image lean | FND 01 | 0.25h | repo status stays clean after local run and build, and Docker build excludes non-runtime files | ⬜ Not started | — |
 | FND 06 | E01.2 | Person D | `README.md` | Add temporary project stub with title, mission, team roles, and local setup placeholder | FND 01 | 0.5h | new contributor can understand repo purpose in under two minutes | ⬜ Not started | — |
 | FND 07 | E01.2 | Person C | repo settings | Define branch naming, PR template, and issue template | FND 01 | 0.5h | all future PRs auto show the template and issue fields | ⬜ Not started | — |
-| FND 08 | E01.2 | Person A and B | docs or backlog file | Freeze JSON contract for actions and observations | FND 04 | 0.75h | all owners sign off and no blocking contract ambiguity remains | ⬜ Not started | — |
+| FND 08 | E01.2 | Person A and B | docs or backlog file | Freeze JSON contract for actions and observations | FND 04 | 0.75h | all owners sign off and no blocking contract ambiguity remains | 🟡 Partial | — |
 | FND 09 | E01.2 | Person A | `openenv.yaml` | Create OpenEnv configuration file specifying environment class, action and observation types, and server settings | FND 04 | 0.5h | OpenEnv can discover and serve the environment using this config file | ⬜ Not started | — |
 | FND 10 | E01.1 | Person C | `replicalab/outputs/` | Create output directory structure with `logs/`, `replays/`, and `plots/` subdirectories and add to gitignore | FND 01 | 0.25h | output directories exist and generated files are not committed to git | ✅ Completed | Person B (Ayush) |
 | FND 11 | E01.1 | Person C | `server/requirements.txt` | Create server requirements file pinning FastAPI, uvicorn, websockets, and other runtime dependencies | FND 02 | 0.25h | server can be installed from requirements.txt independently of pyproject.toml | ⬜ Not started | — |

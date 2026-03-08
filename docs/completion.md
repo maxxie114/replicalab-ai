@@ -4,12 +4,24 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ---
 
+## Working Governance Files
+
+| File | Role |
+|------|------|
+| `AGENTS.md` | Required startup and close-out rules for contributors and automated model agents |
+| `docs/project_management_rules.md` | Detailed project-management workflow |
+| `docs/changes.md` | Append-only deviation log |
+| `docs/<owner>/` | Owner-local task and planning docs |
+
+---
+
 ## Overall Completion
 
 | Metric | Value |
 |--------|-------|
 | Total tasks | 152 |
 | Completed | 3 |
+| Partial / active | 1 |
 | Remaining | 149 |
 | **Completion rate** | **1.97%** |
 
@@ -27,6 +39,14 @@ Note: Person B (Ayush) completed 3 tasks total, but all were assigned to other
 people (FND 01 assigned to Person C, FND 04 assigned to Person A, FND 10
 assigned to Person C). Person B has 0 of their own 29 assigned tasks completed
 because all 29 are still blocked by upstream dependencies.
+
+---
+
+## Active Partial Tasks
+
+| ID | Assigned To | Current Status | Remaining Acceptance Item |
+|----|-------------|----------------|---------------------------|
+| FND 08 | Person A and B | Contract draft completed by Person B in `docs/fnd08_frozen_json_contract.md` | Person A review and sign-off |
 
 ---
 
@@ -68,7 +88,7 @@ because all 29 are still blocked by upstream dependencies.
 | FND 04 | FND 08, FND 09 |
 | FND 10 | No downstream dependencies |
 
-### Current Unblocked Tasks (not yet started)
+### Current Unblocked and Active Tasks
 
 | ID | Owner | Task | Unblocked By |
 |----|-------|------|-------------|
@@ -77,7 +97,7 @@ because all 29 are still blocked by upstream dependencies.
 | FND 05 | Person C | Add .gitignore and .dockerignore rules | FND 01 |
 | FND 06 | Person D | Add temporary README stub | FND 01 |
 | FND 07 | Person C | Define branch naming, PR template, issue template | FND 01 |
-| FND 08 | Person A and B | Freeze JSON contract for actions and observations | FND 04 |
+| FND 08 | Person A and B | Freeze JSON contract for actions and observations (draft complete, sign-off pending) | FND 04 |
 | FND 09 | Person A | Create openenv.yaml configuration | FND 04 |
 
 ---
