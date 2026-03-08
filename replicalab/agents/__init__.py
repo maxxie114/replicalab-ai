@@ -4,6 +4,7 @@ from .judge_policy import (
     JudgeAudit,
     build_judge_audit,
 )
+from .lab_manager_agent import LabManagerAgent
 from .lab_manager_policy import (
     AlternativeSuggestion,
     FeasibilityCheckResult,
@@ -27,6 +28,7 @@ __all__ = [
     "AlternativeSuggestion",
     "FeasibilityCheckResult",
     "JudgeAudit",
+    "LabManagerAgent",
     "RetryMetadata",
     "ScientistCallResult",
     "ScientistOutputParseError",

@@ -111,7 +111,7 @@ def _build_episode_log(
         final_state=state,
         transcript=list(state.conversation_history),
         reward_breakdown=info.reward_breakdown,
-        total_reward=result.reward,
+        total_reward=state.reward,
         rounds_used=state.round_number,
         agreement_reached=info.agreement_reached,
         judge_notes=info.judge_notes or "",

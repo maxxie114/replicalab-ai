@@ -6,6 +6,18 @@
 > **Tasks implemented:** JDG 01, JDG 02, JDG 03, JDG 04, JDG 05, JDG 06, JDG 08
 > **Tasks remaining:** JDG 07
 
+## Oracle Hybrid Note
+
+The repo now includes an additive Oracle layer for richer scenario generation,
+optional Lab Manager narration, optional event injection, and post-mortem
+analysis. None of that replaces the files in `replicalab/scoring/`.
+
+For RL training, this folder remains the canonical reward source:
+- deterministic
+- reproducible
+- testable
+- used by the environment for the actual scalar reward signal
+
 ## Architecture
 
 ```
@@ -18,6 +30,24 @@ replicalab/scoring/
     rubric.py            # JDG 04-05 — total reward formula and breakdown builder
     explain.py           # JDG 06 — deterministic plain-English explanation
 ```
+
+## Current Reward Structure
+
+The training signal now has two layers:
+
+- **Terminal reward** from `replicalab/scoring/rubric.py`
+  - `10 * rigor * feasibility * fidelity * parsimony`
+  - plus bonuses
+  - minus named penalties
+- **Step shaping reward** from `replicalab/env/replicalab_env.py`
+  - information-gain bonus for novel questions
+  - protocol-delta and momentum bonuses for productive revisions
+  - contradiction, hallucination, stalling, regression, invalid-action,
+    timeout, and no-agreement penalties
+
+The judge remains deterministic. The terminal audit still explains the final
+`RewardBreakdown`, while cumulative episode reward now includes the per-step
+shaping applied inside the environment.
 
 ## Shared Utilities
 

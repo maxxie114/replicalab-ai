@@ -318,6 +318,9 @@ class RewardBreakdown(BaseModel):
     rigor: float = Field(default=0.0, ge=0, le=1)
     feasibility: float = Field(default=0.0, ge=0, le=1)
     fidelity: float = Field(default=0.0, ge=0, le=1)
+    # Defaults to 1.0 so existing exact-value tests and manual breakdowns
+    # preserve the prior reward semantics unless parsimony is computed.
+    parsimony: float = Field(default=1.0, ge=0, le=1)
     efficiency_bonus: float = 0.0
     communication_bonus: float = 0.0
     penalties: dict[str, float] = Field(default_factory=dict)

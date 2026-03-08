@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict
 
 from replicalab.config import MAX_BUDGET, MAX_ROUNDS
 from replicalab.models import LabManagerObservation, ScientistObservation
+from replicalab.oracle_models import Scenario as OracleScenario
 from replicalab.scenarios.finance_trading import build_finance_trading_template
 from replicalab.scenarios.math_reasoning import build_math_reasoning_template
 from replicalab.scenarios.ml_benchmark import build_ml_benchmark_template
@@ -185,6 +186,224 @@ def generate_scenario(
     return _build_pack(seed=seed, template=template, draft=scaled, rng=rng)
 
 
+def oracle_scenario_to_normalized_pack(
+    *,
+    seed: int,
+    template: TemplateName,
+    oracle_scenario: OracleScenario,
+    max_rounds: int = MAX_ROUNDS,
+) -> NormalizedScenarioPack:
+    """Adapt an Oracle-generated Scenario into the canonical normalized pack."""
+
+    difficulty = oracle_scenario.difficulty.value
+    budget_total = oracle_scenario.lab_constraints.budget_total
+    budget_remaining = oracle_scenario.lab_constraints.budget_remaining
+    time_limit_days = oracle_scenario.lab_constraints.max_duration_days
+    staff_count = len(oracle_scenario.lab_constraints.staff)
+
+    constraints: list[ScenarioConstraint] = [
+        ScenarioConstraint(
+            key="budget_total",
+            label="Budget total",
+            quantity=budget_total,
+            unit="USD",
+            comparator="<=",
+            hard=True,
+            details=f"Total available budget is {budget_total:.2f} USD.",
+        ),
+        ScenarioConstraint(
+            key="budget_remaining",
+            label="Budget remaining",
+            quantity=budget_remaining,
+            unit="USD",
+            comparator="<=",
+            hard=True,
+            details=f"Remaining budget at episode start is {budget_remaining:.2f} USD.",
+        ),
+        ScenarioConstraint(
+            key="max_duration_days",
+            label="Maximum duration",
+            quantity=time_limit_days,
+            unit="days",
+            comparator="<=",
+            hard=True,
+            details=f"The plan must finish within {time_limit_days} days.",
+        ),
+        ScenarioConstraint(
+            key="staff_count",
+            label="Available staff",
+            quantity=staff_count,
+            unit="people",
+            comparator=">=",
+            hard=True,
+            details=f"{staff_count} staff member(s) are available for this scenario.",
+        ),
+    ]
+    constraints.extend(
+        ScenarioConstraint(
+            key=f"safety_rule_{index + 1}",
+            label=f"Safety rule {index + 1}",
+            comparator="=",
+            hard=True,
+            details=rule,
+        )
+        for index, rule in enumerate(oracle_scenario.lab_constraints.safety_rules)
+    )
+
+    resources: list[ScenarioResource] = []
+    for equipment in oracle_scenario.lab_constraints.equipment:
+        category = (
+            "compute"
+            if any(token in equipment.name.lower() for token in ("gpu", "cluster", "accelerator"))
+            else "tool"
+        )
+        resources.append(
+            ScenarioResource(
+                key=_slug(equipment.name),
+                label=equipment.name,
+                quantity=1,
+                unit="unit",
+                available=equipment.available and equipment.condition != "shared_booking",
+                category=category,
+                details=(
+                    f"Condition: {equipment.condition}. "
+                    f"Booking conflicts: {', '.join(equipment.booking_conflicts) or 'none'}."
+                ),
+            )
+        )
+
+    for reagent in oracle_scenario.lab_constraints.reagents:
+        resources.append(
+            ScenarioResource(
+                key=_slug(reagent.name),
+                label=reagent.name,
+                quantity=reagent.quantity_available,
+                unit=reagent.unit,
+                available=reagent.in_stock,
+                category="reference",
+                details=(
+                    f"Lead time: {reagent.lead_time_days} day(s). "
+                    f"Unit cost: {reagent.cost:.2f}."
+                ),
+            )
+        )
+
+    for member in oracle_scenario.lab_constraints.staff:
+        resources.append(
+            ScenarioResource(
+                key=_slug(member.name),
+                label=member.name,
+                quantity=len(member.available_days),
+                unit="days",
+                available=bool(member.available_days),
+                category="personnel",
+                details=f"Role: {member.role}. Skills: {', '.join(member.skills) or 'generalist'}.",
+            )
+        )
+
+    substitutions = [
+        AllowedSubstitution(
+            original=item.original,
+            alternative=item.substitute,
+            condition=item.validity,
+            tradeoff=item.caveats or item.validity,
+        )
+        for item in oracle_scenario.lab_constraints.valid_substitutions
+    ]
+
+    required_elements = (
+        list(oracle_scenario.minimum_viable_spec.must_keep_controls)
+        + list(oracle_scenario.minimum_viable_spec.critical_equipment)
+        + list(oracle_scenario.minimum_viable_spec.critical_reagents)
+    )
+    flexible_elements = (
+        list(oracle_scenario.minimum_viable_spec.acceptable_techniques)
+        + list(oracle_scenario.minimum_viable_spec.flexible_equipment)
+        + list(oracle_scenario.minimum_viable_spec.flexible_reagents)
+    )
+
+    hidden_reference = HiddenReferenceSpec(
+        summary=oracle_scenario.paper.method_summary,
+        required_elements=required_elements,
+        flexible_elements=flexible_elements,
+        target_metric=oracle_scenario.paper.statistical_test,
+        target_value=f"power>={oracle_scenario.minimum_viable_spec.power_threshold:.2f}",
+    )
+
+    success_criteria = [
+        oracle_scenario.paper.claim,
+        f"Preserve controls: {', '.join(oracle_scenario.paper.required_controls) or 'none listed'}",
+        f"Use an acceptable technique from the viable spec where possible.",
+        f"Stay within {budget_total:.2f} USD and {time_limit_days} days.",
+    ]
+
+    equipment_available = [
+        equipment.name
+        for equipment in oracle_scenario.lab_constraints.equipment
+        if equipment.available and equipment.condition != "shared_booking"
+    ]
+    equipment_booked = [
+        equipment.name
+        for equipment in oracle_scenario.lab_constraints.equipment
+        if not equipment.available or equipment.condition == "shared_booking"
+    ]
+    reagents_in_stock = [
+        reagent.name for reagent in oracle_scenario.lab_constraints.reagents if reagent.in_stock
+    ]
+    reagents_out_of_stock = [
+        reagent.name for reagent in oracle_scenario.lab_constraints.reagents if not reagent.in_stock
+    ]
+
+    scientist_observation = ScientistObservation(
+        paper_title=oracle_scenario.paper.title,
+        paper_hypothesis=oracle_scenario.paper.claim,
+        paper_method=oracle_scenario.paper.method_summary,
+        paper_key_finding=oracle_scenario.narrative_hook,
+        experiment_goal=oracle_scenario.paper.claim,
+        conversation_history=[],
+        current_protocol=None,
+        round_number=0,
+        max_rounds=max_rounds,
+    )
+
+    lab_manager_observation = LabManagerObservation(
+        budget_total=budget_total,
+        budget_remaining=budget_remaining,
+        equipment_available=equipment_available,
+        equipment_booked=equipment_booked,
+        reagents_in_stock=reagents_in_stock,
+        reagents_out_of_stock=reagents_out_of_stock,
+        staff_count=staff_count,
+        time_limit_days=time_limit_days,
+        safety_restrictions=list(oracle_scenario.lab_constraints.safety_rules),
+        conversation_history=[],
+        current_protocol=None,
+        round_number=0,
+        max_rounds=max_rounds,
+    )
+
+    bookings = _oracle_bookings(oracle_scenario)
+    windows = _oracle_windows(oracle_scenario)
+
+    return NormalizedScenarioPack(
+        scenario_id=f"{template}-{difficulty}-{seed}-oracle",
+        template=template,
+        domain_id=oracle_scenario.paper.domain,
+        difficulty=difficulty,
+        seed=seed,
+        task_summary=oracle_scenario.paper.claim,
+        success_criteria=success_criteria,
+        constraints=constraints,
+        resources=resources,
+        allowed_substitutions=substitutions,
+        hidden_reference_spec=hidden_reference,
+        scientist_observation=scientist_observation,
+        lab_manager_observation=lab_manager_observation,
+        resource_bookings=bookings,
+        scheduling_windows=windows,
+    )
+
+
 def _build_pack(seed: int, template: TemplateName, draft: dict[str, Any], rng: Any) -> NormalizedScenarioPack:
     constraints = [ScenarioConstraint.model_validate(item) for item in draft["constraints"]]
     resources = [ScenarioResource.model_validate(item) for item in draft["resources"]]
@@ -282,6 +501,90 @@ def _build_pack(seed: int, template: TemplateName, draft: dict[str, Any], rng: A
         resource_bookings=bookings,
         scheduling_windows=windows,
     )
+
+
+def _slug(value: str) -> str:
+    return "_".join(value.lower().replace("/", " ").replace("-", " ").split())
+
+
+def _day_to_offset(day: str) -> int:
+    mapping = {
+        "monday": 0,
+        "tuesday": 24,
+        "wednesday": 48,
+        "thursday": 72,
+        "friday": 96,
+        "saturday": 120,
+        "sunday": 144,
+    }
+    return mapping.get(day.strip().lower(), 0)
+
+
+def _oracle_bookings(oracle_scenario: OracleScenario) -> list[ResourceBooking]:
+    bookings: list[ResourceBooking] = []
+    for equipment in oracle_scenario.lab_constraints.equipment:
+        if equipment.booking_conflicts:
+            for day in equipment.booking_conflicts:
+                bookings.append(
+                    ResourceBooking(
+                        resource_key=_slug(equipment.name),
+                        resource_label=equipment.name,
+                        slot_label=day,
+                        start_offset_hours=_day_to_offset(day),
+                        duration_hours=8.0,
+                        status="booked" if equipment.available else "maintenance",
+                        details=f"{equipment.name} is constrained on {day}.",
+                    )
+                )
+        else:
+            bookings.append(
+                ResourceBooking(
+                    resource_key=_slug(equipment.name),
+                    resource_label=equipment.name,
+                    slot_label="default",
+                    start_offset_hours=0.0,
+                    duration_hours=8.0,
+                    status="available" if equipment.available else "maintenance",
+                    details=f"{equipment.name} is available under normal scheduling.",
+                )
+            )
+    return bookings
+
+
+def _oracle_windows(oracle_scenario: OracleScenario) -> list[SchedulingWindow]:
+    windows: list[SchedulingWindow] = [
+        SchedulingWindow(
+            key="max_duration_window",
+            label="Maximum project duration",
+            start_offset_hours=0.0,
+            end_offset_hours=float(oracle_scenario.lab_constraints.max_duration_days * 24),
+            hard=True,
+            details=(
+                f"All work must complete within "
+                f"{oracle_scenario.lab_constraints.max_duration_days} days."
+            ),
+        )
+    ]
+
+    seen_days: set[str] = set()
+    for member in oracle_scenario.lab_constraints.staff:
+        for day in member.available_days:
+            normalized = day.strip().lower()
+            if normalized in seen_days:
+                continue
+            seen_days.add(normalized)
+            start = float(_day_to_offset(day))
+            windows.append(
+                SchedulingWindow(
+                    key=f"staff_{normalized}",
+                    label=f"Staff availability {day}",
+                    start_offset_hours=start,
+                    end_offset_hours=start + 8.0,
+                    hard=False,
+                    details=f"At least one staff member is available on {day}.",
+                )
+            )
+    return windows
 
 
 def _split_resources(

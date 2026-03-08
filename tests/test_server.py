@@ -509,7 +509,8 @@ class TestWebSocket:
 
             assert resp["type"] == "step_ok"
             assert resp["done"] is False
-            assert resp["reward"] == 0.0
+            assert resp["reward"] > 0.0
+            assert resp["info"]["step_reward_components"]["protocol_delta_bonus"] > 0.0
             assert resp["observation"] is not None
 
     def test_ws_full_episode_real_reward(self, client: TestClient) -> None:
@@ -627,8 +628,9 @@ class TestWebSocket:
 
             assert resp["done"] is True
             assert resp["info"]["verdict"] == "timeout"
-            assert resp["reward"] == 0.0
+            assert resp["reward"] < 0.0
             assert resp["info"]["reward_breakdown"] is not None
+            assert resp["info"]["reward_breakdown"]["penalties"]["timeout"] > 0.0
 
     def test_ws_terminal_episode_persists_real_replay_log(
         self, client: TestClient

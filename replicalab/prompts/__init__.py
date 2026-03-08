@@ -1,4 +1,4 @@
-"""Prompt template assets and render helpers (AGT 10)."""
+"""Prompt template assets and render helpers."""
 
 from __future__ import annotations
 
@@ -13,11 +13,17 @@ PromptRole = Literal["scientist", "lab_manager", "judge"]
 _PROMPTS_DIR = Path(__file__).resolve().parent
 
 
+def load_prompt_asset(name: str) -> str:
+    """Load any prompt asset by filename stem."""
+
+    path = _PROMPTS_DIR / f"{name}.txt"
+    return path.read_text(encoding="utf-8")
+
+
 def load_prompt_template(role: PromptRole) -> str:
     """Load a role prompt template from disk."""
 
-    path = _PROMPTS_DIR / f"{role}.txt"
-    return path.read_text(encoding="utf-8")
+    return load_prompt_asset(role)
 
 
 def render_prompt_template(
@@ -119,6 +125,7 @@ def _render_substitutions(pack: NormalizedScenarioPack) -> str:
 
 __all__ = [
     "PromptRole",
+    "load_prompt_asset",
     "load_prompt_template",
     "render_prompt_template",
     "render_scientist_prompt",

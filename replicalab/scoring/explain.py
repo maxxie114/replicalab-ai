@@ -1,6 +1,6 @@
-"""JDG 06 — Plain-English explanation builder from RewardBreakdown.
+"""JDG 06 - Plain-English explanation builder from RewardBreakdown.
 
-Pure deterministic function — reads existing breakdown fields only,
+Pure deterministic function - reads existing breakdown fields only,
 introduces no new scoring logic.
 """
 
@@ -22,33 +22,31 @@ def _tier(score: float) -> str:
 
 
 def explain_reward(breakdown: RewardBreakdown) -> str:
-    """Build a plain-English explanation from a RewardBreakdown.
-
-    The output mirrors the three rubric components (rigor, feasibility,
-    fidelity), any bonuses, any named penalties, and the final total.
-    No hidden scoring logic is introduced — this is a pure formatter.
-    """
+    """Build a plain-English explanation from a RewardBreakdown."""
     total = compute_total_reward(breakdown)
     lines: list[str] = []
 
-    # --- rubric components ---
     lines.append(
-        f"Rigor: {breakdown.rigor:.2f} ({_tier(breakdown.rigor)}) — "
+        f"Rigor: {breakdown.rigor:.2f} ({_tier(breakdown.rigor)}) - "
         "measures structural completeness, success-criteria coverage, "
         "and required-element coverage."
     )
     lines.append(
-        f"Feasibility: {breakdown.feasibility:.2f} ({_tier(breakdown.feasibility)}) — "
+        f"Feasibility: {breakdown.feasibility:.2f} ({_tier(breakdown.feasibility)}) - "
         "measures whether the protocol respects budget, equipment, reagent, "
         "schedule, and staffing constraints."
     )
     lines.append(
-        f"Fidelity: {breakdown.fidelity:.2f} ({_tier(breakdown.fidelity)}) — "
+        f"Fidelity: {breakdown.fidelity:.2f} ({_tier(breakdown.fidelity)}) - "
         "measures alignment with the hidden reference spec, including "
         "required elements, substitutions, and target metrics."
     )
+    lines.append(
+        f"Parsimony: {breakdown.parsimony:.2f} ({_tier(breakdown.parsimony)}) - "
+        "measures whether the plan stays lean instead of requesting more "
+        "controls, equipment, or reagents than the scenario complexity calls for."
+    )
 
-    # --- bonuses ---
     if breakdown.efficiency_bonus > 0:
         lines.append(
             f"Efficiency bonus: +{breakdown.efficiency_bonus:.2f} "
@@ -59,15 +57,17 @@ def explain_reward(breakdown: RewardBreakdown) -> str:
             f"Communication bonus: +{breakdown.communication_bonus:.2f}."
         )
 
-    # --- penalties ---
     if breakdown.penalties:
         for key, amount in sorted(breakdown.penalties.items()):
             label = key.replace("_", " ")
-            lines.append(f"Penalty — {label}: -{amount:.2f}.")
+            lines.append(f"Penalty - {label}: -{amount:.2f}.")
     else:
         lines.append("No penalties applied.")
 
-    # --- total ---
-    lines.append(f"Total reward: {total:.2f} (formula: 10 × rigor × feasibility × fidelity + bonuses − penalties).")
+    lines.append(
+        "Total reward: "
+        f"{total:.2f} "
+        "(formula: 10 x rigor x feasibility x fidelity x parsimony + bonuses - penalties)."
+    )
 
     return "\n".join(lines)
