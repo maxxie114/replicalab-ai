@@ -3,8 +3,8 @@
 > Judge scoring engine for protocol evaluation.
 > Pure deterministic functions — no model calls, no side effects.
 >
-> **Tasks implemented:** JDG 01, JDG 02, JDG 03, JDG 04, JDG 05
-> **Tasks remaining:** JDG 06-08
+> **Tasks implemented:** JDG 01, JDG 02, JDG 03, JDG 04, JDG 05, JDG 06, JDG 08
+> **Tasks remaining:** JDG 07
 
 ## Architecture
 
@@ -16,6 +16,7 @@ replicalab/scoring/
     feasibility.py       # JDG 02 — resource feasibility (wraps AGT 05)
     fidelity.py          # JDG 03 — adherence to hidden reference spec
     rubric.py            # JDG 04-05 — total reward formula and breakdown builder
+    explain.py           # JDG 06 — deterministic plain-English explanation
 ```
 
 ## Shared Utilities
@@ -175,8 +176,7 @@ Returns a scalar reward from a `RewardBreakdown` object.
 
 ## Not Yet Implemented
 
-### Bonuses & Penalties — JDG 06-08
-- `explanation_function`: optional plain English from reward breakdown (JDG 06)
+### Bonuses & Penalties — JDG 07
 - `communication_bonus`: reward for clear negotiation (reserved)
 - `penalties`: policy violations, hallucinated resources, etc.
 
@@ -213,3 +213,8 @@ Returns a scalar reward from a `RewardBreakdown` object.
 | `test_fidelity_all_domains_return_valid_range` | [0,1] across all 9 combinations |
 | `test_all_scores_between_zero_and_one_for_bad_protocol` | Bounds check |
 | `test_good_protocol_dominates_bad_on_rigor_and_fidelity` | Cross-scorer consistency |
+| `test_good_protocol_beats_awful_protocol_on_all_scores_and_total_reward` | Good protocol beats a clearly infeasible protocol across all judge axes |
+| `test_rigor_explicit_success_criteria_mentions_improve_score` | Success-criteria mentions improve rigor coverage |
+| `test_feasibility_partial_equipment_credit_sits_between_full_and_total_miss` | Partial equipment availability yields intermediate feasibility credit |
+| `test_fidelity_direct_match_beats_substitution_and_miss` | Fidelity prefers direct match over allowed substitution over a miss |
+| `test_breakdown_matches_with_and_without_precomputed_feasibility_check` | Reward breakdown stays identical with or without an injected feasibility check |

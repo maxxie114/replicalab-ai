@@ -10,14 +10,14 @@ No assumptions from other documents are used to reclassify blocked status.
 ## 1. Blocking Status
 
 `FND 08`, `FND 09`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`,
-`AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 11`, and `TRN 13`
-are now complete.
+`AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`,
+`TRN 13`, `TRN 03`, and `TRN 04` are now complete.
 The scenario prerequisite bundle (`SCN 01` to `SCN 10`) also exists in the
 repo, so Ayush no longer waits on `SCN 09` to start prompt-layer work.
 
 Ayush now has one fully unblocked task:
 
-1. `TRN 03` -- environment client wrapper for notebook rollouts (uses `replicalab/client.py` from TRN 13)
+1. `TRN 05` -- connect collected rollouts to the trainer now that `TRN 04` is complete
 
 The prompt and Lab Manager workstream continues to assume a normalized scenario
 pack below the stable outer contract, so Ayush-owned prompting should be
@@ -38,9 +38,9 @@ Bounded-tool scope note:
 
 | ID | Task | Depends On | Why It Is Ready | Est |
 |----|------|-----------|-----------------|-----|
-| TRN 03 | Env client wrapper in notebook | API 06, TRN 13 | `replicalab/client.py` is complete with dual-transport support; TRN 03 wraps it for notebook rollout use | 1h |
+| TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | The rollout worker is complete, so the next step is wiring those trajectories into the trainer loop | 1.25h |
 
-**Total: 1 task, 1h**
+**Total: 1 task, 1.25h**
 
 ---
 
@@ -50,11 +50,9 @@ These are blocked only by earlier Ayush-owned work.
 
 | ID | Task | Depends On | Blocked By | Est |
 |----|------|-----------|-----------|-----|
-| TRN 04 | Rollout collection loop with frozen evidence packs and bounded tool traces | TRN 03, AGT 01 | Person B: TRN 03 | 1h |
-| TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | Person B: TRN 04 | 1.25h |
 | TRN 09 | Policy loading for trained checkpoint | TRN 05 | Person B: TRN 05 | 0.5h |
 
-**Total: 3 tasks, 2.75h**
+**Total: 1 task, 0.5h**
 
 ---
 
@@ -62,16 +60,15 @@ These are blocked only by earlier Ayush-owned work.
 
 | ID | Task | Depends On | Remaining External Deliverable | Est |
 |----|------|-----------|-------------------------------|-----|
-| AGT 10 | Write domain-neutral prompt text files for all 3 roles with bounded tool rules | AGT 01, AGT 07, JDG 06 | `JDG 06` from Kian | 0.75h |
-| JDG 10 | Expose component metrics for training plots | JDG 05, JDG 07 | `JDG 07` from Max | 0.5h |
+| - | No Ayush tasks are currently blocked on Kian-only deliverables | - | - | - |
 
-**Total: 2 tasks, 1.25h**
+**Total: 0 tasks, 0h**
 
 ### What to ask Kian for first
 
-1. `JDG 06` -- unlocks `AGT 10`
-2. `SCN 13` -- deepens the booking-conflict layer for the Lab Manager path
-3. `ENV 10` and `JDG 08` -- strengthen the env or judge regression layer before training ramps
+1. `SCN 13` -- deepens the booking-conflict layer for the Lab Manager path
+2. `ENV 10` -- strengthens environment regression coverage before training ramps
+3. `JDG 11` -- structured final audit payload for env, API, logs, and UI
 
 ---
 
@@ -81,9 +78,10 @@ Cannot proceed until Max delivers the remaining server and deployment pieces.
 
 | ID | Task | Depends On | Max Deliverable | Est |
 |----|------|-----------|----------------|-----|
+| JDG 10 | Expose component metrics for training plots | JDG 05, JDG 07 | `JDG 07` from Max | 0.5h |
 | TRN 01 | Notebook skeleton | API 10 | Deployed HF Space or stable hosted env URL | 0.5h |
 
-**Total: 1 task, 0.5h**
+**Total: 2 tasks, 1h**
 
 ### What to ask Max for first
 
@@ -144,26 +142,29 @@ are done.
 12. `AGT 08`
 13. `AGT 11`
 14. `TRN 13`
-
-### Phase 2: Active now
-
 15. `TRN 03`
 
-### Phase 3: After `API 10`
+### Phase 2: Recently completed
 
-16. `TRN 01`
-17. `TRN 02`
-18. `TRN 14`
+16. `AGT 10`
+17. `TRN 04`
 
-### Phase 4: After judge work
+### Phase 3: Active now
 
-19. `AGT 10`
-20. `JDG 10`
+18. `TRN 05`
 
-### Phase 5: Training pipeline
+### Phase 4: After `API 10`
 
-21. `TRN 04`
-22. `TRN 05`
+19. `TRN 01`
+20. `TRN 02`
+21. `TRN 14`
+
+### Phase 5: After judge work
+
+22. `JDG 10`
+
+### Phase 6: Training pipeline
+
 23. `TRN 06`
 24. `TRN 07`
 25. `TRN 08`
@@ -182,13 +183,13 @@ are done.
 
 | Category | Count | Hours |
 |----------|-------|-------|
-| Active now | 1 | 1h |
-| Internal Ayush chain after API 06 | 3 | 2.75h |
-| Blocked by Kian or mixed A+B work | 2 | 1.25h |
-| Blocked by Max | 1 | 0.5h |
+| Active now | 1 | 1.25h |
+| Internal Ayush chain after API 06 | 1 | 0.5h |
+| Blocked by Kian or mixed A+B work | 0 | 0h |
+| Blocked by Max | 2 | 1h |
 | Remaining downstream training chain | 8 | 4.75h |
 | Blocked by Kush | 1 | 0.5h |
-| **Total remaining** | **16** | **10.75h** |
+| **Total remaining** | **13** | **8h** |
 
 ---
 
