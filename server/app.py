@@ -27,9 +27,12 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from replicalab.agents import (
@@ -446,8 +449,34 @@ class StepRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Static frontend serving
+# ---------------------------------------------------------------------------
+# The built React frontend is expected at frontend/dist/ (produced by
+# `npm run build` inside frontend/, or by the multi-stage Docker build).
+# When the dist directory exists, the server mounts it and serves the SPA.
+# API routes (/health, /reset, /step, /scenarios, /replay, /ws) are
+# registered first and always take priority over the static catch-all.
+
+_FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+_HAS_FRONTEND = _FRONTEND_DIR.is_dir() and (_FRONTEND_DIR / "index.html").is_file()
+
+if _HAS_FRONTEND:
+    # Mount static assets (js, css, images) — NOT at "/" to avoid shadowing API routes
+    app.mount(
+        "/assets",
+        StaticFiles(directory=str(_FRONTEND_DIR / "assets")),
+        name="frontend-assets",
+    )
+    log.info("Serving frontend from %s", _FRONTEND_DIR)
+else:
+    log.info("No frontend build found at %s — API-only mode", _FRONTEND_DIR)
+
+
 @app.get("/", response_class=HTMLResponse)
-async def root() -> str:
+async def root():
+    if _HAS_FRONTEND:
+        return FileResponse(str(_FRONTEND_DIR / "index.html"), media_type="text/html")
     env_name = "real ReplicaLabEnv" if _HAS_REAL_ENV else "stub ReplicaLabEnv"
     return f"""<!doctype html>
 <html lang="en">
@@ -464,7 +493,7 @@ async def root() -> str:
   <body>
     <h1>ReplicaLab API</h1>
     <p>The container is running and serving the <strong>{env_name}</strong>.</p>
-    <p>This Space currently hosts the backend API. Available endpoints:</p>
+    <p>Available endpoints:</p>
     <ul>
       <li><code>GET /health</code></li>
       <li><code>GET /scenarios</code></li>
@@ -472,7 +501,8 @@ async def root() -> str:
       <li><code>POST /step</code></li>
       <li><code>WS /ws</code></li>
     </ul>
-    <p>If you expected the frontend, the backend is healthy but the hosted web UI is not mounted at <code>/</code> yet.</p>
+    <p>To enable the web UI, build the frontend:
+    <code>cd frontend &amp;&amp; npm install &amp;&amp; npm run build</code></p>
     <p><a href="/web">Open fallback Web UI &rarr;</a></p>
   </body>
 </html>"""
@@ -992,6 +1022,25 @@ async def websocket_endpoint(ws: WebSocket):
         log.exception("WebSocket unexpected error: %s", exc)
     finally:
         env.close()
+
+
+# ---------------------------------------------------------------------------
+# SPA catch-all — must be registered LAST so API routes take priority
+# ---------------------------------------------------------------------------
+# React Router uses client-side routing.  When a user navigates to e.g.
+# /episode/abc123 and refreshes, the browser asks the server for that path.
+# The catch-all returns index.html so the React router can handle it.
+
+if _HAS_FRONTEND:
+
+    @app.get("/{full_path:path}")
+    async def spa_catch_all(request: Request, full_path: str):
+        # Serve actual static files that exist on disk (e.g. favicon, vite.svg)
+        file = _FRONTEND_DIR / full_path
+        if file.is_file():
+            return FileResponse(str(file))
+        # Everything else → index.html for client-side routing
+        return FileResponse(str(_FRONTEND_DIR / "index.html"), media_type="text/html")
 
 
 # ---------------------------------------------------------------------------

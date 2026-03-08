@@ -136,15 +136,29 @@ python -c "from replicalab.models import ScientistAction, LabManagerAction; prin
 python -m server.app
 ```
 
-The server is intended to start at `http://localhost:7860`.
+The server starts at `http://localhost:7860`. In API-only mode it serves REST endpoints and WebSocket.
 
-### Running the Frontend
+### Running the Frontend (Development)
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+The Vite dev server starts at `http://localhost:5173` and proxies `/api` and `/ws` to the backend on port 7860.
+
+### Building & Serving Frontend with Backend (Production)
+
+```bash
+# Build the frontend
+cd frontend && npm install && npm run build && cd ..
+
+# Start the server — it auto-detects frontend/dist/ and serves the UI
+python -m server.app
+```
+
+Open `http://localhost:7860` — the server serves both the React UI and API from the same origin. Client-side routes (`/episode`, `/compare`) are handled by SPA catch-all.
 
 ### Running Tests
 
@@ -295,7 +309,13 @@ replicalab-ai/
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.ts
+│   ├── index.html
 │   └── src/
+│       ├── App.tsx              # Routes, Toast provider, Onboarding
+│       ├── pages/               # DashboardPage, EpisodePage, ComparePage
+│       ├── components/          # UI panels, 3D scenes, editor, toasts
+│       ├── lib/                 # api.ts, audio.ts, confetti.ts, useTheme.ts
+│       └── types/               # TypeScript contracts aligned with backend
 ├── notebooks/
 │   └── train_colab.ipynb
 └── tests/
@@ -313,23 +333,30 @@ replicalab-ai/
 
 ### Docker
 
+The Docker image uses a multi-stage build: Node.js builds the React frontend, then the Python runtime serves both API and UI from a single container.
+
 ```bash
-docker build -f server/Dockerfile -t replicalab .
+# Build (uses root Dockerfile)
+docker build -t replicalab .
 docker run -p 7860:7860 replicalab
 ```
+
+Open `http://localhost:7860` for the full UI, or `http://localhost:7860/health` for the API health check.
+
+The server/Dockerfile is kept in sync with the root Dockerfile for flexibility.
 
 ### Hugging Face Spaces
 
 **Live deployment:** `https://ayushozha-replicalab.hf.space`
 
-The app is deployed on HF Spaces with `sdk: docker` on port `7860`.
+The app is deployed on HF Spaces with `sdk: docker` on port `7860`. The multi-stage Dockerfile builds the frontend and serves it alongside the API.
 
 ```bash
 curl https://ayushozha-replicalab.hf.space/health
-# -> {"status":"ok","env":"real"}
+# -> {"status":"ok","env":"real","version":"0.1.0"}
 ```
 
-Current Space deployment is complete for the deterministic environment path. If live Oracle mode is enabled later, the Space will additionally need:
+Current Space deployment serves the full integrated UI (React frontend + FastAPI backend) from a single container. If live Oracle mode is enabled later, the Space will additionally need:
 
 - provider SDK dependencies
 - model API-key secrets
@@ -337,8 +364,6 @@ Current Space deployment is complete for the deterministic environment path. If 
 - cold-start and latency handling
 
 The deterministic deployment itself does not need to be redesigned.
-
-**Fallback demo path**: If the custom React UI is unavailable, the OpenEnv built-in `/web` route serves a functional fallback interface.
 
 ---
 
