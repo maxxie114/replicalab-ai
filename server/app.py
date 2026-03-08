@@ -309,7 +309,7 @@ def _generate_judge_verdict(
         if backend == "openai":
             response = client.chat.completions.create(
                 model=_ORACLE_MODEL,
-                max_tokens=1024,
+                max_completion_tokens=1024,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
