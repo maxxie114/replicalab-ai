@@ -1,8 +1,8 @@
 # Tests Map — `tests/`
 
-> 134 tests across 8 files. All passing.
+> 231 tests across 10 files. All passing.
 >
-> **Last verified:** 2026-03-07
+> **Last verified:** 2026-03-08
 
 ## Summary
 
@@ -14,15 +14,17 @@
 | `test_validation.py` | 13 | Protocol validation checks |
 | `test_scientist_policy.py` | 18+ | Parser, retry, formatter, baseline, bounded tools |
 | `test_lab_manager_policy.py` | 13 | Feasibility, suggestion, response |
-| `test_reward.py` | 18 | JDG 01-03 scoring functions |
-| `test_server.py` | 5 | API endpoint integration |
-| **Total** | **134** | |
+| `test_reward.py` | 26 | JDG 01-05 scoring functions |
+| `test_env.py` | 36 | ENV 01-08, JDG 04-05, TST 01-03 |
+| `test_server.py` | 34 | API endpoint integration (API 02-04, 06-07, 13) |
+| `test_client.py` | 24 | TRN 13 client module (REST + WS transports) |
+| **Total** | **231** | |
 
 ## Missing Coverage (not yet implemented)
 
 | File (planned) | Would cover |
 |---------------|-------------|
-| `test_env.py` | ENV 01-11 real environment |
+| `test_env.py` (expand) | ENV 10 full reset/step/replay tests |
 
 ---
 
@@ -182,6 +184,185 @@
 | `test_compose_lab_manager_response_reports_non_lab_issues` | Policy-only → REPORT |
 | `test_compose_lab_manager_response_uses_custom_renderer_without_changing_verdict` | Custom renderer works |
 
+## `test_reward.py` (18 tests)
+
+| Test | What it verifies |
+|------|-----------------|
+| `test_rigor_good_protocol_scores_higher_than_bad` | Quality ordering |
+| `test_rigor_is_deterministic` | Same inputs → same output |
+| `test_rigor_empty_controls_reduces_score` | Controls matter |
+| `test_rigor_short_rationale_reduces_score` | Rationale length matters |
+| `test_rigor_all_domains_return_valid_range` | [0,1] across all 9 combinations |
+| `test_feasibility_viable_protocol_scores_high` | Good protocol > 0.7 |
+| `test_feasibility_infeasible_protocol_scores_lower` | Bad < good |
+| `test_feasibility_accepts_precomputed_check` | Pre-computed = computed |
+| `test_feasibility_is_deterministic` | Same inputs → same output |
+| `test_feasibility_partial_credit_for_near_budget` | Slightly over > far over |
+| `test_feasibility_all_domains_return_valid_range` | [0,1] across all 9 combinations |
+| `test_fidelity_aligned_protocol_scores_higher` | Aligned > misaligned |
+| `test_fidelity_is_deterministic` | Same inputs → same output |
+| `test_fidelity_substitution_gets_partial_credit` | Sub > miss |
+| `test_fidelity_mentioning_target_metric_improves_score` | Metric mention helps |
+| `test_fidelity_all_domains_return_valid_range` | [0,1] across all 9 combinations |
+| `test_all_scores_between_zero_and_one_for_bad_protocol` | Bounds check |
+| `test_good_protocol_dominates_bad_on_rigor_and_fidelity` | Cross-scorer consistency |
+
+## `test_env.py` (32 tests)
+
+### TST 01 — Reset (8 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_reset_returns_observation_with_both_roles` | Both scientist + lab_manager present |
+| `test_reset_scientist_fields_populated` | Paper title, hypothesis, goal, round 0 |
+| `test_reset_lab_manager_fields_populated` | Budget, staff, time limit populated |
+| `test_reset_preserves_booked_and_out_of_stock` | ENV 02 scenario-pack data preserved |
+| `test_reset_state_round_zero` | State starts at round 0, not done |
+| `test_reset_generates_episode_id` | UUID episode ID generated |
+| `test_reset_clears_previous_episode` | Second reset clears first episode |
+| `test_reset_all_templates_and_difficulties` | All 9 template/difficulty combos work |
+
+### TST 03 — Invalid Action (4 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_invalid_duration_returns_error_string` | Validation error returned |
+| `test_env_survives_after_invalid_action` | Env still accepts valid actions after error |
+| `test_invalid_action_does_not_advance_round` | Round stays at 0 |
+| `test_request_info_always_passes_validation` | Non-proposal actions skip validation |
+
+### TST 02 — Step and Terminal Path (8 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_step_advances_round_number` | Round increments |
+| `test_step_returns_observations` | Both roles in step result |
+| `test_step_records_conversation_history` | Scientist + LM entries logged |
+| `test_accept_with_protocol_terminates` | Accept → done=True |
+| `test_accept_terminal_step_has_real_reward` | ENV 06 real scores, not stub 0.8 |
+| `test_max_rounds_terminates` | Max rounds → done, no agreement |
+| `test_step_info_has_round_and_episode_id` | Metadata populated |
+| `test_full_episode_propose_then_accept` | Full 2-step episode |
+
+### ENV 07 — State Snapshot (2 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_state_is_deep_copy` | Mutating snapshot doesn't affect env |
+| `test_state_history_is_independent` | History list is independent copy |
+
+### ENV 08 — Close/Reopen (3 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_close_is_idempotent` | Double close doesn't throw |
+| `test_step_after_close_raises` | RuntimeError on step after close |
+| `test_reset_reopens_closed_env` | Reset clears closed state |
+
+### JDG 04-05 — Rubric (7 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_compute_total_reward_formula` | 10×r×f×fi + bonuses = expected |
+| `test_compute_total_reward_with_penalties` | Penalties subtracted correctly |
+| `test_compute_total_reward_zero_scores` | Zero dimension → zero reward |
+| `test_build_reward_breakdown_returns_valid_scores` | All sub-scores in [0,1] |
+| `test_build_reward_breakdown_efficiency_bonus` | Fewer rounds → higher bonus |
+| `test_build_reward_breakdown_is_deterministic` | Same inputs → same output |
+| `test_total_reward_matches_manual_calculation` | Cross-check formula |
+
+## `test_server.py` (34 tests)
+
+### GET /scenarios — API 04 (5 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_returns_200` | Endpoint returns 200 |
+| `test_response_has_scenarios_key` | Response has `scenarios` list |
+| `test_all_families_present` | All 3 families present |
+| `test_each_family_has_difficulties` | Each has easy/medium/hard |
+| `test_no_extra_keys` | Only `family` and `difficulties` keys |
+
+### CORS — API 13 (3 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_preflight_allows_localhost_vite_origin` | localhost:5173 allowed |
+| `test_preflight_allows_hf_space_origin` | HF Spaces origin allowed |
+| `test_preflight_rejects_unconfigured_origin` | Unknown origin → 400 |
+
+### POST /reset — API 02 (7 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_reset_returns_200_with_expected_keys` | 200 with session_id, episode_id, observation |
+| `test_reset_observation_has_both_roles` | Scientist + lab_manager present |
+| `test_reset_with_explicit_session_id_reuses_slot` | Same session_id reused |
+| `test_reset_reuse_closes_prior_env` | New episode on reuse |
+| `test_reset_default_params` | Defaults work without error |
+| `test_reset_custom_scenario_and_difficulty` | All 9 combos succeed |
+| `test_reset_deterministic_with_same_seed` | Same seed → same observation |
+
+### POST /step — API 03 (5 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_reset_then_step_happy_path` | Reset → step returns 200 with StepResult |
+| `test_step_invalid_session_returns_404` | Non-existent session → 404 |
+| `test_terminal_step_returns_real_reward_breakdown` | Accept has real scores, not stub 0.8 |
+| `test_semantic_invalid_action_returns_200_with_error` | Invalid duration → 200 with info.error |
+| `test_replay_uses_real_judge_data` | Replay has real judge_notes, not stub |
+
+### WebSocket — API 06 (12 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_ws_ping_pong` | Ping → pong |
+| `test_ws_reset_returns_observation` | Reset returns episode_id + observation |
+| `test_ws_step_returns_result` | Step returns step_ok with result |
+| `test_ws_full_episode_real_reward` | Propose → accept returns real scores |
+| `test_ws_invalid_json` | Bad JSON → error |
+| `test_ws_missing_action_field` | Missing action → error |
+| `test_ws_invalid_action_payload` | Invalid action schema → error |
+| `test_ws_unknown_message_type` | Unknown type → error |
+| `test_ws_session_isolation` | Two connections have independent env state |
+| `test_ws_semantic_invalid_action_returns_step_ok_with_info_error` | Invalid duration → step_ok with info.error |
+| `test_ws_timeout_verdict` | Max rounds → done, timeout verdict |
+| `test_ws_terminal_episode_persists_real_replay_log` | WS episode → /replay has real data |
+
+### WebSocket Idle Timeout — API 07 (2 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_ws_idle_timeout_closes_connection` | No messages → server closes with code 1000 |
+| `test_ws_env_closes_on_disconnect` | env.close() called in finally block on disconnect |
+
+## `test_client.py` (24 tests)
+
+### REST Transport (10 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_connect_succeeds` | REST connect hits /health |
+| `test_connect_bad_url_raises` | Bad URL raises |
+| `test_reset_returns_observation` | reset() returns typed Observation |
+| `test_reset_sets_session_and_episode_id` | IDs set after reset |
+| `test_reset_reuses_session` | Same session_id on re-reset |
+| `test_step_returns_step_result` | step() returns typed StepResult |
+| `test_step_before_reset_raises` | step() without reset raises |
+| `test_full_episode_propose_accept` | Full episode with reward > 0 |
+| `test_replay_after_episode` | replay() returns typed EpisodeLog |
+| `test_context_manager_closes` | `with` block sets connected=False |
+
+### WebSocket Transport (11 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_connect_succeeds` | WS connect opens connection |
+| `test_connect_bad_url_raises` | Bad URL raises |
+| `test_reset_returns_observation` | reset() returns typed Observation |
+| `test_reset_sets_episode_id` | episode_id set after reset |
+| `test_ws_session_id_is_none` | WS has no session_id |
+| `test_step_returns_step_result` | step() returns typed StepResult |
+| `test_full_episode_propose_accept` | Full episode with reward > 0 |
+| `test_semantic_invalid_action_step_ok_with_error` | Invalid action → info.error |
+| `test_context_manager_closes` | `with` block sets connected=False |
+| `test_state_not_supported` | state() raises NotImplementedError |
+| `test_replay_not_supported` | replay() raises NotImplementedError |
+
+### Constructor (3 tests)
+| Test | What it verifies |
+|------|-----------------|
+| `test_unknown_transport_raises` | "grpc" → ValueError |
+| `test_not_connected_raises_on_reset` | reset() without connect raises |
+| `test_default_transport_is_websocket` | Default is _WsTransport |
+
 ## Test Helpers
 
 ### Shared fixtures in test files
@@ -192,3 +373,13 @@
 | `_base_observation(**overrides)` | test_scientist_policy | Build ScientistObservation with defaults |
 | `_make_system_prompt()` | test_scientist_policy | Build prompt from math_reasoning scenario |
 | `_VALID_REQUEST_INFO_JSON` | test_scientist_policy | Valid request_info JSON string |
+| `_scenario(template, difficulty)` | test_env | Generate scenario with seed=42 |
+| `_good_action(scenario)` | test_env | Build valid propose_protocol action |
+| `_accept_action()` | test_env | Build valid accept action |
+| `_good_protocol(scenario)` | test_env | Build well-formed protocol |
+| `_reset(client, **kwargs)` | test_server | Reset and return response JSON |
+| `_good_action_payload(client)` | test_server | Build valid propose_protocol payload |
+| `_accept_action_payload()` | test_server | Build valid accept payload |
+| `_propose_action(obs)` | test_client | Build valid propose_protocol ScientistAction |
+| `_accept_action()` | test_client | Build valid accept ScientistAction |
+| `live_server` | test_client | Module-scoped uvicorn server fixture |

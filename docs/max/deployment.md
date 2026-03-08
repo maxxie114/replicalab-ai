@@ -28,7 +28,7 @@ curl http://localhost:7860/health
 
 curl -X POST http://localhost:7860/reset \
   -H "Content-Type: application/json" \
-  -d '{"seed": 42, "scenario": "cell_biology", "difficulty": "easy"}'
+  -d '{"seed": 42, "scenario": "math_reasoning", "difficulty": "easy"}'
 ```
 
 ---
@@ -38,6 +38,30 @@ curl -X POST http://localhost:7860/reset \
 ```bash
 docker build -f server/Dockerfile -t replicalab .
 docker run -p 7860:7860 replicalab
+```
+
+### Verified endpoints (API 08 sign-off, 2026-03-08)
+
+After `docker run -p 7860:7860 replicalab`, the following were verified
+against the **real env** (not stub):
+
+```bash
+curl http://localhost:7860/health
+# → {"status":"ok","env":"real"}
+
+curl http://localhost:7860/scenarios
+# → {"scenarios":[{"family":"math_reasoning",...}, ...]}
+
+curl -X POST http://localhost:7860/reset \
+  -H "Content-Type: application/json" \
+  -d '{"seed":42,"scenario":"math_reasoning","difficulty":"easy"}'
+# → {"session_id":"...","episode_id":"...","observation":{...}}
+
+# Use session_id from reset response:
+curl -X POST http://localhost:7860/step \
+  -H "Content-Type: application/json" \
+  -d '{"session_id":"<SESSION_ID>","action":{"action_type":"propose_protocol","sample_size":3,"controls":["baseline"],"technique":"algebraic_proof","duration_days":1,"required_equipment":[],"required_reagents":[],"questions":[],"rationale":"Test."}}'
+# → {"observation":{...},"reward":0.0,"done":false,"info":{...}}
 ```
 
 With optional hosted-model secrets:
@@ -50,27 +74,138 @@ docker run -p 7860:7860 \
 
 ---
 
-## Hosted Space Deployment
+## Hugging Face Spaces Deployment
 
-The repository is not yet marked as fully deployed. Use this section as the deployment checklist for the later API 09, API 10, API 15, and API 17 tasks.
+### What is already configured (API 09)
 
-### One-time setup
+The repo is now deployment-ready for HF Spaces:
 
-1. Create a Space with Docker support.
-2. Add the Space as a remote.
-3. Push the repository once the Docker path and README metadata are finalized.
-4. Verify `/health`, `/reset`, and `/ws` after the Space build finishes.
+- **Root `Dockerfile`** — HF Spaces requires the Dockerfile at repo root.
+  The root-level `Dockerfile` is identical to `server/Dockerfile`. Keep them
+  in sync, or delete `server/Dockerfile` once the team standardizes.
+- **`README.md` frontmatter** — The root README now contains the required
+  YAML frontmatter that HF Spaces parses on push:
+  ```yaml
+  ---
+  title: ReplicaLab
+  emoji: 🧪
+  colorFrom: blue
+  colorTo: green
+  sdk: docker
+  app_port: 7860
+  pinned: false
+  ---
+  ```
+- **Non-root user** — The Dockerfile creates and runs as `appuser` (UID 1000),
+  which HF Spaces requires for security.
+- **Port 7860** — Both the `EXPOSE` directive and the `uvicorn` CMD use 7860,
+  matching the `app_port` in the frontmatter.
 
-### Secrets checklist
+### Step-by-step deployment (for Max)
 
-If the deployed server needs hosted-model credentials later, set them in the platform secret store rather than committing them to the repo.
+#### 1. Create the Space
 
-Suggested secret names:
+1. Go to https://huggingface.co/new-space
+2. Fill in:
+   - **Owner:** your HF username or the team org
+   - **Space name:** `replicalab` (or `replicalab-demo`)
+   - **License:** MIT
+   - **SDK:** Docker
+   - **Hardware:** CPU Basic (free tier is fine for the server)
+   - **Visibility:** Public
+3. Click **Create Space**
 
-| Secret name | Purpose |
-|-------------|---------|
-| `MODEL_API_KEY` | Hosted model access key |
-| `MODEL_BASE_URL` | Optional alternate provider endpoint |
+#### 2. Add the Space as a git remote
+
+```bash
+# From the repo root
+git remote add hf https://huggingface.co/spaces/<YOUR_HF_USERNAME>/replicalab
+
+# If the org is different:
+# git remote add hf https://huggingface.co/spaces/<ORG>/replicalab
+```
+
+#### 3. Push the repo
+
+```bash
+# Push the current branch to the Space
+git push hf ayush:main
+
+# Or if deploying from master:
+# git push hf master:main
+```
+
+HF Spaces will automatically detect the `Dockerfile`, build the image, and
+start the container.
+
+#### 4. Monitor the build
+
+1. Go to https://huggingface.co/spaces/\<YOUR_HF_USERNAME\>/replicalab
+2. Click the **Logs** tab (or **Build** tab during first deploy)
+3. Wait for the build to complete (typically 2-5 minutes)
+4. The Space status should change from "Building" to "Running"
+
+#### 5. Verify the deployment (API 10 scope)
+
+Once the Space is running:
+
+```bash
+# Health check
+curl https://<space-name>.hf.space/health
+
+# Reset an episode
+curl -X POST https://<space-name>.hf.space/reset \
+  -H "Content-Type: application/json" \
+  -d '{"seed": 42, "scenario": "math_reasoning", "difficulty": "easy"}'
+
+# List scenarios
+curl https://<space-name>.hf.space/scenarios
+```
+
+WebSocket test (using websocat or wscat):
+```bash
+wscat -c wss://<space-name>.hf.space/ws
+# Then type: {"type": "ping"}
+# Expect: {"type": "pong"}
+```
+
+### Secrets configuration
+
+If the deployed server needs hosted-model credentials later (e.g. for a
+frontier evaluator), set them in the HF Space secret store:
+
+1. Go to the Space **Settings** tab
+2. Scroll to **Repository secrets**
+3. Add each secret:
+
+| Secret name | Purpose | Required now? |
+|-------------|---------|---------------|
+| `MODEL_API_KEY` | Hosted model access key (for frontier evaluator) | No — only for demo-time evaluator |
+| `MODEL_BASE_URL` | Optional alternate provider endpoint | No |
+
+Secrets are injected as environment variables at container runtime.
+Access them in Python with `os.environ.get("MODEL_API_KEY")`.
+
+### Re-deploying after code changes
+
+```bash
+# Just push again — HF rebuilds automatically
+git push hf ayush:main
+```
+
+To force a full rebuild (e.g. after dependency changes):
+1. Go to Space **Settings**
+2. Click **Factory reboot** under the Danger zone section
+
+### Known limitations
+
+- **Free CPU tier** has 2 vCPU and 16 GB RAM. This is sufficient for the
+  FastAPI server but NOT for running RL training. Training happens in Colab.
+- **Cold starts** — Free-tier Spaces sleep after 48 hours of inactivity.
+  The first request after sleep takes 30-60 seconds to rebuild.
+- **Persistent storage** — Episode replays and logs are in-memory only.
+  They reset when the container restarts. This is acceptable for the
+  hackathon demo.
 
 ---
 
@@ -105,7 +240,7 @@ When hosted deployment is eventually verified:
 
 | Issue | Fix |
 |-------|-----|
-| `ReplicaLabEnv not found` warning at startup | Normal while the real env implementation has not landed; the server will use the stub env |
+| `ReplicaLabEnv not found` warning at startup | The real env is now available; ensure `replicalab/scoring/rubric.py` is present and `httpx` + `websocket-client` are in `server/requirements.txt` |
 | Docker build fails | Re-check `server/requirements.txt` and the Docker build context |
 | CORS error from the frontend | Re-check allowed origins in `server/app.py` |
 | WebSocket closes after idle time | Send periodic ping messages or reconnect |

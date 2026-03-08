@@ -76,7 +76,7 @@ logging.basicConfig(
 log = logging.getLogger("replicalab.server")
 
 # ---------------------------------------------------------------------------
-# Environment factory — swap _StubEnv for ReplicaLabEnv once Person A ships it
+# Environment factory — prefer ReplicaLabEnv, retain _StubEnv only as fallback
 # ---------------------------------------------------------------------------
 
 try:
@@ -89,21 +89,17 @@ except ImportError:
     log.warning("ReplicaLabEnv not found — using _StubEnv (replace when Person A ships env)")
 
 
-def _reward_breakdown_from_state(state: EpisodeState) -> RewardBreakdown:
-    return RewardBreakdown(
-        rigor=state.rigor_score,
-        feasibility=state.feasibility_score,
-        fidelity=state.fidelity_score,
-        efficiency_bonus=0.0,
-        communication_bonus=0.0,
-        penalties={
-            "invalid_action": 0.0,
-            "timeout": 0.0,
-        },
-    )
+def _build_episode_log(
+    episode_id: str,
+    state: EpisodeState,
+    result: StepResult,
+) -> EpisodeLog:
+    """Build an EpisodeLog from the terminal StepResult.
 
-
-def _build_episode_log(episode_id: str, state: EpisodeState) -> EpisodeLog:
+    Uses the real reward_breakdown, judge_notes, and verdict from the env
+    instead of rebuilding from state with stale stub values.
+    """
+    info = result.info
     return EpisodeLog(
         episode_id=episode_id,
         seed=state.seed,
@@ -111,12 +107,12 @@ def _build_episode_log(episode_id: str, state: EpisodeState) -> EpisodeLog:
         difficulty=state.difficulty,
         final_state=state,
         transcript=list(state.conversation_history),
-        reward_breakdown=_reward_breakdown_from_state(state),
-        total_reward=state.reward,
+        reward_breakdown=info.reward_breakdown,
+        total_reward=result.reward,
         rounds_used=state.round_number,
-        agreement_reached=state.agreement_reached,
-        judge_notes="Stub audit until judge integration lands.",
-        verdict="accept" if state.agreement_reached else "revise",
+        agreement_reached=info.agreement_reached,
+        judge_notes=info.judge_notes or "",
+        verdict=info.verdict or "",
     )
 
 
@@ -198,7 +194,11 @@ class _StubEnv:
             info=StepInfo(
                 agreement_reached=self._state.agreement_reached,
                 error=None,
-                reward_breakdown=_reward_breakdown_from_state(self._state) if done else None,
+                reward_breakdown=RewardBreakdown(
+                    rigor=self._state.rigor_score,
+                    feasibility=self._state.feasibility_score,
+                    fidelity=self._state.fidelity_score,
+                ) if done else None,
                 judge_notes="Stub audit until judge integration lands." if done else None,
                 verdict=("accept" if self._state.agreement_reached else "revise") if done else None,
                 round=self._state.round_number,
@@ -416,6 +416,10 @@ class ResetResponse(BaseModel):
     observation: Observation
 
 
+class ScenariosResponse(BaseModel):
+    scenarios: list[dict]
+
+
 class StepRequest(BaseModel):
     session_id: str
     action: ScientistAction
@@ -431,9 +435,9 @@ async def health():
     return {"status": "ok", "env": "real" if _HAS_REAL_ENV else "stub"}
 
 
-@app.get("/scenarios")
+@app.get("/scenarios", response_model=ScenariosResponse)
 async def list_scenarios():
-    return {"scenarios": SCENARIOS}
+    return ScenariosResponse(scenarios=SCENARIOS)
 
 
 @app.post("/reset", response_model=ResetResponse)
@@ -478,6 +482,7 @@ async def step_episode(req: StepRequest):
         _replay_store[session["episode_id"]] = _build_episode_log(
             session["episode_id"],
             state,
+            result,
         )
         log.info(
             "Episode done | session=%s episode=%s reward=%.2f",
@@ -596,7 +601,9 @@ async def websocket_endpoint(ws: WebSocket):
                     # Store completed episode for REST replay
                     if result.done and episode_id:
                         state = env.state()
-                        _replay_store[episode_id] = _build_episode_log(episode_id, state)
+                        _replay_store[episode_id] = _build_episode_log(
+                            episode_id, state, result
+                        )
 
                     await _ws_send(
                         ws,

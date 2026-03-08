@@ -9,17 +9,28 @@ No assumptions from other documents are used to reclassify blocked status.
 
 ## 1. Blocking Status
 
-`FND 08`, `FND 09`, `MOD 09`, `SCN 11`, and `AGT 01` are now complete.
+`FND 08`, `FND 09`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`,
+`AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 11`, and `TRN 13`
+are now complete.
 The scenario prerequisite bundle (`SCN 01` to `SCN 10`) also exists in the
 repo, so Ayush no longer waits on `SCN 09` to start prompt-layer work.
 
 Ayush now has one fully unblocked task:
 
-1. `AGT 03` -- highest leverage next task inside the Scientist chain
+1. `TRN 03` -- environment client wrapper for notebook rollouts (uses `replicalab/client.py` from TRN 13)
 
 The prompt and Lab Manager workstream continues to assume a normalized scenario
 pack below the stable outer contract, so Ayush-owned prompting should be
 assembled from mapped scenario data rather than hard-coded to one domain.
+
+Bounded-tool scope note:
+
+1. Ayush-owned prompt, training, and client tasks now assume bounded `search`,
+   `code_check`, and `image_inspection` capabilities.
+2. Training must still use frozen evidence packs and deterministic reward.
+3. Live web search is for validation or demo-time evidence only, not the core
+   reward loop.
+4. Audio remains out of scope.
 
 ---
 
@@ -27,21 +38,23 @@ assembled from mapped scenario data rather than hard-coded to one domain.
 
 | ID | Task | Depends On | Why It Is Ready | Est |
 |----|------|-----------|-----------------|-----|
-| AGT 03 | Parse plus retry for malformed output | MOD 09, AGT 02 | The parser and observation formatter are now both complete | 0.75h |
+| TRN 03 | Env client wrapper in notebook | API 06, TRN 13 | `replicalab/client.py` is complete with dual-transport support; TRN 03 wraps it for notebook rollout use | 1h |
 
-**Total: 1 task, 0.75h**
+**Total: 1 task, 1h**
 
 ---
 
-## 3. Internal Ayush Chain After AGT 03
+## 3. Internal Ayush Chain After API 06
 
 These are blocked only by earlier Ayush-owned work.
 
 | ID | Task | Depends On | Blocked By | Est |
 |----|------|-----------|-----------|-----|
-| AGT 08 | Prompt formatting and parse tests | AGT 01 to AGT 04 | Person B: AGT 03 | 0.75h |
+| TRN 04 | Rollout collection loop with frozen evidence packs and bounded tool traces | TRN 03, AGT 01 | Person B: TRN 03 | 1h |
+| TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | Person B: TRN 04 | 1.25h |
+| TRN 09 | Policy loading for trained checkpoint | TRN 05 | Person B: TRN 05 | 0.5h |
 
-**Total: 1 task, 0.75h**
+**Total: 3 tasks, 2.75h**
 
 ---
 
@@ -49,46 +62,33 @@ These are blocked only by earlier Ayush-owned work.
 
 | ID | Task | Depends On | Remaining External Deliverable | Est |
 |----|------|-----------|-------------------------------|-----|
-| JDG 10 | Expose component metrics for training plots | JDG 05, JDG 07 | `JDG 05` from Kian and `JDG 07` from Max | 0.5h |
+| AGT 10 | Write domain-neutral prompt text files for all 3 roles with bounded tool rules | AGT 01, AGT 07, JDG 06 | `JDG 06` from Kian | 0.75h |
+| JDG 10 | Expose component metrics for training plots | JDG 05, JDG 07 | `JDG 07` from Max | 0.5h |
 
-**Total: 1 task, 0.5h**
+**Total: 2 tasks, 1.25h**
 
 ### What to ask Kian for first
 
-1. `JDG 05` and `JDG 06` -- unlock `JDG 10` and later `AGT 10`
+1. `JDG 06` -- unlocks `AGT 10`
 2. `SCN 13` -- deepens the booking-conflict layer for the Lab Manager path
-3. `ENV 01` -- makes the real environment path available beyond the stub server
+3. `ENV 10` and `JDG 08` -- strengthen the env or judge regression layer before training ramps
 
 ---
 
-## 5. Mixed Chain After AGT 05 and Judge Work
+## 5. Blocked by Max (Person C)
 
-These depend on both Ayush-owned work and remaining upstream work.
-
-| ID | Task | Depends On | Blocked By | Est |
-|----|------|-----------|-----------|-----|
-| AGT 10 | Write domain-neutral prompt text files for all 3 roles | AGT 01, AGT 07, JDG 06 | Person A: JDG 06 | 0.75h |
-
-**Total: 1 task, 0.75h**
-
----
-
-## 6. Blocked by Max (Person C)
-
-Cannot proceed until Max delivers the server and deployment pieces.
+Cannot proceed until Max delivers the remaining server and deployment pieces.
 
 | ID | Task | Depends On | Max Deliverable | Est |
 |----|------|-----------|----------------|-----|
-| TRN 01 | Notebook skeleton | API 10 | Deployed HF Space | 0.5h |
-| TRN 03 | Env client wrapper in notebook | API 06 | WebSocket handler against the real env | 1h |
-| TRN 13 | `client.py` reusable module | API 06 | WebSocket handler against the real env | 1h |
+| TRN 01 | Notebook skeleton | API 10 | Deployed HF Space or stable hosted env URL | 0.5h |
 
-**Total: 3 tasks, 2.5h**
+**Total: 1 task, 0.5h**
 
 ### What to ask Max for first
 
-1. `API 06` -- unblocks `TRN 03` and `TRN 13`
-2. `API 10` -- unblocks `TRN 01`
+1. `API 10` -- unlocks `TRN 01`
+2. `JDG 07` -- unlocks `JDG 10`
 
 ---
 
@@ -99,19 +99,20 @@ are done.
 
 | Order | ID | Task | Depends On | Est |
 |-------|----|------|-----------|-----|
-| 1 | TRN 02 | Package install and model setup cell | TRN 01 | 0.75h |
-| 2 | TRN 14 | Select and document base model (notebook side) | TRN 01 | 0.5h |
-| 3 | TRN 04 | Rollout collection loop | TRN 03, AGT 01 | 1h |
-| 4 | TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | 1.25h |
-| 5 | TRN 06 | Log episode metrics | JDG 10, TRN 04 | 0.75h |
-| 6 | TRN 07 | Plot reward curves | TRN 06 | 0.5h |
-| 7 | TRN 08 | Before vs after eval on fixed seeds | SCN 11, TRN 05 | 1h |
-| 8 | TRN 09 | Policy loading for trained checkpoint | TRN 05 | 0.5h |
-| 9 | TRN 10 | Export plots to outputs/plots | TRN 07 | 0.25h |
-| 10 | TRN 15 | Agreement and invalid action rate aggregation | TRN 06, TRN 08, OBS 09 | 0.5h |
-| 11 | OBS 06 | Log training run metadata | TRN 06 | 0.5h |
+| 1 | TRN 01 | Notebook skeleton | API 10 | 0.5h |
+| 2 | TRN 02 | Package install and model setup cell | TRN 01 | 0.75h |
+| 3 | TRN 14 | Select and document base model (notebook side) | TRN 01 | 0.5h |
+| 4 | TRN 04 | Rollout collection loop with frozen evidence packs and bounded tool traces | TRN 03, AGT 01 | 1h |
+| 5 | TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | 1.25h |
+| 6 | TRN 06 | Log episode metrics plus bounded tool metrics | JDG 10, TRN 04 | 0.75h |
+| 7 | TRN 07 | Plot reward curves | TRN 06 | 0.5h |
+| 8 | TRN 08 | Before vs after eval on fixed seeds and frozen evidence packs | SCN 11, TRN 05 | 1h |
+| 9 | TRN 09 | Policy loading for trained checkpoint | TRN 05 | 0.5h |
+| 10 | TRN 10 | Export plots to outputs/plots | TRN 07 | 0.25h |
+| 11 | TRN 15 | Agreement, invalid action, and invalid bounded-tool rate aggregation | TRN 06, TRN 08, OBS 09 | 0.5h |
+| 12 | OBS 06 | Log training run metadata | TRN 06 | 0.5h |
 
-**Total: 11 tasks, 7.5h**
+**Total: 12 tasks, 8h**
 
 ---
 
@@ -134,43 +135,46 @@ are done.
 3. `MOD 09`
 4. `SCN 11`
 5. `AGT 01`
+6. `AGT 02`
+7. `AGT 03`
+8. `AGT 04`
+9. `AGT 05`
+10. `AGT 06`
+11. `AGT 07`
+12. `AGT 08`
+13. `AGT 11`
+14. `TRN 13`
 
 ### Phase 2: Active now
 
-6. `AGT 03`
+15. `TRN 03`
 
-### Phase 3: After AGT 03
+### Phase 3: After `API 10`
 
-7. `AGT 08`
+16. `TRN 01`
+17. `TRN 02`
+18. `TRN 14`
 
 ### Phase 4: After judge work
 
-8. `AGT 10`
-9. `JDG 10`
+19. `AGT 10`
+20. `JDG 10`
 
-### Phase 5: After Max lands `API 06` and `API 10`
+### Phase 5: Training pipeline
 
-10. `TRN 13`
-11. `TRN 01`
-12. `TRN 02`
-13. `TRN 03`
-14. `TRN 14`
-
-### Phase 6: Training pipeline
-
-15. `TRN 04`
-16. `TRN 05`
-17. `TRN 06`
-18. `TRN 07`
-19. `TRN 08`
-20. `TRN 09`
-21. `TRN 10`
-22. `TRN 15`
-23. `OBS 06`
+21. `TRN 04`
+22. `TRN 05`
+23. `TRN 06`
+24. `TRN 07`
+25. `TRN 08`
+26. `TRN 09`
+27. `TRN 10`
+28. `TRN 15`
+29. `OBS 06`
 
 ### Phase 7: Final notebook validation
 
-24. `TST 09`
+30. `TST 09`
 
 ---
 
@@ -178,14 +182,13 @@ are done.
 
 | Category | Count | Hours |
 |----------|-------|-------|
-| Active now | 1 | 0.75h |
-| Internal Ayush chain after AGT 03 | 1 | 0.75h |
-| Blocked by Kian or mixed A+B work | 1 | 0.5h |
-| Mixed chain after AGT 05 and judge work | 1 | 0.75h |
-| Blocked by Max | 3 | 2.5h |
-| Deep training chain | 11 | 7.5h |
+| Active now | 1 | 1h |
+| Internal Ayush chain after API 06 | 3 | 2.75h |
+| Blocked by Kian or mixed A+B work | 2 | 1.25h |
+| Blocked by Max | 1 | 0.5h |
+| Remaining downstream training chain | 8 | 4.75h |
 | Blocked by Kush | 1 | 0.5h |
-| **Total remaining** | **19** | **13.25h** |
+| **Total remaining** | **16** | **10.75h** |
 
 ---
 

@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 from replicalab.agents.lab_manager_policy import check_feasibility
-from replicalab.models import Protocol
+from replicalab.models import Protocol, RewardBreakdown
 from replicalab.scenarios import generate_scenario
-from replicalab.scoring import score_feasibility, score_fidelity, score_rigor
+from replicalab.scoring import (
+    build_reward_breakdown,
+    compute_total_reward,
+    score_feasibility,
+    score_fidelity,
+    score_rigor,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -301,3 +307,100 @@ def test_good_protocol_dominates_bad_on_rigor_and_fidelity() -> None:
 
     assert score_rigor(good, scenario) > score_rigor(bad, scenario)
     assert score_fidelity(good, scenario) > score_fidelity(bad, scenario)
+
+
+# ---------------------------------------------------------------------------
+# JDG 04 — compute_total_reward
+# ---------------------------------------------------------------------------
+
+
+def test_total_reward_perfect_beats_broken() -> None:
+    """A well-aligned protocol earns a higher total reward than a bad one."""
+    scenario = _scenario("ml_benchmark", "easy")
+    good = _good_protocol(scenario)
+    bad = _bad_protocol()
+
+    good_bd = build_reward_breakdown(good, scenario, rounds_used=1, max_rounds=6)
+    bad_bd = build_reward_breakdown(bad, scenario, rounds_used=1, max_rounds=6)
+
+    assert compute_total_reward(good_bd) > compute_total_reward(bad_bd)
+
+
+def test_zero_feasibility_zeroes_base() -> None:
+    """If any component is 0, the multiplicative base is 0."""
+    rb = RewardBreakdown(rigor=1.0, feasibility=0.0, fidelity=1.0)
+    assert compute_total_reward(rb) == 0.0
+
+
+def test_efficiency_bonus_higher_when_faster() -> None:
+    """Finishing in fewer rounds yields a higher total reward."""
+    scenario = _scenario()
+    protocol = _good_protocol(scenario)
+
+    fast = build_reward_breakdown(protocol, scenario, rounds_used=1, max_rounds=6)
+    slow = build_reward_breakdown(protocol, scenario, rounds_used=5, max_rounds=6)
+
+    assert compute_total_reward(fast) > compute_total_reward(slow)
+
+
+def test_penalty_subtraction_exact() -> None:
+    """Named penalties subtract exactly from the total."""
+    rb = RewardBreakdown(
+        rigor=1.0,
+        feasibility=1.0,
+        fidelity=1.0,
+        penalties={"invalid_tool_use": 2.0, "unsupported_claim": 0.5},
+    )
+    total = compute_total_reward(rb)
+    assert total == 7.5  # 10*1*1*1 - 2.5
+
+
+def test_total_reward_clamps_at_zero() -> None:
+    """Massive penalties cannot push the total below 0."""
+    rb = RewardBreakdown(
+        rigor=0.1,
+        feasibility=0.1,
+        fidelity=0.1,
+        penalties={"massive_penalty": 50.0},
+    )
+    assert compute_total_reward(rb) == 0.0
+
+
+def test_breakdown_determinism() -> None:
+    """Same inputs always produce the same total reward."""
+    scenario = _scenario("finance_trading", "medium")
+    protocol = _good_protocol(scenario)
+
+    b1 = build_reward_breakdown(protocol, scenario, rounds_used=3, max_rounds=6)
+    b2 = build_reward_breakdown(protocol, scenario, rounds_used=3, max_rounds=6)
+
+    assert compute_total_reward(b1) == compute_total_reward(b2)
+
+
+# ---------------------------------------------------------------------------
+# JDG 05 — build_reward_breakdown
+# ---------------------------------------------------------------------------
+
+
+def test_breakdown_accepts_external_penalties() -> None:
+    """Callers can inject named penalty keys via the penalties parameter."""
+    scenario = _scenario()
+    protocol = _good_protocol(scenario)
+
+    bd = build_reward_breakdown(
+        protocol, scenario, rounds_used=2, max_rounds=6,
+        penalties={"invalid_tool_use": 1.0},
+    )
+
+    assert "invalid_tool_use" in bd.penalties
+    assert bd.penalties["invalid_tool_use"] == 1.0
+
+
+def test_breakdown_no_penalties_by_default() -> None:
+    """Without external penalties, the dict is empty."""
+    scenario = _scenario()
+    protocol = _good_protocol(scenario)
+
+    bd = build_reward_breakdown(protocol, scenario, rounds_used=2, max_rounds=6)
+
+    assert bd.penalties == {}
