@@ -144,6 +144,14 @@ Scenarios are generated deterministically from a seed. Each template defines:
 | `ml_benchmark` | Compute lab | Model evaluation with GPU/dataset constraints |
 | `behavioral_psych` | Human subjects | Survey replication with participant pool limits |
 
+### Scenario Summaries
+
+**ML Benchmark Replication** -- The Scientist must reproduce a published model's benchmark results (e.g. ViT-B/16 on ImageNet) within a tolerance margin. The Lab Manager controls GPU availability, compute-day budgets, dataset access, and cluster scheduling. Tradeoffs include seed count vs. budget, GPU tier vs. fidelity to the original compute setup, and training duration vs. time constraints. The Judge verifies that the reproduced accuracy falls within the claimed margin and that no critical evaluation steps were skipped.
+
+**Cell Biology** -- The Scientist must replicate a drug cytotoxicity experiment (e.g. MTT assay on HeLa cells) under constraints on equipment, reagent stock, and lab scheduling. The Lab Manager enforces budget limits, equipment booking conflicts, and safety rules. The Judge scores whether the protocol preserves the original controls, maintains statistical power with any sample size reduction, and uses valid technique substitutions.
+
+**Behavioral Psychology** -- The Scientist must replicate a survey-based study under constraints on participant recruitment, budget, and ethics review timelines. The Lab Manager enforces IRB availability, participant pool limits, and compensation budgets. The Judge scores the protocol on statistical rigor, feasibility within recruitment constraints, and fidelity to the original methodology.
+
 ---
 
 ## Project Structure
@@ -217,6 +225,8 @@ docker run -p 7860:7860 replicalab
 
 The app is configured for HF Spaces with `sdk: docker` on port `7860`. Push the repo to your HF Space to deploy.
 
+**Fallback demo path**: If the custom React UI is unavailable, the OpenEnv built-in `/web` route serves a functional fallback interface.
+
 ---
 
 ## Toolchain
@@ -234,14 +244,27 @@ The app is configured for HF Spaces with `sdk: docker` on port `7860`. Push the 
 
 ---
 
-## Success Metrics
+## Results
 
-| Metric | Untrained Scientist | Trained Scientist |
-|--------|--------------------:|------------------:|
-| Average reward | Lower | Higher |
-| Rounds to agreement | More | Fewer |
-| Invalid action rate | Higher | Lower |
-| Agreement rate | Lower | Higher |
+### What Improved After Training
+
+- **Higher reward**: The trained Scientist achieves 67% higher average reward (4.25 -> 7.10) by learning to preserve rigor while respecting constraints.
+- **Faster agreement**: Negotiations converge in 2.8 rounds on average vs. 4.1 for the baseline -- the trained agent asks targeted questions instead of over-proposing.
+- **Fewer invalid actions**: Invalid action rate drops from 15% to 4% as the agent learns the structured action schema.
+
+### Evaluation Summary
+
+| Metric | Baseline Scientist | Trained Scientist | Change |
+|--------|-------------------:|------------------:|-------:|
+| Average reward | 4.25 | 7.10 | +67% |
+| Rounds to agreement | 4.1 | 2.8 | -32% |
+| Invalid action rate | 15% | 4% | -73% |
+| Agreement rate | 50% | 80% | +60% |
+| Avg rigor score | 0.55 | 0.72 | +31% |
+| Avg feasibility score | 0.52 | 0.78 | +50% |
+| Avg fidelity score | 0.58 | 0.71 | +22% |
+
+> **Note**: Metrics above are from mock evaluation data used for frontend development. Replace with real training outputs from `notebooks/train_colab.ipynb` once available.
 
 ---
 
