@@ -14,10 +14,10 @@ There are zero unblocked Person B tasks at project start.
 
 ---
 
-## 2. Blocked by Person A (First-Order External Dependencies)
+## 2. Blocked by Person A-Led External Dependencies
 
-These tasks depend directly on Person A deliverables. They are the first Person B
-tasks that can begin once Person A ships the listed modules.
+These tasks are first gated by upstream deliverables, primarily from Person A.
+`JDG 10` also requires Person C to ship `JDG 07`.
 
 | ID | Task | Depends On | Person A Deliverable | Est |
 |----|------|-----------|---------------------|-----|
@@ -32,12 +32,13 @@ tasks that can begin once Person A ships the listed modules.
 
 ### What to ask Person A for first (priority order)
 
-1. **MOD 01** (ScientistAction schema) -- unblocks MOD 09 and AGT 01
-2. **FND 04** (empty Pydantic models) -- unblocks FND 08 contract freeze
+1. **FND 04** (empty Pydantic models) -- unblocks FND 08 contract freeze
+2. **MOD 01** (ScientistAction schema) -- unblocks MOD 09 and, after SCN 11, AGT 01
 3. **MOD 03** (Observation models) -- unblocks AGT 02
-4. **SCN 07 + MOD 05** (constraints + validation) -- unblocks AGT 05, AGT 06, AGT 07
-5. **SCN 09** (generate_scenario) -- unblocks SCN 11 golden scenarios
-6. **JDG 05 + JDG 06** (reward breakdown + explanation) -- unblocks JDG 10, AGT 10
+4. **SCN 09** (generate_scenario) -- unblocks SCN 11 golden scenarios
+5. **SCN 07 + MOD 05** (constraints + validation) -- unblocks AGT 05, AGT 06, AGT 07
+6. **JDG 05 + JDG 06** (reward breakdown + explanation) -- unblocks AGT 10 and is only part of the path for JDG 10
+7. **SCN 08** (minimum viable replication spec) -- unblocks AGT 06 after AGT 05
 
 ---
 
@@ -117,22 +118,25 @@ are done.
 
 All phases are gated by the listed external dependency being delivered first.
 
-### Phase 1: After Person A delivers MOD 01
+### Phase 1: After Person A delivers FND 04
 
 1. **FND 08** -- Freeze JSON contract (shared with Person A, needs FND 04)
-2. **MOD 09** -- Build output parser for ScientistAction
 
-### Phase 2: After Person A delivers MOD 01 + MOD 03 + SCN 09 + SCN 11
+### Phase 2: After Person A and B complete FND 08, and Person A delivers MOD 01 + SCN 09
 
-3. **AGT 01** -- Draft Scientist system prompt
-4. **SCN 11** -- Create golden scenarios for prompt testing
-5. **AGT 02** -- Build observation to prompt formatter
-6. **AGT 11** -- Select and document base model
+2. **SCN 11** -- Create golden scenarios for prompt testing
+3. **MOD 09** -- Build output parser for ScientistAction
+4. **AGT 01** -- Draft Scientist system prompt
+5. **AGT 11** -- Select and document base model
+
+### Phase 3: After Person A delivers MOD 03
+
+6. **AGT 02** -- Build observation to prompt formatter
 7. **AGT 03** -- Add parse plus retry logic
 8. **AGT 04** -- Build baseline heuristic Scientist
 9. **AGT 08** -- Write tests for prompt formatting and parsing
 
-### Phase 3: After Person A delivers SCN 07 + MOD 05 + JDG 05 + JDG 06
+### Phase 4: After Person A delivers SCN 07 + MOD 05 + SCN 08 + JDG 05 + JDG 06, and Person C delivers JDG 07
 
 10. **AGT 05** -- Feasibility checker (shared with Person A)
 11. **AGT 06** -- Alternative suggestion logic
@@ -140,7 +144,7 @@ All phases are gated by the listed external dependency being delivered first.
 13. **AGT 10** -- Write all prompt text files
 14. **JDG 10** -- Expose component metrics for training plots
 
-### Phase 4: After Person C delivers API 06 + API 10
+### Phase 5: After Person C delivers API 06 + API 10
 
 15. **TRN 13** -- Build client.py reusable module
 16. **TRN 01** -- Create notebook skeleton
@@ -148,7 +152,7 @@ All phases are gated by the listed external dependency being delivered first.
 18. **TRN 03** -- Environment client wrapper in notebook
 19. **TRN 14** -- Document base model choice (notebook side)
 
-### Phase 5: Training Pipeline (internal chain)
+### Phase 6: Training Pipeline (internal chain)
 
 20. **TRN 04** -- Rollout collection loop
 21. **TRN 05** -- Connect to GRPO trainer
@@ -160,7 +164,7 @@ All phases are gated by the listed external dependency being delivered first.
 27. **TRN 15** -- Agreement and invalid action rate metrics
 28. **OBS 06** -- Training run metadata logging
 
-### Phase 6: After Person D delivers TRN 12
+### Phase 7: After Person D delivers TRN 12
 
 29. **TST 09** -- Notebook smoke test
 
