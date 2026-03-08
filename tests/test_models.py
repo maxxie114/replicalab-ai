@@ -5,14 +5,19 @@ from pydantic import ValidationError
 
 from replicalab.models import (
     ConversationEntry,
+    EpisodeLog,
+    EpisodeState,
     LabManagerAction,
     LabManagerActionType,
     LabManagerObservation,
     Observation,
     Protocol,
+    RewardBreakdown,
     ScientistAction,
     ScientistActionType,
     ScientistObservation,
+    StepInfo,
+    StepResult,
 )
 
 
@@ -230,3 +235,178 @@ def test_observation_rejects_negative_budget() -> None:
 
     with pytest.raises(ValidationError):
         Observation.model_validate(payload)
+
+
+# ---------------------------------------------------------------------------
+# MOD 04 — Typed EpisodeState and EpisodeLog
+# ---------------------------------------------------------------------------
+
+
+def _sample_protocol() -> Protocol:
+    return Protocol(
+        sample_size=32,
+        controls=["vehicle_control", "positive_control"],
+        technique="manual_cell_counting",
+        duration_days=5,
+        required_equipment=["microscope", "co2_incubator"],
+        required_reagents=["dmso", "drug_x", "culture_media"],
+        rationale="Uses available equipment while preserving controls.",
+    )
+
+
+def _sample_conversation_entry() -> ConversationEntry:
+    return ConversationEntry(
+        role="scientist",
+        message="I propose a manual counting protocol.",
+        round_number=1,
+        action_type="propose_protocol",
+    )
+
+
+def test_episode_state_accepts_typed_protocol_and_history() -> None:
+    protocol = _sample_protocol()
+    entry = _sample_conversation_entry()
+    state = EpisodeState(
+        seed=42,
+        current_protocol=protocol,
+        conversation_history=[entry],
+        round_number=1,
+        max_rounds=6,
+    )
+
+    assert isinstance(state.current_protocol, Protocol)
+    assert state.current_protocol.technique == "manual_cell_counting"
+    assert isinstance(state.conversation_history[0], ConversationEntry)
+    assert state.conversation_history[0].role == "scientist"
+
+
+def test_episode_state_accepts_none_protocol() -> None:
+    state = EpisodeState(current_protocol=None, conversation_history=[])
+    assert state.current_protocol is None
+    assert state.conversation_history == []
+
+
+def test_episode_state_json_round_trip() -> None:
+    protocol = _sample_protocol()
+    entry = _sample_conversation_entry()
+    state = EpisodeState(
+        seed=7,
+        scenario_template="math_reasoning",
+        difficulty="hard",
+        paper_title="Test Paper",
+        current_protocol=protocol,
+        conversation_history=[entry],
+        round_number=2,
+        max_rounds=6,
+    )
+
+    dumped = state.model_dump_json()
+    restored = EpisodeState.model_validate_json(dumped)
+
+    assert isinstance(restored.current_protocol, Protocol)
+    assert restored.current_protocol.sample_size == 32
+    assert isinstance(restored.conversation_history[0], ConversationEntry)
+    assert restored.conversation_history[0].action_type == "propose_protocol"
+    assert restored.seed == 7
+
+
+def test_episode_log_accepts_typed_fields() -> None:
+    entry = _sample_conversation_entry()
+    breakdown = RewardBreakdown(rigor=0.8, feasibility=0.7, fidelity=0.9)
+    log = EpisodeLog(
+        episode_id="ep-001",
+        seed=42,
+        transcript=[entry],
+        reward_breakdown=breakdown,
+        total_reward=5.0,
+        rounds_used=3,
+        agreement_reached=True,
+    )
+
+    assert isinstance(log.transcript[0], ConversationEntry)
+    assert isinstance(log.reward_breakdown, RewardBreakdown)
+    assert log.reward_breakdown.rigor == 0.8
+
+
+def test_episode_log_none_reward_breakdown() -> None:
+    log = EpisodeLog(episode_id="ep-002")
+    assert log.reward_breakdown is None
+    assert log.transcript == []
+
+
+def test_episode_log_json_round_trip() -> None:
+    entry = _sample_conversation_entry()
+    breakdown = RewardBreakdown(
+        rigor=0.6, feasibility=0.5, fidelity=0.7,
+        efficiency_bonus=0.1, communication_bonus=0.05,
+        penalties={"timeout": 0.02},
+    )
+    state = EpisodeState(
+        seed=99,
+        current_protocol=_sample_protocol(),
+        conversation_history=[entry],
+        round_number=3,
+        max_rounds=6,
+        done=True,
+        agreement_reached=True,
+        reward=5.0,
+        rigor_score=0.6,
+    )
+    log = EpisodeLog(
+        episode_id="ep-round-trip",
+        seed=99,
+        final_state=state,
+        transcript=[entry],
+        reward_breakdown=breakdown,
+        total_reward=5.0,
+        rounds_used=3,
+        agreement_reached=True,
+        judge_notes="Good protocol.",
+        verdict="accept",
+    )
+
+    dumped = log.model_dump_json()
+    restored = EpisodeLog.model_validate_json(dumped)
+
+    assert isinstance(restored.final_state, EpisodeState)
+    assert isinstance(restored.final_state.current_protocol, Protocol)
+    assert isinstance(restored.final_state.conversation_history[0], ConversationEntry)
+    assert isinstance(restored.transcript[0], ConversationEntry)
+    assert isinstance(restored.reward_breakdown, RewardBreakdown)
+    assert restored.reward_breakdown.penalties == {"timeout": 0.02}
+    assert restored.episode_id == "ep-round-trip"
+
+
+def test_episode_log_nested_state_preserves_typed_fields() -> None:
+    protocol = _sample_protocol()
+    entry = _sample_conversation_entry()
+    state = EpisodeState(
+        current_protocol=protocol,
+        conversation_history=[entry],
+    )
+    log = EpisodeLog(final_state=state)
+
+    assert isinstance(log.final_state.current_protocol, Protocol)
+    assert log.final_state.current_protocol.technique == "manual_cell_counting"
+    assert isinstance(log.final_state.conversation_history[0], ConversationEntry)
+
+
+def test_step_result_with_typed_info() -> None:
+    breakdown = RewardBreakdown(rigor=0.8, feasibility=0.8, fidelity=0.8)
+    info = StepInfo(
+        agreement_reached=True,
+        reward_breakdown=breakdown,
+        judge_notes="All checks passed.",
+        verdict="accept",
+        round=3,
+        stub=True,
+    )
+    result = StepResult(reward=5.0, done=True, info=info)
+
+    dumped = result.model_dump_json()
+    restored = StepResult.model_validate_json(dumped)
+
+    assert isinstance(restored.info, StepInfo)
+    assert isinstance(restored.info.reward_breakdown, RewardBreakdown)
+    assert restored.info.agreement_reached is True
+    assert restored.info.verdict == "accept"

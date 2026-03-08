@@ -308,17 +308,49 @@ class Observation(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Reward breakdown and step metadata
+# ---------------------------------------------------------------------------
+
+
+class RewardBreakdown(BaseModel):
+    """Component scores and adjustments produced by the judge rubric engine."""
+
+    rigor: float = Field(default=0.0, ge=0, le=1)
+    feasibility: float = Field(default=0.0, ge=0, le=1)
+    fidelity: float = Field(default=0.0, ge=0, le=1)
+    efficiency_bonus: float = 0.0
+    communication_bonus: float = 0.0
+    penalties: dict[str, float] = Field(default_factory=dict)
+
+
+class StepInfo(BaseModel):
+    """Typed metadata returned alongside each step result.
+
+    Reserved keys from the frozen contract are typed fields.
+    Additional debug or runtime metadata is allowed via extra="allow".
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    agreement_reached: bool = False
+    error: Optional[str] = None
+    reward_breakdown: Optional[RewardBreakdown] = None
+    judge_notes: Optional[str] = None
+    verdict: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
 # Step result
 # ---------------------------------------------------------------------------
 
 class StepResult(BaseModel):
     """Returned by env.step(). Contains the next observation, reward,
-    termination flag, and optional info dict."""
+    termination flag, and typed step info."""
 
     observation: Optional[Observation] = None
     reward: float = 0.0
     done: bool = False
-    info: dict = Field(default_factory=dict)
+    info: StepInfo = Field(default_factory=StepInfo)
 
 
 # ---------------------------------------------------------------------------
@@ -342,8 +374,8 @@ class EpisodeState(BaseModel):
     lab_reagents: list[str] = Field(default_factory=list)
     lab_staff_count: int = 0
     lab_time_limit_days: int = 0
-    current_protocol: Optional[dict] = None
-    conversation_history: list[dict] = Field(default_factory=list)
+    current_protocol: Optional[Protocol] = None
+    conversation_history: list[ConversationEntry] = Field(default_factory=list)
     round_number: int = 0
     max_rounds: int = 0
     done: bool = False
@@ -362,8 +394,8 @@ class EpisodeLog(BaseModel):
     scenario_template: str = ""
     difficulty: str = "easy"
     final_state: Optional[EpisodeState] = None
-    transcript: list[dict] = Field(default_factory=list)
-    reward_breakdown: dict = Field(default_factory=dict)
+    transcript: list[ConversationEntry] = Field(default_factory=list)
+    reward_breakdown: Optional[RewardBreakdown] = None
     total_reward: float = 0.0
     rounds_used: int = 0
     agreement_reached: bool = False

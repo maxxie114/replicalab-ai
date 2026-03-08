@@ -1,0 +1,26 @@
+[
+  {
+    "id": "golden_math_easy",
+    "template": "math_reasoning",
+    "difficulty": "easy",
+    "seed": 101,
+    "expected_domain_id": "mathematics",
+    "expected_title_contains": "Jensen"
+  },
+  {
+    "id": "golden_ml_medium",
+    "template": "ml_benchmark",
+    "difficulty": "medium",
+    "seed": 202,
+    "expected_domain_id": "machine_learning",
+    "expected_title_contains": "CIFAR-10"
+  },
+  {
+    "id": "golden_finance_hard",
+    "template": "finance_trading",
+    "difficulty": "hard",
+    "seed": 303,
+    "expected_domain_id": "finance_trading",
+    "expected_title_contains": "momentum"
+  }
+]
