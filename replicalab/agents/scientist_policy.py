@@ -5,16 +5,18 @@ MOD 09 introduced strict parsing from raw model output into
 builder so prompt assembly can be driven by the normalized scenario pack
 instead of hard-coded domain text. AGT 02 adds the per-turn observation
 formatter that converts a ``ScientistObservation`` into the user message
-sent to the LLM each round.
+sent to the LLM each round. AGT 03 wraps the formatter and parser in a
+retry loop with error-specific correction prompts and exposed telemetry.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import re
-from typing import Any, Literal, Mapping
+from typing import Any, Callable, Literal, Mapping
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from replicalab.models import (
     ConversationEntry,
@@ -24,6 +26,8 @@ from replicalab.models import (
     ScientistObservation,
 )
 from replicalab.scenarios import NormalizedScenarioPack
+
+log = logging.getLogger(__name__)
 
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.IGNORECASE | re.DOTALL)
 
@@ -54,6 +58,137 @@ class ScientistOutputParseError(ValueError):
             "raw_text": self.raw_text,
             "parsed_payload": self.parsed_payload,
         }
+
+
+GenerateFn = Callable[[list[dict[str, str]]], str]
+"""Type alias for the injected model backend.
+
+Takes a list of chat messages (each ``{"role": ..., "content": ...}``)
+and returns the raw model output string.
+"""
+
+
+class RetryMetadata(BaseModel):
+    """Telemetry from a single ``call_scientist_with_retry`` invocation.
+
+    Exposed so training metrics (TRN 15) and eval (OBS 09) can track
+    retry rates and failure modes without hidden state.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_count: int
+    retry_count: int
+    last_error_code: str | None = None
+    last_error_message: str | None = None
+
+
+class ScientistCallResult(BaseModel):
+    """Bundled action and retry telemetry from ``call_scientist_with_retry``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: ScientistAction
+    metadata: RetryMetadata
+
+
+def call_scientist_with_retry(
+    generate_fn: GenerateFn,
+    system_prompt: str,
+    observation: ScientistObservation,
+    *,
+    max_retries: int = 2,
+) -> ScientistCallResult:
+    """Call an LLM to produce a ``ScientistAction`` with parser-driven retries.
+
+    On parse failure the error is fed back to the model as a correction
+    prompt and the model is asked to try again, up to *max_retries* times.
+    No fields are silently auto-fixed.  If all attempts fail the last
+    ``ScientistOutputParseError`` is raised.
+
+    Parameters
+    ----------
+    generate_fn:
+        Injected model backend.  Called with a list of chat message dicts
+        and must return the raw text output.  No Qwen/API-specific logic
+        lives here — any callable with the right signature works.
+    system_prompt:
+        The system prompt built by ``build_scientist_system_prompt``.
+    observation:
+        The current-turn ``ScientistObservation``.
+    max_retries:
+        Maximum number of correction attempts after the first call.
+        Default is 2 (so up to 3 total attempts).
+    """
+
+    user_message = format_scientist_observation(observation)
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message},
+    ]
+
+    last_error: ScientistOutputParseError | None = None
+    total_attempts = 1 + max_retries
+
+    for attempt in range(1, total_attempts + 1):
+        raw_text = generate_fn(messages)
+
+        try:
+            action = parse_scientist_output(raw_text)
+            return ScientistCallResult(
+                action=action,
+                metadata=RetryMetadata(
+                    attempt_count=attempt,
+                    retry_count=attempt - 1,
+                    last_error_code=last_error.code if last_error else None,
+                    last_error_message=last_error.message if last_error else None,
+                ),
+            )
+        except ScientistOutputParseError as exc:
+            last_error = exc
+            log.info(
+                "Scientist parse failure attempt=%d/%d code=%s",
+                attempt,
+                total_attempts,
+                exc.code,
+            )
+
+            if attempt < total_attempts:
+                messages.append({"role": "assistant", "content": raw_text})
+                messages.append({
+                    "role": "user",
+                    "content": _build_correction_prompt(exc),
+                })
+
+    assert last_error is not None  # guaranteed by loop structure
+    raise last_error
+
+
+def _build_correction_prompt(error: ScientistOutputParseError) -> str:
+    """Build an error-specific correction message for the model."""
+
+    suffix = (
+        "Return exactly one JSON object with all ScientistAction fields. "
+        "No markdown fences, no prose — only the JSON object."
+    )
+
+    if error.code == "no_json":
+        return (
+            "Your previous response did not contain a JSON object. " + suffix
+        )
+
+    if error.code == "invalid_json":
+        return (
+            f"Your previous response contained malformed JSON: {error.message} "
+            + suffix
+        )
+
+    # invalid_action
+    return (
+        "Your previous response contained valid JSON but it failed "
+        f"ScientistAction validation: {error.message} "
+        "Fix the validation error and return a corrected JSON object. " + suffix
+    )
 
 
 def build_scientist_system_prompt(
@@ -146,9 +281,21 @@ def format_scientist_observation(obs: ScientistObservation) -> str:
     else:
         sections.append("No protocol has been proposed yet.")
 
+    allowed_actions = ", ".join(action.value for action in ScientistActionType)
+    sections.append(
+        "ScientistAction schema reminder:\n"
+        f"  allowed action_type values: {allowed_actions}\n"
+        "  include all ScientistAction fields in every response: action_type, "
+        "sample_size, controls, technique, duration_days, required_equipment, "
+        "required_reagents, questions, rationale\n"
+        "  use empty lists, zero values, or empty strings for fields that do "
+        "not apply to the selected action_type"
+    )
+
     # Closing instruction
     sections.append(
-        "Respond with exactly one JSON object containing your next ScientistAction."
+        "Respond with exactly one JSON object containing your next "
+        "ScientistAction and no extra text."
     )
 
     return "\n\n".join(sections)

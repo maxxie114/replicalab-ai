@@ -3,8 +3,11 @@ from __future__ import annotations
 import pytest
 
 from replicalab.agents.scientist_policy import (
+    RetryMetadata,
+    ScientistCallResult,
     ScientistOutputParseError,
     build_scientist_system_prompt,
+    call_scientist_with_retry,
     format_scientist_observation,
     parse_scientist_output,
 )
@@ -15,6 +18,23 @@ from replicalab.models import (
     ScientistObservation,
 )
 from replicalab.scenarios import generate_scenario
+
+
+# ---------------------------------------------------------------------------
+# Shared valid JSON payloads for retry tests
+# ---------------------------------------------------------------------------
+
+_VALID_REQUEST_INFO_JSON = """{
+  "action_type": "request_info",
+  "sample_size": 0,
+  "controls": [],
+  "technique": "",
+  "duration_days": 0,
+  "required_equipment": [],
+  "required_reagents": [],
+  "questions": ["What compute budget is available?"],
+  "rationale": ""
+}"""
 
 
 def test_parse_scientist_output_accepts_plain_json() -> None:
@@ -157,6 +177,12 @@ def test_format_observation_empty_history_no_protocol() -> None:
     assert "Replicate the 10% improvement." in result
     assert "No conversation history yet" in result
     assert "No protocol has been proposed yet" in result
+    assert "ScientistAction schema reminder:" in result
+    assert (
+        "allowed action_type values: propose_protocol, revise_protocol, "
+        "request_info, accept"
+    ) in result
+    assert "include all ScientistAction fields in every response" in result
     assert "Respond with exactly one JSON object" in result
 
 
@@ -267,3 +293,166 @@ def test_format_observation_from_generated_scenario() -> None:
     assert "Round 0" in result
     assert "No conversation history yet" in result
     assert "Respond with exactly one JSON" in result
+
+
+# ---------------------------------------------------------------------------
+# AGT 03 — call_scientist_with_retry
+# ---------------------------------------------------------------------------
+
+
+def _make_system_prompt() -> str:
+    scenario = generate_scenario(seed=1, template="math_reasoning", difficulty="easy")
+    return build_scientist_system_prompt(scenario)
+
+
+def test_retry_success_on_first_try() -> None:
+    def gen_fn(messages: list[dict[str, str]]) -> str:
+        return _VALID_REQUEST_INFO_JSON
+
+    obs = _base_observation()
+    result = call_scientist_with_retry(gen_fn, _make_system_prompt(), obs)
+
+    assert isinstance(result, ScientistCallResult)
+    assert result.action.action_type is ScientistActionType.REQUEST_INFO
+    assert result.metadata.attempt_count == 1
+    assert result.metadata.retry_count == 0
+    assert result.metadata.last_error_code is None
+    assert result.metadata.last_error_message is None
+
+
+def test_retry_malformed_json_then_valid() -> None:
+    call_count = 0
+
+    def gen_fn(messages: list[dict[str, str]]) -> str:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return '{"action_type": "request_info", trailing garbage'
+        return _VALID_REQUEST_INFO_JSON
+
+    obs = _base_observation()
+    result = call_scientist_with_retry(gen_fn, _make_system_prompt(), obs)
+
+    assert result.action.action_type is ScientistActionType.REQUEST_INFO
+    assert result.metadata.attempt_count == 2
+    assert result.metadata.retry_count == 1
+    assert result.metadata.last_error_code == "invalid_json"
+
+
+def test_retry_invalid_action_then_valid() -> None:
+    # First attempt: valid JSON but questions is empty for request_info
+    invalid_json = """{
+      "action_type": "request_info",
+      "sample_size": 0,
+      "controls": [],
+      "technique": "",
+      "duration_days": 0,
+      "required_equipment": [],
+      "required_reagents": [],
+      "questions": [],
+      "rationale": ""
+    }"""
+    call_count = 0
+
+    def gen_fn(messages: list[dict[str, str]]) -> str:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return invalid_json
+        return _VALID_REQUEST_INFO_JSON
+
+    obs = _base_observation()
+    result = call_scientist_with_retry(gen_fn, _make_system_prompt(), obs)
+
+    assert result.action.action_type is ScientistActionType.REQUEST_INFO
+    assert result.metadata.attempt_count == 2
+    assert result.metadata.retry_count == 1
+    assert result.metadata.last_error_code == "invalid_action"
+    assert "ScientistAction validation" in result.metadata.last_error_message
+
+
+def test_retry_exhausted_raises_last_error() -> None:
+    def gen_fn(messages: list[dict[str, str]]) -> str:
+        return "I cannot produce JSON right now."
+
+    obs = _base_observation()
+    with pytest.raises(ScientistOutputParseError) as exc_info:
+        call_scientist_with_retry(gen_fn, _make_system_prompt(), obs, max_retries=2)
+
+    assert exc_info.value.code == "no_json"
+
+
+def test_retry_correction_message_includes_parser_error() -> None:
+    """The correction prompt sent to the model must include the specific error."""
+    captured_messages: list[list[dict[str, str]]] = []
+
+    call_count = 0
+
+    def gen_fn(messages: list[dict[str, str]]) -> str:
+        nonlocal call_count
+        call_count += 1
+        captured_messages.append(list(messages))
+        if call_count == 1:
+            return "Just some prose, no JSON here."
+        return _VALID_REQUEST_INFO_JSON
+
+    obs = _base_observation()
+    call_scientist_with_retry(gen_fn, _make_system_prompt(), obs)
+
+    # Second call should have 4 messages: system, user, assistant (bad), user (correction)
+    assert len(captured_messages) == 2
+    retry_messages = captured_messages[1]
+    assert len(retry_messages) == 4
+    assert retry_messages[2]["role"] == "assistant"
+    assert retry_messages[2]["content"] == "Just some prose, no JSON here."
+    assert retry_messages[3]["role"] == "user"
+    correction = retry_messages[3]["content"]
+    assert "did not contain a JSON object" in correction
+    assert "No markdown fences, no prose" in correction
+
+
+def test_retry_correction_for_invalid_action_includes_validation_detail() -> None:
+    """invalid_action correction must include the schema validation message."""
+    captured_messages: list[list[dict[str, str]]] = []
+
+    invalid_json = """{
+      "action_type": "request_info",
+      "sample_size": 0,
+      "controls": [],
+      "technique": "",
+      "duration_days": 0,
+      "required_equipment": [],
+      "required_reagents": [],
+      "questions": [],
+      "rationale": ""
+    }"""
+    call_count = 0
+
+    def gen_fn(messages: list[dict[str, str]]) -> str:
+        nonlocal call_count
+        call_count += 1
+        captured_messages.append(list(messages))
+        if call_count == 1:
+            return invalid_json
+        return _VALID_REQUEST_INFO_JSON
+
+    obs = _base_observation()
+    call_scientist_with_retry(gen_fn, _make_system_prompt(), obs)
+
+    retry_messages = captured_messages[1]
+    correction = retry_messages[3]["content"]
+    assert "failed ScientistAction validation" in correction
+    assert "Fix the validation error" in correction
+
+
+def test_retry_metadata_serializable() -> None:
+    def gen_fn(messages: list[dict[str, str]]) -> str:
+        return _VALID_REQUEST_INFO_JSON
+
+    obs = _base_observation()
+    result = call_scientist_with_retry(gen_fn, _make_system_prompt(), obs)
+
+    dumped = result.metadata.model_dump_json()
+    restored = RetryMetadata.model_validate_json(dumped)
+    assert restored.attempt_count == 1
+    assert restored.retry_count == 0
