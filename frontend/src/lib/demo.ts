@@ -33,6 +33,20 @@ export const DEMO_CASES: DemoCaseMeta[] = [
   },
 ];
 
+const LIVE_TEMPLATES = ['math_reasoning', 'ml_benchmark', 'finance_trading'] as const;
+const LIVE_DIFFICULTIES = ['easy', 'medium', 'medium', 'hard'] as const;
+
+function sampleRandom<T>(items: readonly T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+export function buildLiveEpisodePath(): string {
+  const template = sampleRandom(LIVE_TEMPLATES);
+  const difficulty = sampleRandom(LIVE_DIFFICULTIES);
+  const seed = Math.floor(Math.random() * 9000) + 1000;
+  return `/episode?template=${template}&difficulty=${difficulty}&seed=${seed}&autostart=1&autoplay=1`;
+}
+
 export function parseDemoCase(value: string | null): DemoCase | undefined {
   return DEMO_CASES.find((item) => item.id === value)?.id;
 }

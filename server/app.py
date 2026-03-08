@@ -22,6 +22,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -35,7 +36,28 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+
+def _load_local_env() -> None:
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if not env_path.is_file():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key:
+            continue
+        os.environ.setdefault(key, value.strip().strip('"').strip("'"))
+
+
+_load_local_env()
+
 from replicalab.agents import (
+    build_anthropic_scientist_policy,
+    build_baseline_scientist_action,
+    build_ollama_scientist_policy,
     check_feasibility,
     compose_lab_manager_response,
     suggest_alternative,
@@ -50,6 +72,14 @@ from replicalab.config import (
     SESSION_TTL_SECONDS,
     STUB_ACCEPT_REWARD,
     WS_IDLE_TIMEOUT_SECONDS,
+    get_scientist_max_completion_tokens,
+    get_scientist_max_retries,
+    get_scientist_model,
+    get_scientist_ollama_base_url,
+    get_scientist_ollama_model,
+    get_scientist_runtime,
+    get_scientist_temperature,
+    get_scientist_timeout_seconds,
 )
 from replicalab.utils.logging import log_episode_reward, write_episode_log
 from replicalab.scenarios import (
@@ -347,6 +377,225 @@ _sessions: dict[str, dict[str, Any]] = {}
 _replay_store: dict[str, EpisodeLog] = {}
 # { episode_id: EpisodeLog }
 
+_SCIENTIST_POLICY_CACHE: dict[tuple[Any, ...], Any] = {}
+
+
+def _scientist_runtime_status() -> dict[str, Any]:
+    runtime = get_scientist_runtime()
+    if runtime == "anthropic":
+        model = get_scientist_model()
+    elif runtime == "ollama":
+        model = get_scientist_ollama_model()
+    else:
+        model = "baseline-heuristic"
+    anthropic_ready = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    ready = (
+        runtime == "baseline"
+        or (runtime == "anthropic" and anthropic_ready)
+        or runtime == "ollama"
+    )
+    if runtime == "anthropic" and ready:
+        note = "Episodes can use backend model-driven Scientist inference through Anthropic."
+    elif runtime == "ollama":
+        note = "Episodes can use backend model-driven Scientist inference through the local Ollama runtime."
+    else:
+        note = "Episodes use the deterministic baseline Scientist policy."
+    return {
+        "scientist_runtime": runtime,
+        "scientist_model": model,
+        "scientist_ready": ready,
+        "agent_step_available": ready,
+        "available_runtimes": ["baseline", "anthropic", "ollama"],
+        "note": note,
+    }
+
+
+def _get_scientist_policy():
+    runtime = get_scientist_runtime()
+    if runtime == "baseline":
+        return build_baseline_scientist_action
+    if runtime == "anthropic":
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY is not configured for Anthropic Scientist mode.")
+        cache_key = (
+            runtime,
+            get_scientist_model(),
+            get_scientist_max_completion_tokens(),
+            get_scientist_temperature(),
+            get_scientist_max_retries(),
+            get_scientist_timeout_seconds(),
+        )
+    elif runtime == "ollama":
+        cache_key = (
+            runtime,
+            get_scientist_ollama_model(),
+            get_scientist_ollama_base_url(),
+            get_scientist_temperature(),
+            get_scientist_max_retries(),
+            get_scientist_timeout_seconds(),
+        )
+    else:
+        raise RuntimeError(f"Unsupported scientist runtime '{runtime}'.")
+    cached = _SCIENTIST_POLICY_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    if runtime == "anthropic":
+        policy = build_anthropic_scientist_policy(
+            api_key=api_key,
+            model=get_scientist_model(),
+            max_completion_tokens=get_scientist_max_completion_tokens(),
+            temperature=get_scientist_temperature(),
+            max_retries=get_scientist_max_retries(),
+            timeout_seconds=get_scientist_timeout_seconds(),
+        )
+    else:
+        policy = build_ollama_scientist_policy(
+            model=get_scientist_ollama_model(),
+            base_url=get_scientist_ollama_base_url(),
+            temperature=get_scientist_temperature(),
+            max_retries=0,
+            timeout_seconds=get_scientist_timeout_seconds(),
+        )
+    _SCIENTIST_POLICY_CACHE.clear()
+    _SCIENTIST_POLICY_CACHE[cache_key] = policy
+    return policy
+
+
+def _normalize_runtime_scientist_action(
+    session: dict[str, Any],
+    action: ScientistAction,
+) -> tuple[ScientistAction, list[str]]:
+    observation = session.get("last_observation")
+    lab_obs = observation.lab_manager if observation is not None else None
+    action_type = (
+        action.action_type.value
+        if hasattr(action.action_type, "value")
+        else str(action.action_type)
+    )
+    if action_type not in {"propose_protocol", "revise_protocol"}:
+        return action, []
+
+    updates: dict[str, Any] = {}
+    notes: list[str] = []
+    max_controls = max(0, action.sample_size - 1)
+    if len(action.controls) > max_controls:
+        updates["controls"] = list(action.controls[:max_controls])
+        notes.append("trimmed_controls_to_fit_sample_size")
+
+    if lab_obs is not None:
+        if action.duration_days > lab_obs.time_limit_days:
+            updates["duration_days"] = lab_obs.time_limit_days
+            notes.append("clamped_duration_to_time_limit")
+
+        if lab_obs.equipment_available:
+            available_equipment = set(lab_obs.equipment_available)
+            filtered_equipment = [
+                item for item in action.required_equipment if item in available_equipment
+            ]
+            if not filtered_equipment:
+                filtered_equipment = list(lab_obs.equipment_available[:1])
+            if filtered_equipment != list(action.required_equipment):
+                updates["required_equipment"] = filtered_equipment
+                notes.append("aligned_equipment_to_available_inventory")
+
+        if lab_obs.reagents_in_stock:
+            available_reagents = set(lab_obs.reagents_in_stock)
+            filtered_reagents = [
+                item for item in action.required_reagents if item in available_reagents
+            ]
+            if not filtered_reagents:
+                filtered_reagents = list(lab_obs.reagents_in_stock[:1])
+            if filtered_reagents != list(action.required_reagents):
+                updates["required_reagents"] = filtered_reagents
+                notes.append("aligned_reagents_to_available_inventory")
+
+    if not updates:
+        return action, []
+    return action.model_copy(update=updates), notes
+
+
+def _resolve_scientist_action(session: dict[str, Any]) -> tuple[ScientistAction, dict[str, Any]]:
+    observation = session.get("last_observation")
+    if observation is None or observation.scientist is None:
+        raise RuntimeError("Session has no active Scientist observation. Reset the episode first.")
+
+    runtime = get_scientist_runtime()
+    if runtime == "baseline":
+        action = build_baseline_scientist_action(observation.scientist)
+    else:
+        policy = _get_scientist_policy()
+        action = policy(
+            observation.scientist,
+            seed=session.get("seed"),
+            scenario=session.get("scenario"),
+            difficulty=session.get("difficulty"),
+        )
+    raw_action = action.model_dump(mode="json")
+    action, normalization_notes = _normalize_runtime_scientist_action(session, action)
+
+    metadata = {
+        "scientist_runtime": runtime,
+        "scientist_model": (
+            get_scientist_model()
+            if runtime == "anthropic"
+            else get_scientist_ollama_model()
+            if runtime == "ollama"
+            else "baseline-heuristic"
+        ),
+        "scientist_action": action.model_dump(mode="json"),
+        "scientist_action_raw": raw_action,
+        "scientist_safety_adjustments": normalization_notes,
+    }
+    return action, metadata
+
+
+def _record_session_step(session_id: str, result: StepResult) -> StepResult:
+    session = _sessions[session_id]
+    session["total_steps"] = session.get("total_steps", 0) + 1
+    if result.observation is not None:
+        session["last_observation"] = result.observation
+    if result.info.error is not None:
+        session["invalid_action_count"] = session.get("invalid_action_count", 0) + 1
+
+    if result.done:
+        state = session["env"].state()
+        episode_log = _build_episode_log(
+            session["episode_id"],
+            state,
+            result,
+            invalid_action_count=session.get("invalid_action_count", 0),
+            total_steps=session.get("total_steps", 0),
+        )
+        _replay_store[session["episode_id"]] = episode_log
+
+        try:
+            write_episode_log(episode_log)
+            log_episode_reward(
+                episode_id=session["episode_id"],
+                seed=state.seed,
+                scenario_template=state.scenario_template,
+                difficulty=state.difficulty,
+                total_reward=state.reward,
+                breakdown=result.info.reward_breakdown,
+                rounds_used=state.round_number,
+                agreement_reached=result.info.agreement_reached,
+                verdict=result.info.verdict or "",
+                judge_notes=result.info.judge_notes or "",
+            )
+        except Exception:
+            log.exception("Failed to persist episode log to disk")
+
+        log.info(
+            "Episode done | session=%s episode=%s reward=%.2f",
+            session_id,
+            session["episode_id"],
+            result.reward,
+        )
+
+    return result
+
 
 def _touch(session_id: str) -> None:
     if session_id in _sessions:
@@ -442,6 +691,19 @@ class ScenariosResponse(BaseModel):
 class StepRequest(BaseModel):
     session_id: str
     action: ScientistAction
+
+
+class AgentStepRequest(BaseModel):
+    session_id: str
+
+
+class RuntimeStatusResponse(BaseModel):
+    scientist_runtime: str
+    scientist_model: str
+    scientist_ready: bool
+    agent_step_available: bool
+    available_runtimes: list[str]
+    note: str
 
 
 # ---------------------------------------------------------------------------
@@ -776,6 +1038,11 @@ async def health():
     }
 
 
+@_api.get("/runtime", response_model=RuntimeStatusResponse)
+async def runtime_status():
+    return RuntimeStatusResponse.model_validate(_scientist_runtime_status())
+
+
 @_api.get("/scenarios", response_model=ScenariosResponse)
 async def list_scenarios():
     return ScenariosResponse(scenarios=SCENARIOS)
@@ -802,6 +1069,10 @@ async def reset_episode(req: ResetRequest):
         "episode_id": episode_id,
         "total_steps": 0,
         "invalid_action_count": 0,
+        "last_observation": obs,
+        "seed": req.seed,
+        "scenario": req.scenario,
+        "difficulty": req.difficulty,
     }
 
     log.info("REST reset | session=%s episode=%s", session_id, episode_id)
@@ -818,48 +1089,46 @@ async def step_episode(req: StepRequest):
     env = session["env"]
 
     result = env.step(req.action)
+    return _record_session_step(req.session_id, result)
 
-    session["total_steps"] = session.get("total_steps", 0) + 1
-    if result.info.error is not None:
-        session["invalid_action_count"] = session.get("invalid_action_count", 0) + 1
 
-    # Store completed episode log for replay and persist to disk (ENV 09)
-    if result.done:
-        state = env.state()
-        episode_log = _build_episode_log(
-            session["episode_id"],
-            state,
-            result,
-            invalid_action_count=session.get("invalid_action_count", 0),
-            total_steps=session.get("total_steps", 0),
-        )
-        _replay_store[session["episode_id"]] = episode_log
+@_api.post("/agent-step", response_model=StepResult)
+async def agent_step_episode(req: AgentStepRequest):
+    if req.session_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found. Call /reset first.")
 
-        try:
-            write_episode_log(episode_log)
-            log_episode_reward(
-                episode_id=session["episode_id"],
-                seed=state.seed,
-                scenario_template=state.scenario_template,
-                difficulty=state.difficulty,
-                total_reward=state.reward,
-                breakdown=result.info.reward_breakdown,
-                rounds_used=state.round_number,
-                agreement_reached=result.info.agreement_reached,
-                verdict=result.info.verdict or "",
-                judge_notes=result.info.judge_notes or "",
-            )
-        except Exception:
-            log.exception("Failed to persist episode log to disk")
+    _touch(req.session_id)
+    session = _sessions[req.session_id]
+    env = session["env"]
 
-        log.info(
-            "Episode done | session=%s episode=%s reward=%.2f",
+    try:
+        action, metadata = _resolve_scientist_action(session)
+    except Exception as exc:
+        runtime = get_scientist_runtime()
+        observation = session.get("last_observation")
+        if observation is None or observation.scientist is None or runtime == "baseline":
+            log.exception("Scientist runtime failed for session %s", req.session_id)
+            raise HTTPException(status_code=503, detail=f"Scientist runtime failed: {exc}") from exc
+        log.exception(
+            "Scientist runtime failed for session %s; falling back to baseline",
             req.session_id,
-            session["episode_id"],
-            result.reward,
         )
+        action = build_baseline_scientist_action(observation.scientist)
+        metadata = {
+            "scientist_runtime": f"{runtime}_fallback",
+            "scientist_model": "baseline-heuristic",
+            "scientist_action": action.model_dump(mode="json"),
+            "scientist_action_raw": None,
+            "scientist_safety_adjustments": ["fallback_to_baseline_after_runtime_error"],
+            "scientist_error": str(exc),
+        }
 
-    return result
+    result = env.step(action)
+    result.info = StepInfo.model_validate({
+        **result.info.model_dump(mode="json"),
+        **metadata,
+    })
+    return _record_session_step(req.session_id, result)
 
 
 @_api.get("/replay/{episode_id}", response_model=EpisodeLog)

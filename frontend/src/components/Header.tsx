@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FlaskConical, LayoutDashboard, Play, Sun, Moon, Volume2, VolumeX, HelpCircle, GitCompareArrows, GraduationCap } from 'lucide-react';
+import { FlaskConical, LayoutDashboard, Play, Sun, Moon, Volume2, VolumeX, HelpCircle, GitCompareArrows, GraduationCap, BrainCircuit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/useTheme';
 import { toggleMute, isMuted } from '@/lib/audio';
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/episode', label: 'Episode', icon: Play },
   { to: '/training', label: 'Training', icon: GraduationCap },
   { to: '/compare', label: 'Compare', icon: GitCompareArrows },
+  { to: '/policies', label: 'Policies', icon: BrainCircuit },
 ];
 
 export default function Header({ onShowTutorial }: { onShowTutorial?: () => void }) {

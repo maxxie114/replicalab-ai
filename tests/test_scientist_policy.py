@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import json
+
+import httpx
 import pytest
 
 from replicalab.agents.scientist_policy import (
     RetryMetadata,
     ScientistCallResult,
     ScientistOutputParseError,
+    build_anthropic_scientist_policy,
     build_baseline_scientist_action,
+    build_ollama_scientist_policy,
     build_scientist_system_prompt,
     call_scientist_with_retry,
     format_scientist_observation,
@@ -900,3 +905,83 @@ def test_baseline_scientist_accepts_at_final_round_even_with_blocker() -> None:
     action = build_baseline_scientist_action(obs)
 
     assert action.action_type is ScientistActionType.ACCEPT
+
+
+def test_build_anthropic_scientist_policy_calls_messages_api() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["headers"] = dict(request.headers)
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            json={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": _VALID_REQUEST_INFO_JSON,
+                    }
+                ]
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    policy = build_anthropic_scientist_policy(
+        api_key="test-key",
+        model="claude-test",
+        client=client,
+        base_url="https://api.anthropic.com/v1/messages",
+    )
+
+    action = policy(
+        _base_observation(),
+        scenario="ml_benchmark",
+        difficulty="medium",
+    )
+
+    assert action.action_type is ScientistActionType.REQUEST_INFO
+    payload = captured["payload"]
+    assert isinstance(payload, dict)
+    assert payload["model"] == "claude-test"
+    assert payload["temperature"] == 0.0
+    assert payload["messages"][0]["role"] == "user"
+    headers = captured["headers"]
+    assert isinstance(headers, dict)
+    assert headers["x-api-key"] == "test-key"
+
+
+def test_build_ollama_scientist_policy_calls_local_chat_api() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": _VALID_REQUEST_INFO_JSON,
+                }
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    policy = build_ollama_scientist_policy(
+        model="glm-5:cloud",
+        client=client,
+        base_url="http://127.0.0.1:11434/api/chat",
+    )
+
+    action = policy(
+        _base_observation(),
+        scenario="finance_trading",
+        difficulty="medium",
+    )
+
+    assert action.action_type is ScientistActionType.REQUEST_INFO
+    payload = captured["payload"]
+    assert isinstance(payload, dict)
+    assert payload["model"] == "glm-5:cloud"
+    assert payload["stream"] is False
+    assert payload["format"] == "json"
+    assert payload["messages"][0]["role"] == "system"

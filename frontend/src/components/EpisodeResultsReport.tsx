@@ -37,6 +37,10 @@ type OutcomeProfile = {
   icon: typeof CheckCircle2;
 };
 
+function hasAcceptCaveats(episode: EpisodeState): boolean {
+  return episode.judge_audit?.verdict === 'accept' && (episode.judge_audit?.top_failure_reasons.length ?? 0) > 0;
+}
+
 const TOOL_STACK: Record<string, { title: string; packages: string[]; commands: string[] }> = {
   math_reasoning: {
     title: 'Suggested proof-and-verification stack',
@@ -78,19 +82,24 @@ function computeConfidencePercent(episode: EpisodeState): number {
 }
 
 function buildReliabilityLabel(episode: EpisodeState): string {
-  if (episode.judge_audit?.verdict === 'accept' && episode.step_history[0]?.lab_manager_action_type === 'accept') {
+  if (episode.judge_audit?.verdict !== 'accept') {
+    return 'Bad';
+  }
+  if (hasAcceptCaveats(episode)) {
+    return 'Conditional';
+  }
+  if (episode.step_history[0]?.lab_manager_action_type === 'accept') {
     return 'Good';
   }
-  if (episode.judge_audit?.verdict === 'accept') {
-    return 'Needs iteration';
-  }
-  return 'Bad';
+  return 'Needs iteration';
 }
 
 function buildOutcomeProfile(episode: EpisodeState): OutcomeProfile {
+  const acceptedWithCaveats = hasAcceptCaveats(episode);
   const firstRoundAccepted =
     episode.step_history[0]?.lab_manager_action_type === 'accept' &&
-    episode.judge_audit?.verdict === 'accept';
+    episode.judge_audit?.verdict === 'accept' &&
+    !acceptedWithCaveats;
   const disagreementRounds = episode.step_history.filter(
     (trace) => trace.lab_manager_action_type && trace.lab_manager_action_type !== 'accept',
   ).length;
@@ -102,6 +111,16 @@ function buildOutcomeProfile(episode: EpisodeState): OutcomeProfile {
       subtitle: 'The paper looks replicable under the current constraints, and the agents converged immediately.',
       badge: 'Good paper / strong replication candidate',
       icon: CheckCircle2,
+    };
+  }
+
+  if (acceptedWithCaveats) {
+    return {
+      tone: 'learning',
+      title: 'Completed: Accepted with caveats',
+      subtitle: 'The agents reached agreement, but the final plan still has visible gaps against the hidden reference requirements.',
+      badge: 'Conditional replication candidate',
+      icon: AlertTriangle,
     };
   }
 
@@ -203,6 +222,7 @@ export default function EpisodeResultsReport({ episode, className }: EpisodeResu
   const profile = buildOutcomeProfile(episode);
   const confidencePercent = computeConfidencePercent(episode);
   const reliabilityLabel = buildReliabilityLabel(episode);
+  const acceptedWithCaveats = hasAcceptCaveats(episode);
   const disagreementRounds = episode.step_history.filter(
     (trace) => trace.lab_manager_action_type && trace.lab_manager_action_type !== 'accept',
   ).length;
@@ -240,7 +260,9 @@ export default function EpisodeResultsReport({ episode, className }: EpisodeResu
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{profile.subtitle}</p>
           <p className="mt-3 max-w-3xl text-sm">
             {profile.tone !== 'reject'
-              ? `ReplicaLab scores this paper as replicable in the current lab setup with ${confidencePercent}% confidence.`
+              ? acceptedWithCaveats
+                ? `ReplicaLab scores this paper as conditionally replicable in the current lab setup with ${confidencePercent}% confidence. The caveats below should be addressed before claiming a clean reproduction.`
+                : `ReplicaLab scores this paper as replicable in the current lab setup with ${confidencePercent}% confidence.`
               : `ReplicaLab rejects this paper for the current setup. The paper reliability score is ${confidencePercent}% until the blocking constraints are addressed.`}
           </p>
         </div>
@@ -256,13 +278,13 @@ export default function EpisodeResultsReport({ episode, className }: EpisodeResu
             icon={<CheckCircle2 className="h-4 w-4" />}
             label="Paper reliability quality"
             value={reliabilityLabel}
-            hint="Good, learning opportunity, or bad based on the judged outcome."
+            hint="Good, conditional, learning opportunity, or bad based on the judged outcome."
           />
           <MetricCard
             icon={<FileCheck2 className="h-4 w-4" />}
             label="Judge verdict"
-            value={episode.judge_audit?.verdict ?? 'unknown'}
-            hint="Canonical deterministic decision."
+            value={acceptedWithCaveats ? 'accept_with_caveats' : episode.judge_audit?.verdict ?? 'unknown'}
+            hint="Deterministic decision with caveats separated from outright rejection."
           />
           <MetricCard
             icon={<TrendingUp className="h-4 w-4" />}
