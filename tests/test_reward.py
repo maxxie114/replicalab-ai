@@ -1,13 +1,15 @@
-"""Tests for JDG 01–03 scoring functions."""
+"""Tests for JDG 01–06 scoring functions."""
 
 from __future__ import annotations
 
 from replicalab.agents.lab_manager_policy import check_feasibility
 from replicalab.models import Protocol, RewardBreakdown
 from replicalab.scenarios import generate_scenario
+from replicalab.scenarios.templates import AllowedSubstitution, HiddenReferenceSpec
 from replicalab.scoring import (
     build_reward_breakdown,
     compute_total_reward,
+    explain_reward,
     score_feasibility,
     score_fidelity,
     score_rigor,
@@ -61,6 +63,19 @@ def _bad_protocol() -> Protocol:
         required_equipment=[],
         required_reagents=[],
         rationale="No plan.",
+    )
+
+
+def _awful_protocol(scenario) -> Protocol:
+    """Build a structurally weak and clearly infeasible protocol."""
+    return Protocol(
+        sample_size=200,
+        controls=[],
+        technique="imaginary_method",
+        duration_days=scenario.lab_manager_observation.time_limit_days + 5,
+        required_equipment=["Imaginary Device"],
+        required_reagents=["Imaginary Reagent"],
+        rationale="No.",
     )
 
 
@@ -309,6 +324,119 @@ def test_good_protocol_dominates_bad_on_rigor_and_fidelity() -> None:
     assert score_fidelity(good, scenario) > score_fidelity(bad, scenario)
 
 
+def test_good_protocol_beats_awful_protocol_on_all_scores_and_total_reward() -> None:
+    """A clearly infeasible and low-quality protocol loses on every judge axis."""
+    scenario = _scenario("ml_benchmark", "easy")
+    good = _good_protocol(scenario)
+    awful = _awful_protocol(scenario)
+
+    good_breakdown = build_reward_breakdown(good, scenario, rounds_used=2, max_rounds=6)
+    awful_breakdown = build_reward_breakdown(awful, scenario, rounds_used=2, max_rounds=6)
+
+    assert score_rigor(good, scenario) > score_rigor(awful, scenario)
+    assert score_feasibility(good, scenario) > score_feasibility(awful, scenario)
+    assert score_fidelity(good, scenario) > score_fidelity(awful, scenario)
+    assert compute_total_reward(good_breakdown) > compute_total_reward(awful_breakdown)
+
+
+def test_rigor_explicit_success_criteria_mentions_improve_score() -> None:
+    """Mentioning scenario success criteria should improve rigor coverage."""
+    scenario = _scenario("finance_trading", "easy").model_copy(
+        update={
+            "success_criteria": ["risk-adjusted return", "drawdown control"],
+            "hidden_reference_spec": HiddenReferenceSpec(
+                summary="risk-aware replication plan",
+                required_elements=[],
+                flexible_elements=[],
+                target_metric="sharpe ratio",
+                target_value="> 1.5",
+            ),
+        }
+    )
+    generic = _good_protocol(scenario).model_copy(
+        update={"rationale": "Follow a generic plan with basic checks."}
+    )
+    explicit = generic.model_copy(
+        update={
+            "rationale": (
+                "Optimize for risk-adjusted return while preserving drawdown control "
+                "through explicit checkpoints."
+            )
+        }
+    )
+
+    assert score_rigor(explicit, scenario) > score_rigor(generic, scenario)
+
+
+def test_feasibility_partial_equipment_credit_sits_between_full_and_total_miss() -> None:
+    """One available requirement should score between full availability and a total miss."""
+    scenario = _scenario("ml_benchmark", "easy")
+    available = list(scenario.lab_manager_observation.equipment_available)
+    assert available, "scenario must expose at least one available equipment item"
+
+    full = _good_protocol(scenario).model_copy(
+        update={"required_equipment": [available[0]]}
+    )
+    partial = full.model_copy(
+        update={"required_equipment": [available[0], "Imaginary Device"]}
+    )
+    miss = full.model_copy(
+        update={"required_equipment": ["Imaginary Device", "Missing Device"]}
+    )
+
+    full_score = score_feasibility(full, scenario)
+    partial_score = score_feasibility(partial, scenario)
+    miss_score = score_feasibility(miss, scenario)
+
+    assert full_score > partial_score > miss_score
+
+
+def test_fidelity_direct_match_beats_substitution_and_miss() -> None:
+    """Required-element scoring should prefer direct match > allowed substitution > miss."""
+    scenario = _scenario("math_reasoning", "easy").model_copy(
+        update={
+            "hidden_reference_spec": HiddenReferenceSpec(
+                summary="structured proof plan",
+                required_elements=["alphaprobe"],
+                flexible_elements=[],
+                target_metric="accuracy",
+                target_value="0.95",
+            ),
+            "allowed_substitutions": [
+                AllowedSubstitution(
+                    original="alphaprobe",
+                    alternative="betaprobe",
+                    condition="when the primary resource is booked",
+                    tradeoff="backup sensor is slower",
+                )
+            ],
+        }
+    )
+    base = Protocol(
+        sample_size=10,
+        controls=["baseline", "ablation"],
+        technique="structured proof plan",
+        duration_days=1,
+        required_equipment=[],
+        required_reagents=[],
+        rationale="Target accuracy 0.95 with explicit evaluation.",
+    )
+
+    direct = base.model_copy(
+        update={"rationale": base.rationale + " Use the alphaprobe."}
+    )
+    substitution = base.model_copy(
+        update={"rationale": base.rationale + " Use the betaprobe."}
+    )
+    miss = base
+
+    direct_score = score_fidelity(direct, scenario)
+    substitution_score = score_fidelity(substitution, scenario)
+    miss_score = score_fidelity(miss, scenario)
+
+    assert direct_score > substitution_score > miss_score
+
+
 # ---------------------------------------------------------------------------
 # JDG 04 — compute_total_reward
 # ---------------------------------------------------------------------------
@@ -404,3 +532,127 @@ def test_breakdown_no_penalties_by_default() -> None:
     bd = build_reward_breakdown(protocol, scenario, rounds_used=2, max_rounds=6)
 
     assert bd.penalties == {}
+
+
+def test_breakdown_matches_with_and_without_precomputed_feasibility_check() -> None:
+    """Providing a precomputed feasibility check should not change the breakdown."""
+    scenario = _scenario("ml_benchmark", "medium")
+    protocol = _good_protocol(scenario)
+    precomputed = check_feasibility(protocol, scenario)
+
+    with_check = build_reward_breakdown(
+        protocol,
+        scenario,
+        rounds_used=3,
+        max_rounds=6,
+        check=precomputed,
+    )
+    without_check = build_reward_breakdown(
+        protocol,
+        scenario,
+        rounds_used=3,
+        max_rounds=6,
+    )
+
+    assert with_check == without_check
+
+
+# ---------------------------------------------------------------------------
+# JDG 06 — explain_reward
+# ---------------------------------------------------------------------------
+
+
+def test_explain_mentions_all_rubric_components() -> None:
+    """Explanation must reference rigor, feasibility, and fidelity."""
+    bd = RewardBreakdown(rigor=0.8, feasibility=0.6, fidelity=0.9)
+    text = explain_reward(bd)
+
+    assert "Rigor:" in text
+    assert "Feasibility:" in text
+    assert "Fidelity:" in text
+    assert "0.80" in text
+    assert "0.60" in text
+    assert "0.90" in text
+
+
+def test_explain_includes_penalties() -> None:
+    """Each named penalty key appears in the explanation."""
+    bd = RewardBreakdown(
+        rigor=0.5,
+        feasibility=0.5,
+        fidelity=0.5,
+        penalties={"invalid_tool_use": 1.0, "unsupported_claim": 0.5},
+    )
+    text = explain_reward(bd)
+
+    assert "invalid tool use" in text
+    assert "unsupported claim" in text
+    assert "-1.00" in text
+    assert "-0.50" in text
+
+
+def test_explain_no_penalties_message() -> None:
+    """When no penalties exist, the explanation says so."""
+    bd = RewardBreakdown(rigor=1.0, feasibility=1.0, fidelity=1.0)
+    text = explain_reward(bd)
+
+    assert "No penalties applied" in text
+
+
+def test_explain_includes_efficiency_bonus() -> None:
+    """Efficiency bonus appears when present."""
+    bd = RewardBreakdown(
+        rigor=0.7, feasibility=0.7, fidelity=0.7, efficiency_bonus=0.8,
+    )
+    text = explain_reward(bd)
+
+    assert "Efficiency bonus" in text
+    assert "+0.80" in text
+
+
+def test_explain_omits_efficiency_bonus_when_zero() -> None:
+    """Efficiency bonus line is absent when bonus is 0."""
+    bd = RewardBreakdown(rigor=0.7, feasibility=0.7, fidelity=0.7)
+    text = explain_reward(bd)
+
+    assert "Efficiency bonus" not in text
+
+
+def test_explain_shows_total_reward() -> None:
+    """Explanation ends with the computed total reward."""
+    bd = RewardBreakdown(rigor=1.0, feasibility=1.0, fidelity=1.0)
+    text = explain_reward(bd)
+
+    assert "Total reward: 10.00" in text
+
+
+def test_explain_tier_labels() -> None:
+    """Quality tier labels map correctly to score ranges."""
+    strong = RewardBreakdown(rigor=0.85, feasibility=0.5, fidelity=0.25)
+    text = explain_reward(strong)
+
+    assert "strong" in text   # rigor 0.85
+    assert "moderate" in text  # feasibility 0.5
+    assert "weak" in text      # fidelity 0.25
+
+
+def test_explain_deterministic() -> None:
+    """Same breakdown always produces the same explanation."""
+    bd = RewardBreakdown(
+        rigor=0.6, feasibility=0.4, fidelity=0.8,
+        efficiency_bonus=0.5, penalties={"timeout": 0.3},
+    )
+    assert explain_reward(bd) == explain_reward(bd)
+
+
+def test_explain_with_real_breakdown() -> None:
+    """Explanation works end-to-end with build_reward_breakdown output."""
+    scenario = _scenario("ml_benchmark", "easy")
+    protocol = _good_protocol(scenario)
+    bd = build_reward_breakdown(protocol, scenario, rounds_used=2, max_rounds=6)
+    text = explain_reward(bd)
+
+    assert "Rigor:" in text
+    assert "Feasibility:" in text
+    assert "Fidelity:" in text
+    assert "Total reward:" in text

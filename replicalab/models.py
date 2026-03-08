@@ -337,6 +337,7 @@ class StepInfo(BaseModel):
     reward_breakdown: Optional[RewardBreakdown] = None
     judge_notes: Optional[str] = None
     verdict: Optional[str] = None
+    top_failure_reasons: list[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -384,6 +385,9 @@ class EpisodeState(BaseModel):
     rigor_score: float = 0.0
     feasibility_score: float = 0.0
     fidelity_score: float = 0.0
+    judge_notes: str = ""
+    verdict: str = ""
+    top_failure_reasons: list[str] = Field(default_factory=list)
 
 
 class EpisodeLog(BaseModel):
@@ -401,3 +405,4 @@ class EpisodeLog(BaseModel):
     agreement_reached: bool = False
     judge_notes: str = ""
     verdict: str = ""
+    top_failure_reasons: list[str] = Field(default_factory=list)

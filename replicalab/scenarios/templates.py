@@ -56,6 +56,33 @@ class AllowedSubstitution(BaseModel):
     tradeoff: str
 
 
+class ResourceBooking(BaseModel):
+    """A time-slot booking for a schedulable resource."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    resource_key: str
+    resource_label: str
+    slot_label: str
+    start_offset_hours: float
+    duration_hours: float
+    status: Literal["available", "booked", "maintenance"]
+    details: str
+
+
+class SchedulingWindow(BaseModel):
+    """A time window constraining when a resource or activity is accessible."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    key: str
+    label: str
+    start_offset_hours: float
+    end_offset_hours: float
+    hard: bool = True
+    details: str
+
+
 class HiddenReferenceSpec(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -82,6 +109,8 @@ class NormalizedScenarioPack(BaseModel):
     hidden_reference_spec: HiddenReferenceSpec
     scientist_observation: ScientistObservation
     lab_manager_observation: LabManagerObservation
+    resource_bookings: list[ResourceBooking] = []
+    scheduling_windows: list[SchedulingWindow] = []
 
 
 TemplateBuilder = Callable[[Any], dict[str, Any]]
@@ -153,10 +182,10 @@ def generate_scenario(
     rng = seed_rng(seed, namespace=f"scenario:{template}")
     base_draft = load_template(template)(rng)
     scaled = apply_difficulty(base_draft, difficulty, rng)
-    return _build_pack(seed=seed, template=template, draft=scaled)
+    return _build_pack(seed=seed, template=template, draft=scaled, rng=rng)
 
 
-def _build_pack(seed: int, template: TemplateName, draft: dict[str, Any]) -> NormalizedScenarioPack:
+def _build_pack(seed: int, template: TemplateName, draft: dict[str, Any], rng: Any) -> NormalizedScenarioPack:
     constraints = [ScenarioConstraint.model_validate(item) for item in draft["constraints"]]
     resources = [ScenarioResource.model_validate(item) for item in draft["resources"]]
     substitutions = [
@@ -231,6 +260,11 @@ def _build_pack(seed: int, template: TemplateName, draft: dict[str, Any]) -> Nor
         target_value=draft["target_value"],
     )
 
+    bookings = _generate_bookings(resources, template, draft["difficulty"], rng)
+    windows = _generate_scheduling_windows(
+        template, draft["difficulty"], time_limit_days, rng,
+    )
+
     return NormalizedScenarioPack(
         scenario_id=f"{template}-{draft['difficulty']}-{seed}",
         template=template,
@@ -245,6 +279,8 @@ def _build_pack(seed: int, template: TemplateName, draft: dict[str, Any]) -> Nor
         hidden_reference_spec=hidden_reference,
         scientist_observation=scientist_observation,
         lab_manager_observation=lab_manager_observation,
+        resource_bookings=bookings,
+        scheduling_windows=windows,
     )
 
 
@@ -297,3 +333,116 @@ def _append_conflict_constraint(
             "details": details,
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# Booking / scheduling generation (SCN 13)
+# ---------------------------------------------------------------------------
+
+_BOOKABLE_CATEGORIES: dict[TemplateName, set[str]] = {
+    "ml_benchmark": {"compute", "tool"},
+    "math_reasoning": {"tool", "personnel"},
+    "finance_trading": {"data", "personnel"},
+}
+
+_WINDOW_CONFIGS: dict[TemplateName, list[dict[str, str]]] = {
+    "ml_benchmark": [
+        {"key": "gpu_cluster_hours", "label": "GPU cluster availability window"},
+        {"key": "maintenance_window", "label": "Scheduled maintenance window"},
+    ],
+    "math_reasoning": [
+        {"key": "reviewer_hours", "label": "Reviewer availability window"},
+        {"key": "room_access", "label": "Workspace access hours"},
+    ],
+    "finance_trading": [
+        {"key": "data_feed_window", "label": "Market data feed window"},
+        {"key": "analyst_hours", "label": "Analyst availability window"},
+    ],
+}
+
+
+def _generate_bookings(
+    resources: list[ScenarioResource],
+    template: TemplateName,
+    difficulty: Difficulty,
+    rng: Any,
+) -> list[ResourceBooking]:
+    """Create deterministic time-slot bookings from existing resources."""
+    bookable_cats = _BOOKABLE_CATEGORIES[template]
+    bookable = [r for r in resources if r.category in bookable_cats]
+
+    bookings: list[ResourceBooking] = []
+    for resource in bookable:
+        num_slots = rng.randint(2, 4)
+        offset = 0.0
+        for slot_idx in range(num_slots):
+            duration = rng.choice([2.0, 4.0, 8.0])
+
+            if difficulty == "easy":
+                status: Literal["available", "booked", "maintenance"] = "available"
+            elif difficulty == "medium":
+                status = rng.choice(["available", "available", "booked"])
+            else:
+                status = rng.choice(["available", "booked", "booked", "maintenance"])
+
+            if status == "available":
+                detail = f"Open for use from offset {offset}h for {duration}h."
+            elif status == "booked":
+                detail = f"Reserved by another team from offset {offset}h for {duration}h."
+            else:
+                detail = f"Under maintenance from offset {offset}h for {duration}h."
+
+            bookings.append(ResourceBooking(
+                resource_key=resource.key,
+                resource_label=resource.label,
+                slot_label=f"{resource.label} — slot {slot_idx + 1}",
+                start_offset_hours=offset,
+                duration_hours=duration,
+                status=status,
+                details=detail,
+            ))
+
+            gap = round(rng.uniform(1.0, 4.0), 1)
+            offset = round(offset + duration + gap, 1)
+
+    return bookings
+
+
+def _generate_scheduling_windows(
+    template: TemplateName,
+    difficulty: Difficulty,
+    time_limit_days: int,
+    rng: Any,
+) -> list[SchedulingWindow]:
+    """Create deterministic scheduling windows scaled by difficulty."""
+    configs = _WINDOW_CONFIGS[template]
+    total_hours = float(time_limit_days * 24)
+
+    windows: list[SchedulingWindow] = []
+    for cfg in configs:
+        if difficulty == "easy":
+            start = 0.0
+            end = total_hours
+            hard = False
+        elif difficulty == "medium":
+            start = round(rng.uniform(0, total_hours * 0.1), 1)
+            end = round(total_hours - rng.uniform(0, total_hours * 0.2), 1)
+            hard = rng.choice([True, False])
+        else:
+            start = round(rng.uniform(total_hours * 0.1, total_hours * 0.25), 1)
+            end = round(total_hours - rng.uniform(total_hours * 0.15, total_hours * 0.3), 1)
+            hard = True
+
+        end = max(start + 1.0, end)
+
+        constraint_label = "hard" if hard else "soft"
+        windows.append(SchedulingWindow(
+            key=cfg["key"],
+            label=cfg["label"],
+            start_offset_hours=start,
+            end_offset_hours=end,
+            hard=hard,
+            details=f"{cfg['label']}: offset {start}h to {end}h ({constraint_label} constraint).",
+        ))
+
+    return windows

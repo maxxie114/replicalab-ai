@@ -151,40 +151,90 @@ Once the Space is running:
 
 ```bash
 # Health check
-curl https://<space-name>.hf.space/health
+curl https://ayushozha-replicalab.hf.space/health
 
 # Reset an episode
-curl -X POST https://<space-name>.hf.space/reset \
+curl -X POST https://ayushozha-replicalab.hf.space/reset \
   -H "Content-Type: application/json" \
   -d '{"seed": 42, "scenario": "math_reasoning", "difficulty": "easy"}'
 
 # List scenarios
-curl https://<space-name>.hf.space/scenarios
+curl https://ayushozha-replicalab.hf.space/scenarios
 ```
 
 WebSocket test (using websocat or wscat):
 ```bash
-wscat -c wss://<space-name>.hf.space/ws
+wscat -c wss://ayushozha-replicalab.hf.space/ws
 # Then type: {"type": "ping"}
 # Expect: {"type": "pong"}
 ```
 
-### Secrets configuration
+### Verified live deployment (API 10 sign-off, 2026-03-08)
 
-If the deployed server needs hosted-model credentials later (e.g. for a
-frontier evaluator), set them in the HF Space secret store:
+**Public Space URL:** https://huggingface.co/spaces/ayushozha/replicalab
+**API base URL:** `https://ayushozha-replicalab.hf.space`
 
-1. Go to the Space **Settings** tab
-2. Scroll to **Repository secrets**
-3. Add each secret:
+All four endpoints verified against the live Space with real env:
 
-| Secret name | Purpose | Required now? |
-|-------------|---------|---------------|
-| `MODEL_API_KEY` | Hosted model access key (for frontier evaluator) | No — only for demo-time evaluator |
-| `MODEL_BASE_URL` | Optional alternate provider endpoint | No |
+```
+GET  /health    → 200 {"status":"ok","env":"real"}
+GET  /scenarios → 200 {"scenarios":[...3 families...]}
+POST /reset     → 200 {"session_id":"...","episode_id":"...","observation":{...}}
+POST /step      → 200 {"reward":2.312798,"done":true,"info":{"verdict":"accept",...}}
+```
 
-Secrets are injected as environment variables at container runtime.
-Access them in Python with `os.environ.get("MODEL_API_KEY")`.
+Full episode verified: reset → propose_protocol → accept → terminal reward
+with real judge scoring (rigor=0.465, feasibility=1.000, fidelity=0.325,
+total_reward=2.313, verdict=accept).
+
+---
+
+## Secrets and API Key Management (API 17)
+
+### Current state
+
+The server is **fully self-contained with no external API calls**.
+No secrets or API keys are required to run the environment, judge, or
+scoring pipeline. All reward computation is deterministic and local.
+
+### Where secrets live (by context)
+
+| Context | Location | What to set | Required? |
+|---------|----------|-------------|-----------|
+| **HF Space** | Space Settings → Repository secrets | Nothing currently | No |
+| **Local dev** | Shell env vars or `.env` file (gitignored) | Nothing currently | No |
+| **Docker** | `-e KEY=value` flags on `docker run` | Nothing currently | No |
+| **Colab notebook** | `google.colab.userdata` or env vars | `HF_TOKEN` for model downloads, `REPLICALAB_URL` for hosted env | Yes for training |
+
+### Colab notebook secrets
+
+When running the training notebook, the following are needed:
+
+| Secret | Purpose | Where to set | Required? |
+|--------|---------|-------------|-----------|
+| `HF_TOKEN` | Download gated models (Qwen3-4B) from HF Hub | Colab Secrets panel (key icon) | Yes |
+| `REPLICALAB_URL` | URL of the hosted environment | Hardcode or Colab secret | Optional — defaults to `https://ayushozha-replicalab.hf.space` |
+
+To set in Colab:
+1. Click the key icon in the left sidebar
+2. Add `HF_TOKEN` with your Hugging Face access token
+3. Access in code:
+```python
+from google.colab import userdata
+hf_token = userdata.get("HF_TOKEN")
+```
+
+### Future secrets (not currently needed)
+
+If a frontier hosted evaluator is added later:
+
+| Secret name | Purpose | Required? |
+|-------------|---------|-----------|
+| `MODEL_API_KEY` | Hosted evaluator access key | Only if a hosted evaluator is added |
+| `MODEL_BASE_URL` | Alternate provider endpoint | Only if using a proxy |
+
+These would be set in HF Space Settings → Repository secrets, and
+accessed via `os.environ.get("MODEL_API_KEY")` in server code.
 
 ### Re-deploying after code changes
 
@@ -213,26 +263,25 @@ To force a full rebuild (e.g. after dependency changes):
 
 | Service | Local | Hosted |
 |---------|-------|--------|
-| FastAPI app | `http://localhost:7860` | `https://<space>.hf.space` |
-| Health | `http://localhost:7860/health` | `https://<space>.hf.space/health` |
-| WebSocket | `ws://localhost:7860/ws` | `wss://<space>.hf.space/ws` |
-| Scenarios | `http://localhost:7860/scenarios` | `https://<space>.hf.space/scenarios` |
+| FastAPI app | `http://localhost:7860` | `https://ayushozha-replicalab.hf.space` |
+| Health | `http://localhost:7860/health` | `https://ayushozha-replicalab.hf.space/health` |
+| WebSocket | `ws://localhost:7860/ws` | `wss://ayushozha-replicalab.hf.space/ws` |
+| Scenarios | `http://localhost:7860/scenarios` | `https://ayushozha-replicalab.hf.space/scenarios` |
 
 ---
 
 ## Hand-off To Ayush
 
-When the server path is verified locally:
+**Local server:**
+- WebSocket: `ws://localhost:7860/ws`
+- REST health: `http://localhost:7860/health`
+- Running against: **real env** (not stub)
 
-- share the local WebSocket URL: `ws://localhost:7860/ws`
-- share the expected REST health endpoint: `http://localhost:7860/health`
-- note whether the server is still running against the stub env or the real env
-
-When hosted deployment is eventually verified:
-
-- share the hosted base URL
-- confirm `/health` returns `200`
-- confirm the WebSocket path is reachable
+**Hosted deployment (verified 2026-03-08):**
+- Base URL: `https://ayushozha-replicalab.hf.space`
+- `/health` returns `200` with `{"status":"ok","env":"real"}`
+- WebSocket path: `wss://ayushozha-replicalab.hf.space/ws`
+- Full episode tested: propose → accept → reward with real judge scores
 
 ---
 
