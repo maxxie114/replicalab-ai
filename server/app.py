@@ -152,23 +152,26 @@ def _run_scientist_inference(sci_obs: "ScientistObservation", scenario_pack: Any
 
         with _scientist_lock:
             import torch  # type: ignore
-            inputs = _scientist_tokenizer.apply_chat_template(
+            # Use tokenize=False first to get the formatted string, then tokenize
+            # separately. This avoids the Jinja template "string indices must be
+            # integers" error that occurs when the tokenizer template expects
+            # multimodal content dicts but receives plain strings.
+            prompt_text = _scientist_tokenizer.apply_chat_template(
                 messages,
-                tokenize=True,
+                tokenize=False,
                 add_generation_prompt=True,
-                return_tensors="pt",
             )
-            # Move to same device as model
             device = next(_scientist_model.parameters()).device
-            inputs = inputs.to(device)
+            enc = _scientist_tokenizer(prompt_text, return_tensors="pt").to(device)
             with torch.no_grad():
                 outputs = _scientist_model.generate(
-                    input_ids=inputs,
+                    input_ids=enc["input_ids"],
+                    attention_mask=enc["attention_mask"],
                     max_new_tokens=512,
                     temperature=0.7,
                     do_sample=True,
                 )
-            generated_ids = outputs[0][inputs.shape[1]:]
+            generated_ids = outputs[0][enc["input_ids"].shape[1]:]
             raw_text = _scientist_tokenizer.decode(generated_ids, skip_special_tokens=True)
 
         return parse_scientist_output(raw_text)
@@ -187,6 +190,124 @@ def _generic_scientist_system_prompt() -> str:
         "Negotiate toward the strongest feasible replication plan under the given constraints. "
         f"Return exactly one JSON object with all ScientistAction fields. Allowed action_type values: {allowed}."
     )
+
+# ---------------------------------------------------------------------------
+# Oracle LLM judge — optional; requires ANTHROPIC_API_KEY
+# ---------------------------------------------------------------------------
+
+_ORACLE_ENABLED = os.environ.get("REPLICALAB_ORACLE_ENABLED", "1") == "1"
+_ORACLE_MODEL = os.environ.get("REPLICALAB_ORACLE_MODEL", "claude-haiku-4-5-20251001")
+
+
+def _build_anthropic_client() -> Optional[Any]:
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import anthropic  # type: ignore
+        return anthropic.Anthropic(api_key=api_key)
+    except ImportError:
+        log.warning("anthropic package not installed — Oracle judge unavailable")
+        return None
+
+
+def _generate_judge_verdict(
+    state: "EpisodeState",
+    scenario_pack: Any,
+    conversation_history: list,
+) -> str:
+    """Call Anthropic to produce Judge Aldric's comprehensive verdict."""
+    if not _ORACLE_ENABLED:
+        return "Deterministic scoring only. Set REPLICALAB_ORACLE_ENABLED=1 and ANTHROPIC_API_KEY for LLM verdicts."
+
+    client = _build_anthropic_client()
+    if client is None:
+        return "No LLM API key configured (ANTHROPIC_API_KEY). Deterministic scoring applied."
+
+    # Format final protocol
+    if state.current_protocol:
+        p = state.current_protocol
+        protocol_summary = (
+            f"Technique: {p.technique}\n"
+            f"Sample size: {p.sample_size}\n"
+            f"Duration: {p.duration_days} days\n"
+            f"Controls: {', '.join(p.controls)}\n"
+            f"Equipment: {', '.join(p.required_equipment)}\n"
+            f"Reagents: {', '.join(p.required_reagents)}\n"
+            f"Rationale: {p.rationale}"
+        )
+    else:
+        protocol_summary = "No concrete protocol was finalized."
+
+    # Format conversation transcript
+    if conversation_history:
+        conv_text = "\n".join(
+            f"[Round {e.round_number}] {e.role.upper()}: {e.message}"
+            for e in conversation_history
+        )
+    else:
+        conv_text = "No conversation recorded."
+
+    # Scenario context from pack
+    scenario_context = ""
+    if scenario_pack is not None:
+        try:
+            sci = scenario_pack.scientist_observation
+            lab = scenario_pack.lab_manager_observation
+            scenario_context = (
+                f"Paper: {getattr(sci, 'paper_title', 'N/A')}\n"
+                f"Hypothesis: {getattr(sci, 'paper_hypothesis', 'N/A')}\n"
+                f"Goal: {getattr(sci, 'experiment_goal', 'N/A')}\n"
+                f"Budget: ${getattr(lab, 'budget_total', '?')}\n"
+                f"Time limit: {getattr(lab, 'time_limit_days', '?')} days\n"
+                f"Available equipment: {', '.join(getattr(lab, 'equipment_available', []))}\n"
+            )
+        except Exception:
+            scenario_context = "(scenario details unavailable)"
+
+    outcome = (
+        f"Agreement reached after {state.round_number} rounds"
+        if state.agreement_reached
+        else f"No agreement reached — rounds exhausted ({state.round_number}/{state.max_rounds})"
+    )
+
+    user_prompt = (
+        f"Evaluate this scientific replication negotiation and produce a comprehensive judge's verdict.\n\n"
+        f"SCENARIO:\n{scenario_context}\n"
+        f"OUTCOME: {outcome}\n\n"
+        f"FINAL PROTOCOL:\n{protocol_summary}\n\n"
+        f"NEGOTIATION TRANSCRIPT:\n{conv_text}\n\n"
+        "Write a comprehensive verdict covering:\n"
+        "1. Overall assessment (2-3 sentences)\n"
+        "2. Scientific rigor of the proposed protocol\n"
+        "3. Feasibility within lab constraints\n"
+        "4. Fidelity to the original paper's methodology\n"
+        "5. Key decisions that shaped the outcome\n"
+        "6. Missed opportunities or weaknesses\n"
+        "7. How this compares to an optimal negotiation strategy\n\n"
+        "Be specific, reference actual protocol details and conversation turns. "
+        "Write as Judge Aldric, the impartial arbiter of ReplicaLab."
+    )
+    system_prompt = (
+        "You are Judge Aldric, the impartial arbiter of ReplicaLab — an RL environment where AI scientists "
+        "negotiate replication protocols with lab managers under real resource constraints. "
+        "Produce comprehensive, evidence-based verdicts evaluating scientific rigor, feasibility, and fidelity. "
+        "Be specific, fair, and insightful. Write in clear prose paragraphs."
+    )
+
+    try:
+        import anthropic  # type: ignore
+        response = client.messages.create(
+            model=_ORACLE_MODEL,
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        return response.content[0].text
+    except Exception:
+        log.exception("Oracle verdict generation failed")
+        return "Judge Aldric was unable to render a verdict due to an API error."
+
 
 # ---------------------------------------------------------------------------
 # Environment factory — prefer ReplicaLabEnv, retain _StubEnv only as fallback
@@ -311,6 +432,12 @@ class _StubEnv:
                 self._state.rigor_score = 0.8
                 self._state.feasibility_score = 0.8
                 self._state.fidelity_score = 0.8
+        judge_notes = None
+        if done:
+            judge_notes = _generate_judge_verdict(
+                self._state, self._scenario_pack, self._logs
+            )
+
         return StepResult(
             observation=self._make_observation(),
             reward=reward,
@@ -323,7 +450,7 @@ class _StubEnv:
                     feasibility=self._state.feasibility_score,
                     fidelity=self._state.fidelity_score,
                 ) if done else None,
-                judge_notes="Stub audit until judge integration lands." if done else None,
+                judge_notes=judge_notes,
                 verdict=("accept" if self._state.agreement_reached else "revise") if done else None,
                 round=self._state.round_number,
                 stub=True,
