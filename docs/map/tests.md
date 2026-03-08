@@ -1,6 +1,6 @@
 # Tests Map — `tests/`
 
-> 87 tests across 6 files. All passing.
+> 134 tests across 8 files. All passing.
 >
 > **Last verified:** 2026-03-07
 
@@ -12,17 +12,17 @@
 | `test_models.py` | 15 | All Pydantic model contracts |
 | `test_scenarios.py` | 8 | Scenario generation and determinism |
 | `test_validation.py` | 13 | Protocol validation checks |
-| `test_scientist_policy.py` | 18 | Parser, retry, formatter, baseline |
+| `test_scientist_policy.py` | 18+ | Parser, retry, formatter, baseline, bounded tools |
 | `test_lab_manager_policy.py` | 13 | Feasibility, suggestion, response |
-| **Total** | **87** | |
+| `test_reward.py` | 18 | JDG 01-03 scoring functions |
+| `test_server.py` | 5 | API endpoint integration |
+| **Total** | **134** | |
 
 ## Missing Coverage (not yet implemented)
 
 | File (planned) | Would cover |
 |---------------|-------------|
-| `test_reward.py` | JDG 01-03 scoring functions |
 | `test_env.py` | ENV 01-11 real environment |
-| `test_server.py` | API endpoint integration tests |
 
 ---
 

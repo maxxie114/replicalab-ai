@@ -3,7 +3,7 @@
 > Living reference of every module, class, function, and relationship.
 > Updated after each implementation session.
 >
-> **Last updated:** 2026-03-07
+> **Last updated:** 2026-03-07 (JDG 01-03 scoring implemented)
 
 ## Module Index
 
@@ -13,7 +13,7 @@
 | [scenarios.md](scenarios.md) | Scenario generation — templates, constraints, resources, hidden specs |
 | [agents.md](agents.md) | Agent policies — scientist prompt/parse/retry, lab manager feasibility/suggest/compose |
 | [validation.md](validation.md) | Protocol validation — deterministic checks against scenario constraints |
-| [scoring.md](scoring.md) | Judge scoring — rigor, feasibility, fidelity (NOT YET IMPLEMENTED) |
+| [scoring.md](scoring.md) | Judge scoring — rigor, feasibility, fidelity |
 | [server.md](server.md) | FastAPI server — REST + WebSocket endpoints, stub environment |
 | [frontend.md](frontend.md) | React UI — dashboard, episode viewer, components |
 | [config.md](config.md) | Shared constants — rounds, budget, timeouts |
@@ -47,10 +47,11 @@ replicalab/utils/validation.py
  ├── replicalab.models (Protocol)
  └── replicalab.scenarios.templates (NormalizedScenarioPack)
 
-replicalab/scoring/           <-- NOT YET IMPLEMENTED
+replicalab/scoring/
  ├── replicalab.models (Protocol, RewardBreakdown)
  ├── replicalab.scenarios (NormalizedScenarioPack, HiddenReferenceSpec)
- └── replicalab.agents.lab_manager_policy (check_feasibility, FeasibilityCheckResult)
+ ├── replicalab.agents.lab_manager_policy (check_feasibility, FeasibilityCheckResult)
+ └── replicalab.utils.text (element_tokens, normalize_label)
 ```
 
 ## File Tree (implemented only)
@@ -70,10 +71,14 @@ replicalab/
  │   ├── math_reasoning.py    (2 cases: Cauchy-Schwarz, Jensen's inequality)
  │   ├── ml_benchmark.py      (2 cases: AG News TinyBERT, CIFAR-10 ResNet-18)
  │   └── finance_trading.py   (2 cases: SPY/QQQ mean-reversion, momentum futures)
- ├── scoring/                 <-- EMPTY (JDG 01-03 not yet built)
- │   └── .gitkeep
+ ├── scoring/
+ │   ├── __init__.py          (exports score_rigor, score_feasibility, score_fidelity)
+ │   ├── rigor.py             (JDG 01: structural quality + criteria coverage)
+ │   ├── feasibility.py       (JDG 02: wraps FeasibilityCheckResult with partial credit)
+ │   └── fidelity.py          (JDG 03: substitution-aware hidden spec alignment)
  └── utils/
      ├── seed.py              (deterministic RNG from SHA256)
+     ├── text.py              (shared token matching: normalize_label, element_tokens)
      └── validation.py        (MOD 05: protocol validation, 5 checks)
 
 server/
@@ -98,7 +103,9 @@ tests/
  ├── test_scenarios.py        (8 tests)
  ├── test_validation.py       (13 tests)
  ├── test_scientist_policy.py (18 tests)
- └── test_lab_manager_policy.py(13 tests)
+ ├── test_lab_manager_policy.py(13 tests)
+ ├── test_reward.py           (18 tests — JDG 01-03 scoring)
+ └── test_server.py           (5 tests — API endpoints)
 ```
 
 ## Task Completion Status
@@ -108,7 +115,7 @@ tests/
 | Models (MOD) | MOD 01-05, 09, 11-12 | MOD 06 | Semantic validators for impossible plans |
 | Scenarios (SCN) | SCN 01-12 | SCN 13 | Booking/scheduling data model |
 | Agents (AGT) | AGT 01-07, 11 | AGT 08-10 | LLM-backed scientist, model selection |
-| Judge (JDG) | — | JDG 01-08 | Entire scoring engine |
+| Judge (JDG) | JDG 01-03 | JDG 04-08 | Reward composition, bonuses, penalties |
 | Environment (ENV) | — | ENV 01-11 | Entire real environment |
 | Server (API) | API 01-04, 06 (partial) | API 05, 07-10 | Replay, auth, rate limiting |
 | Frontend (FND) | FND 01-10 | — | Complete |
