@@ -96,12 +96,34 @@ By judging time, the project should demonstrate:
 | Storytelling | everyone contributes screenshots, gifs, examples |
 | Submission readiness | all four review final demo, notebook, README, repo visibility |
 
-## 4.1 Training compute availability
+## 4.1 Training compute and model selection
 
 1. The team has access to an H100 GPU for heavier Scientist training and evaluation runs.
 2. Person B is the primary owner of that compute for RL tasks, especially `TRN 04` to `TRN 10`, `TRN 13` to `TRN 15`, `OBS 06`, and `TST 09`.
 3. The judged artifact remains the Colab notebook, so any H100 run must still have a documented notebook path or reduced scale fallback that can be shown in Colab.
 4. Person C supports any environment URL, secret, or infra setup needed so the H100 training run can connect to the same backend contract as the notebook.
+
+### Trainable model
+
+The primary trainable model for the Scientist policy is **Qwen3-4B**.
+
+| Model | Role | Rationale |
+| --- | --- | --- |
+| Qwen3-4B | Primary Scientist policy | BF16 fits H100 (~14GB weights, ~42-56GB training). 4-bit fits Colab T4 (5.5GB). Strong structured output for JSON action schemas. Fast RL iteration speed. |
+| Qwen3-8B | H100-only stretch | Better reasoning quality but 4-bit barely fits Colab T4 (6.5GB). Use only if Qwen3-4B quality is insufficient and Colab demo uses reduced-scale fallback. |
+
+### Evaluator layer
+
+The training reward is always the **deterministic rubric engine** defined in E05. A hosted frontier evaluator may optionally be used for post-episode explanation and demo audit only. The frontier evaluator is never part of the training reward loop.
+
+### MVP role implementations
+
+| Role | MVP implementation | Future stretch |
+| --- | --- | --- |
+| Scientist | Trainable policy (Qwen3-4B) | Qwen3-8B if quality insufficient |
+| Lab Manager | Rule-based deterministic policy | Model-backed policy using same base model with separate adapter |
+| Judge (training reward) | Deterministic rubric engine | Unchanged |
+| Judge (explanation layer) | Optional hosted frontier evaluator | Extended explanation panel in UI |
 
 ---
 
@@ -209,12 +231,16 @@ Create a stable shared codebase, contracts, and development workflow so all work
 
 - `FND 01` status: completed on 2026-03-07
 - `FND 01` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
+- `FND 04` status: completed on 2026-03-08
+- `FND 04` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
 - `FND 10` status: completed on 2026-03-07
 - `FND 10` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
 - Completed scope for `FND 01`: created the agreed repo scaffold for `replicalab/`, `server/`, `frontend/`, `notebooks/`, and `tests/`, including the initial `replicalab/*` and `frontend/src/*` subfolders from the planned layout
+- Completed scope for `FND 04`: added importable empty Pydantic model stubs in `replicalab/models.py` for the shared action, observation, step, state, and log contracts
 - Completed scope for `FND 10`: created `replicalab/outputs/` with tracked `logs/`, `replays/`, and `plots/` subdirectories
-- Remaining work now unblocked by `FND 01`: `FND 02`, `FND 03`, `FND 04`, `FND 05`, `FND 06`, `FND 07`
-- Remaining Epic E01 work still gated by follow-on dependencies: `FND 08`, `FND 09`, `FND 11`, `FND 12`, `FND 13`
+- Remaining work now unblocked by `FND 01`: `FND 02`, `FND 03`, `FND 05`, `FND 06`, `FND 07`
+- Newly unblocked by `FND 04`: `FND 08`, `FND 09`
+- Remaining Epic E01 work still gated by follow-on dependencies: `FND 11`, `FND 12`, `FND 13`
 
 ### User stories
 
@@ -231,7 +257,7 @@ As a team, we want agreed schemas and coding rules so integration risk stays low
 | FND 01 | E01.1 | Person C | repo root | Create repo structure and base folders from agreed layout | none | 0.5h | all top level folders exist and repo clones cleanly | ✅ Completed | Person B (Ayush) |
 | FND 02 | E01.1 | Person C | `pyproject.toml` | Add Python project config and dependencies placeholder | FND 01 | 0.5h | project installs locally without missing package errors for base modules | ⬜ Not started | — |
 | FND 03 | E01.1 | Person C | `frontend/package.json` | Initialize React plus Vite frontend shell | FND 01 | 0.5h | `npm install` and dev server run successfully | ⬜ Not started | — |
-| FND 04 | E01.2 | Person A | `replicalab/models.py` | Add empty Pydantic models and shared type names | FND 01 | 0.5h | import paths resolve for all placeholder models | ⬜ Not started | — |
+| FND 04 | E01.2 | Person A | `replicalab/models.py` | Add empty Pydantic models and shared type names | FND 01 | 0.5h | import paths resolve for all placeholder models | ✅ Completed | Person B (Ayush) |
 | FND 05 | E01.2 | Person C | `.gitignore` and `.dockerignore` | Add ignore rules for Python, Node, logs, notebooks, and build artifacts. `.dockerignore` must explicitly exclude `.git`, `node_modules`, `notebooks/`, `tests/`, `__pycache__`, `.venv`, and output files to keep the Docker image lean | FND 01 | 0.25h | repo status stays clean after local run and build, and Docker build excludes non-runtime files | ⬜ Not started | — |
 | FND 06 | E01.2 | Person D | `README.md` | Add temporary project stub with title, mission, team roles, and local setup placeholder | FND 01 | 0.5h | new contributor can understand repo purpose in under two minutes | ⬜ Not started | — |
 | FND 07 | E01.2 | Person C | repo settings | Define branch naming, PR template, and issue template | FND 01 | 0.5h | all future PRs auto show the template and issue fields | ⬜ Not started | — |
@@ -707,7 +733,7 @@ The MVP is complete when all of the following are true:
 | 2 | add judge plain English explanation panel | better judge readability |
 | 3 | add second and third difficulty levels to all templates | stronger world modeling story |
 | 4 | add curriculum training path | stronger self improvement story |
-| 5 | add optional LLM Lab Manager | stronger multi agent depth but higher risk |
+| 5 | add model-backed Lab Manager using same base model with a separate role adapter | stronger multi agent depth but higher risk, reward stays deterministic, Lab Manager affects trajectory variance not reward definition |
 | 6 | add third agent such as ethics reviewer | potential partner fit extension |
 | 7 | add post episode self critique before retry | stronger self improvement story from Blueprint Section 14.2 |
 | 8 | add automatic scenario difficulty scaling | adaptive curriculum from Blueprint Section 14.2 |
@@ -725,6 +751,7 @@ The MVP is complete when all of the following are true:
 | reward too noisy or subjective | high | Person A | keep judge deterministic and rubric based |
 | final demo breaks live | high | all | keep replay logs and a pre tested demo seed ready |
 | too many scenarios | medium | Person A | ship one excellent scenario, then add more only if stable |
+| future model-backed Lab Manager increases episode variance | medium | Person B | keep rule-based Lab Manager for MVP training, introduce model-backed version only after Scientist policy is stable, use same base model with separate adapter to limit infra complexity |
 
 ---
 
