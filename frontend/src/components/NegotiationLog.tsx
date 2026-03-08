@@ -4,6 +4,7 @@ import { MessageSquare } from 'lucide-react';
 import type { NegotiationMessage } from '@/types';
 import { cn, roleBgColor, roleLabel } from '@/lib/utils';
 import AnimatedCharacter from '@/components/AnimatedCharacter';
+import TypingText from '@/components/TypingText';
 
 interface NegotiationLogProps {
   messages: NegotiationMessage[];
@@ -40,7 +41,7 @@ export default function NegotiationLog({ messages, className }: NegotiationLogPr
         ) : (
           messages.map((msg, i) => (
             <MessageBubble
-              key={i}
+              key={`${i}-${msg.round}-${msg.role}`}
               message={msg}
               index={i}
               isLatest={i === messages.length - 1}
@@ -109,7 +110,11 @@ function MessageBubble({
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 400, damping: 20, delay: index * 0.1 + 0.1 }}
         >
-          {message.message}
+          {isLatest ? (
+            <TypingText text={message.message} speed={15} />
+          ) : (
+            message.message
+          )}
         </motion.div>
 
         {actionType && (
