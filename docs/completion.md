@@ -20,10 +20,10 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Metric | Value |
 |--------|-------|
 | Total tasks | 152 |
-| Completed | 102 |
+| Completed | 104 |
 | Partial / active | 0 |
-| Remaining | 50 |
-| **Completion rate** | **67.11%** |
+| Remaining | 48 |
+| **Completion rate** | **68.42%** |
 
 ### Completion by Person
 
@@ -31,8 +31,8 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 |--------|----------|----------------|----------------------|-----------|------|
 | Kian (Person A) | 49 (47 solo + 2 shared with B) | 1 shared sign-off (`FND 08`) | 48 (`FND 04`, `FND 09`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`, `MOD 05`, `MOD 06`, `MOD 08`, `MOD 11`, `MOD 12`, `SCN 01` to `SCN 10`, `SCN 13`, `AGT 05`, `AGT 09`, `ENV 01` to `ENV 08`, `ENV 10`, `ENV 11`, `JDG 01` to `JDG 06`, `JDG 08`, `JDG 11`, `OBS 04`, `TST 01` to `TST 05` done by Person B) | 0 | 100.00% |
 | Person B (Ayush) | 29 (27 solo + 2 shared with A) | 19 (`FND 08`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`, `TRN 13`, `TRN 03`, `TRN 04`, `TRN 01`, `TRN 02`, `TRN 14`) | 0 | 10 | 65.52% |
-| Max (Person C) | 41 | 1 (`FND 11`) | 36 (`FND 01`, `FND 02`, `FND 03`, `FND 05`, `FND 07`, `FND 10`, `FND 12` done by others, `MOD 07`, `MOD 10`, `API 01`, `API 02`, `API 03`, `API 04`, `API 05`, `API 06`, `API 07`, `API 08`, `API 09`, `API 10`, `API 11`, `API 13`, `API 14`, `API 15`, `API 17`, `API 18`, `JDG 07`, `OBS 01`, `OBS 02`, `OBS 03`, `OBS 07`, `OBS 09`, `TRN 11`, `TST 06`, `TST 07`, `TST 11`, `ENV 09` done by Person B) | 4 | 90.24% |
-| Kush (Person D) | 32 | 0 | 1 (`FND 06` done by Person B) | 31 | 3.13% |
+| Max (Person C) | 41 | 1 (`FND 11`) | 37 (`FND 01`, `FND 02`, `FND 03`, `FND 05`, `FND 07`, `FND 10`, `FND 12` done by others, `MOD 07`, `MOD 10`, `API 01`, `API 02`, `API 03`, `API 04`, `API 05`, `API 06`, `API 07`, `API 08`, `API 09`, `API 10`, `API 11`, `API 13`, `API 14`, `API 15`, `API 17`, `API 18`, `API 19`, `JDG 07`, `OBS 01`, `OBS 02`, `OBS 03`, `OBS 07`, `OBS 09`, `TRN 11`, `TST 06`, `TST 07`, `TST 11`, `ENV 09` done by Person B) | 3 | 92.68% |
+| Kush (Person D) | 32 | 1 (`UI 07`) | 1 (`FND 06` done by Person B) | 30 | 6.25% |
 | All (shared) | 3 | 2 (`FND 08`, `AGT 05`) | 0 | 1 | 66.67% |
 
 Note: Person B (Ayush) has completed two shared tasks in their own lane
@@ -47,10 +47,11 @@ to `SCN 10`, `SCN 13`, `AGT 09`, `ENV 01` to `ENV 09`, `ENV 10`, `ENV 11`,
 `JDG 01` to `JDG 06`, `JDG 07`, `JDG 08`, `JDG 11`, `TST 01` to `TST 07`,
 `TST 11`, `API 01`, `API 02`, `API 03`, `API 04`, `API 05`, `API 06`,
 `API 07`, `API 08`, `API 09`, `API 10`, `API 11`, `API 13`, `API 14`,
-`API 15`, `API 17`, `API 18`, `OBS 01`, `OBS 02`, `OBS 03`, `OBS 04`,
+`API 15`, `API 17`, `API 18`, `API 19`, `OBS 01`, `OBS 02`, `OBS 03`, `OBS 04`,
 `OBS 07`, `OBS 09`, `TRN 11`) to keep the Kian, Max, and Kush dependency
 chain moving. All Person A and Person C implementation tasks are now complete
-except for 4 remaining Max tasks (`API 16`, `API 19`, `DOC 08`, `UI 11`).
+except for 3 remaining Max tasks (`API 16`, `DOC 08`, `UI 11`).
+`UI 07` was completed by Kush (Person D), unblocking `UI 11`.
 Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`.
 
 ---

@@ -104,6 +104,30 @@ class TestRootEndpoint:
         assert "WS /ws" in body
 
 
+class TestWebFallback:
+    """GET /web — API 19: OpenEnv fallback UI."""
+
+    def test_web_returns_200_html(self, client: TestClient) -> None:
+        resp = client.get("/web")
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers["content-type"]
+
+    def test_web_contains_interactive_controls(self, client: TestClient) -> None:
+        body = client.get("/web").text
+        assert "ReplicaLab" in body
+        assert "btnReset" in body
+        assert "btnPropose" in body
+        assert "btnAccept" in body
+        assert "/reset" in body
+        assert "/step" in body
+
+    def test_web_is_self_contained(self, client: TestClient) -> None:
+        """Fallback UI must work without external JS/CSS dependencies."""
+        body = client.get("/web").text
+        assert "<script>" in body
+        assert "<style>" in body
+
+
 class TestScenariosEndpoint:
     """GET /scenarios — API 04."""
 
