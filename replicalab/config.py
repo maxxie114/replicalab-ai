@@ -78,7 +78,7 @@ def get_scientist_model() -> str:
 
 
 def get_scientist_openai_model() -> str:
-    return os.environ.get("REPLICALAB_SCIENTIST_OPENAI_MODEL", "gpt-4o")
+    return os.environ.get("REPLICALAB_SCIENTIST_OPENAI_MODEL", "gpt-5.4")
 
 
 def get_scientist_ollama_model() -> str:
@@ -97,7 +97,11 @@ def get_scientist_max_retries() -> int:
 
 
 def get_scientist_max_completion_tokens() -> int:
-    return _get_env_int("REPLICALAB_SCIENTIST_MAX_COMPLETION_TOKENS", 450)
+    # gpt-5.x models use reasoning tokens internally before output, so the
+    # effective output budget is much smaller than max_completion_tokens.
+    # Default is 4000 to ensure the model has enough budget for both
+    # reasoning and JSON output.
+    return _get_env_int("REPLICALAB_SCIENTIST_MAX_COMPLETION_TOKENS", 4000)
 
 
 def get_scientist_temperature() -> float:
