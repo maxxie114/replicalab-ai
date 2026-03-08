@@ -358,7 +358,7 @@ def build_baseline_scientist_action(
     if observation.current_protocol is not None:
         if observation.round_number >= max(1, observation.max_rounds - 1):
             return _build_accept_action()
-        if latest_feedback and _feedback_requires_revision(latest_feedback.message):
+        if latest_feedback and _feedback_indicates_blocker(latest_feedback):
             return _build_revision_action(observation.current_protocol, latest_feedback)
         return _build_accept_action()
 
@@ -646,8 +646,15 @@ def _latest_lab_manager_feedback(
     return None
 
 
-def _feedback_requires_revision(message: str) -> bool:
-    lowered = message.lower()
+def _feedback_indicates_blocker(feedback: ConversationEntry) -> bool:
+    """Return True only when the lab manager is flagging a real blocker.
+
+    An ``accept`` action_type means the protocol passed — even if the
+    explanation text mentions words like "budget" or "schedule".
+    """
+    if feedback.action_type in ("accept", "report_feasibility"):
+        return False
+    lowered = feedback.message.lower()
     return any(token in lowered for token in _BLOCKER_HINTS)
 
 
