@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, FlaskConical, Scale, TrendingUp, Play, Pencil } from 'lucide-react';
 import type { EpisodeState, ResetParams, ScientistAction } from '@/types';
-import { resetEpisode, stepEpisode } from '@/lib/api';
+import { resetEpisode, stepEpisode, suggestScientistAction } from '@/lib/api';
 import { sfx, startAmbient, stopAmbient } from '@/lib/audio';
 import { fireSuccessConfetti, fireGavelConfetti } from '@/lib/confetti';
 import { buildDemoScientistAction, DEMO_CASES, parseDemoCase } from '@/lib/demo';
@@ -196,7 +196,16 @@ export default function EpisodePage() {
 
     try {
       const isLastRound = episode.round >= episode.max_rounds - 1;
-      const finalAction = action ?? buildDemoScientistAction(episode, demoCase);
+      let finalAction: ScientistAction;
+      if (action) {
+        finalAction = action;
+      } else {
+        try {
+          finalAction = await suggestScientistAction(episode.session_id);
+        } catch {
+          finalAction = buildDemoScientistAction(episode, demoCase);
+        }
+      }
 
       if (isLastRound && !action) {
         setIsJudging(true);
