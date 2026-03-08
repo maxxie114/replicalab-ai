@@ -4,6 +4,13 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ---
 
+## Current status
+
+- `FND 04` is complete in `replicalab/models.py`
+- `FND 08` is now the next unblocked Ayush task
+
+---
+
 ## Epic E02. Domain Models
 
 - [ ] **MOD 09** | Add output parser that maps model text to `ScientistAction` | 0.75h | Depends: MOD 01
@@ -50,7 +57,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - [ ] **TRN 09** | Add policy loading path for trained adapter | 0.5h | Depends: TRN 05
 - [ ] **TRN 10** | Export plot image and sample logs to outputs/plots | 0.25h | Depends: TRN 07
 - [ ] **TRN 13** | Create reusable environment client module (client.py) | 1h | Depends: API 06
-- [ ] **TRN 14** | Select and document base model (notebook side) | 0.5h | Depends: TRN 01
+- [ ] **TRN 14** | Select and document base model (notebook side) | 0.5h | Depends: TRN 01 | Assumption: Qwen3-4B primary, Qwen3-8B H100-only stretch
 - [ ] **TRN 15** | Add agreement rate and invalid action rate aggregation | 0.5h | Depends: TRN 06, TRN 08, OBS 09
 
 ---
@@ -69,7 +76,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ## Shared Tasks
 
-- [ ] **FND 08** | Freeze JSON contract for actions and observations (with Person A) | 0.75h | Depends: FND 04
+- [ ] **FND 08** | Freeze JSON contract for actions and observations (with Person A) | 0.75h | Depends: FND 04 (done) | Status: ready now
 
 ---
 
