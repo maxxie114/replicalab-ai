@@ -2,44 +2,50 @@
 
 ## Decision
 
-The primary Scientist training model is **Qwen3-4B**.
+The primary V2 training base model is **Qwen3-8B**.
 
-The stretch fallback is **Qwen3-8B** if H100-only training is acceptable and
-the 4B model underperforms on structured planning quality.
+The reduced-scale fallback is **Qwen3-4B** when Colab, T4, or lower-memory
+debugging is more important than maximum planning quality.
 
-## Why Qwen3-4B
+The same `Qwen3-8B` base is shared across two first-class model artifacts:
 
-- Strong enough for structured JSON action output without moving to a much
-  slower large-model loop.
-- Small enough for fast RL iteration on H100 and practical 4-bit Colab use.
+- **Scientist**: GRPO LoRA via Unsloth
+- **Lab Manager**: SFT LoRA via Unsloth
+
+## Why Qwen3-8B
+
+- Stronger structured planning headroom for the Scientist GRPO target while
+  still fitting comfortably on the H100 runtime the team now intends to use.
+- Large enough to support both the Scientist and Lab Manager adapters on one
+  shared base family without fragmenting the stack.
 - Open weights with a permissive Apache 2.0 license.
-- A clean fit for the current architecture: train the Scientist first while the
-  reward and Lab Manager grounding remain deterministic.
+- A clean fit for the current V2 architecture: keep deterministic reward and
+  feasibility truth while training two role-specific adapters on one base.
 
-## Why Not Smaller
+## Why Not Smaller By Default
 
-- Smaller checkpoints are cheaper, but they are more likely to underperform on
-  multi-step technical planning and strict output schemas.
-- The project needs enough reasoning quality to negotiate across mathematics,
-  machine learning, and finance-trading scenarios.
+- Smaller checkpoints are cheaper, but they lose headroom on multi-step
+  technical planning, strict JSON output, and richer Lab Manager narration.
+- The active runtime assumption is now a Northflank H100 GPU job rather than a
+  Colab-first compromise.
 
-## Why Not Larger By Default
+## Why Keep Qwen3-4B As Fallback
 
-- Larger checkpoints slow rollout collection and raise memory pressure.
-- The judged artifact still needs a credible Colab path, not only an H100-only
-  path.
-- Faster iteration matters more than squeezing out a marginal quality gain at
-  this stage.
+- The judged artifact still needs a credible notebook path even if the heavy
+  run happens on Northflank.
+- `Qwen3-4B` remains useful for smoke tests, lower-cost debugging, and any
+  reduced-scale Colab fallback.
 
 ## Project Usage
 
-- **Scientist MVP training:** `Qwen3-4B`
-- **Stretch Scientist training:** `Qwen3-8B`
-- **Lab Manager future path:** reuse the same base family with a separate
-  role-specific adapter if the team later trains both roles
+- **Scientist primary training:** `Qwen/Qwen3-8B`
+- **Lab Manager primary training:** `Qwen/Qwen3-8B` with a separate adapter
+- **Fallback notebook/debug training:** `Qwen/Qwen3-4B`
 
 ## Notes
 
 - The reward loop stays deterministic regardless of the model choice.
-- `TRN 14` should mirror this decision on the notebook side once the Colab
-  skeleton exists.
+- The active oracle provider remains external and API-only; Anthropic is used
+  for scenario enrichment and post-mortem features, not as the training reward.
+- `TRN 14` should mirror this decision on the notebook side and in the
+  Northflank H100 job entrypoint.

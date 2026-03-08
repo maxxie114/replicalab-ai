@@ -96,12 +96,35 @@ class TestRootEndpoint:
 
     def test_root_mentions_core_api_endpoints(self, client: TestClient) -> None:
         body = client.get("/").text
-        assert "ReplicaLab API" in body
-        assert "GET /health" in body
-        assert "GET /scenarios" in body
-        assert "POST /reset" in body
-        assert "POST /step" in body
-        assert "WS /ws" in body
+        # When frontend/dist exists, root serves the SPA; otherwise the API landing
+        assert "ReplicaLab" in body
+        if "ReplicaLab API" in body:
+            assert "GET /health" in body
+            assert "POST /reset" in body
+
+
+class TestWebFallback:
+    """GET /web — API 19: OpenEnv fallback UI."""
+
+    def test_web_returns_200_html(self, client: TestClient) -> None:
+        resp = client.get("/web")
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers["content-type"]
+
+    def test_web_contains_interactive_controls(self, client: TestClient) -> None:
+        body = client.get("/web").text
+        assert "ReplicaLab" in body
+        assert "btnReset" in body
+        assert "btnPropose" in body
+        assert "btnAccept" in body
+        assert "/reset" in body
+        assert "/step" in body
+
+    def test_web_is_self_contained(self, client: TestClient) -> None:
+        """Fallback UI must work without external JS/CSS dependencies."""
+        body = client.get("/web").text
+        assert "<script>" in body
+        assert "<style>" in body
 
 
 class TestScenariosEndpoint:

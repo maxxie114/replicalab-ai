@@ -67,6 +67,7 @@ export interface LabConstraints {
   staff_count: number;
   booking_conflicts: string[];
   safety_rules: string[];
+  time_limit_days: number;
 }
 
 // --- Conversation entry (matches backend ConversationEntry) ---
@@ -85,6 +86,7 @@ export interface ScoreBreakdown {
   rigor: number;
   feasibility: number;
   fidelity: number;
+  parsimony: number;
   total_reward: number;
   efficiency_bonus: number;
   communication_bonus: number;

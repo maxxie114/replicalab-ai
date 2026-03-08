@@ -13,3 +13,4 @@ state: EpisodeState
 action_module: replicalab.models
 observation_module: replicalab.models
 state_module: replicalab.models
+web_fallback: /web
