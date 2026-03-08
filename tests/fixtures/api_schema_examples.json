@@ -1,0 +1,491 @@
+{
+  "_meta": {
+    "generated_by": "tests/fixtures/generate_api_examples.py",
+    "description": "API schema examples generated from real Pydantic models. Re-run the script to regenerate after contract changes.",
+    "seed": 42,
+    "scenario_template": "math_reasoning",
+    "difficulty": "easy"
+  },
+  "rest": {
+    "POST /reset": {
+      "request": {
+        "seed": 42,
+        "scenario": "math_reasoning",
+        "difficulty": "easy",
+        "session_id": null
+      },
+      "response": {
+        "session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "episode_id": "ep-deadbeef-1234-5678-9abc-def012345678",
+        "observation": {
+          "scientist": {
+            "paper_title": "Planning a proof of the Cauchy-Schwarz inequality",
+            "paper_hypothesis": "A square-expansion argument gives the cleanest proof path.",
+            "paper_method": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+            "paper_key_finding": "The proof is accepted only if every inequality step and equality case is justified.",
+            "experiment_goal": "Produce a proof-planning workflow for the Cauchy-Schwarz inequality for an undergraduate seminar handout.",
+            "conversation_history": [],
+            "current_protocol": null,
+            "round_number": 0,
+            "max_rounds": 6
+          },
+          "lab_manager": {
+            "budget_total": 345.0,
+            "budget_remaining": 345.0,
+            "equipment_available": [
+              "Structured proof notebook"
+            ],
+            "equipment_booked": [],
+            "reagents_in_stock": [
+              "Reference theorem library",
+              "Graduate reviewer"
+            ],
+            "reagents_out_of_stock": [],
+            "staff_count": 1,
+            "time_limit_days": 3,
+            "safety_restrictions": [
+              "The outline should stay concise enough for seminar notes."
+            ],
+            "conversation_history": [],
+            "current_protocol": null,
+            "round_number": 0,
+            "max_rounds": 6
+          }
+        }
+      }
+    },
+    "POST /step": {
+      "request": {
+        "session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "action": {
+          "action_type": "propose_protocol",
+          "sample_size": 30,
+          "controls": [
+            "positive_control",
+            "negative_control"
+          ],
+          "technique": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+          "duration_days": 5,
+          "required_equipment": [
+            "Structured proof notebook"
+          ],
+          "required_reagents": [
+            "Reference theorem library",
+            "Graduate reviewer"
+          ],
+          "questions": [],
+          "rationale": "Initial proposal using available resources."
+        }
+      },
+      "response_mid_episode": {
+        "observation": {
+          "scientist": {
+            "paper_title": "Planning a proof of the Cauchy-Schwarz inequality",
+            "paper_hypothesis": "A square-expansion argument gives the cleanest proof path.",
+            "paper_method": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+            "paper_key_finding": "The proof is accepted only if every inequality step and equality case is justified.",
+            "experiment_goal": "Produce a proof-planning workflow for the Cauchy-Schwarz inequality for an undergraduate seminar handout.",
+            "conversation_history": [
+              {
+                "role": "scientist",
+                "message": "Initial proposal using available resources.",
+                "round_number": 1,
+                "action_type": "propose_protocol"
+              },
+              {
+                "role": "lab_manager",
+                "message": "Budget is within range. Equipment is available.",
+                "round_number": 1,
+                "action_type": "report_feasibility"
+              }
+            ],
+            "current_protocol": {
+              "sample_size": 30,
+              "controls": [
+                "positive_control",
+                "negative_control"
+              ],
+              "technique": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+              "duration_days": 5,
+              "required_equipment": [
+                "Structured proof notebook"
+              ],
+              "required_reagents": [
+                "Reference theorem library",
+                "Graduate reviewer"
+              ],
+              "rationale": "Initial proposal using available resources."
+            },
+            "round_number": 1,
+            "max_rounds": 6
+          },
+          "lab_manager": {
+            "budget_total": 345.0,
+            "budget_remaining": 345.0,
+            "equipment_available": [
+              "Structured proof notebook"
+            ],
+            "equipment_booked": [],
+            "reagents_in_stock": [
+              "Reference theorem library",
+              "Graduate reviewer"
+            ],
+            "reagents_out_of_stock": [],
+            "staff_count": 1,
+            "time_limit_days": 3,
+            "safety_restrictions": [
+              "The outline should stay concise enough for seminar notes."
+            ],
+            "conversation_history": [
+              {
+                "role": "scientist",
+                "message": "Initial proposal using available resources.",
+                "round_number": 1,
+                "action_type": "propose_protocol"
+              },
+              {
+                "role": "lab_manager",
+                "message": "Budget is within range. Equipment is available.",
+                "round_number": 1,
+                "action_type": "report_feasibility"
+              }
+            ],
+            "current_protocol": {
+              "sample_size": 30,
+              "controls": [
+                "positive_control",
+                "negative_control"
+              ],
+              "technique": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+              "duration_days": 5,
+              "required_equipment": [
+                "Structured proof notebook"
+              ],
+              "required_reagents": [
+                "Reference theorem library",
+                "Graduate reviewer"
+              ],
+              "rationale": "Initial proposal using available resources."
+            },
+            "round_number": 1,
+            "max_rounds": 6
+          }
+        },
+        "reward": 0.0,
+        "done": false,
+        "info": {
+          "agreement_reached": false,
+          "error": null,
+          "reward_breakdown": null,
+          "judge_notes": null,
+          "verdict": null
+        }
+      },
+      "response_terminal": {
+        "observation": null,
+        "reward": 5.0,
+        "done": true,
+        "info": {
+          "agreement_reached": true,
+          "error": null,
+          "reward_breakdown": {
+            "rigor": 0.8,
+            "feasibility": 0.8,
+            "fidelity": 0.8,
+            "efficiency_bonus": 0.2,
+            "communication_bonus": 0.1,
+            "penalties": {
+              "timeout": 0.0
+            }
+          },
+          "judge_notes": "Stub audit until judge integration lands.",
+          "verdict": "accept"
+        }
+      }
+    },
+    "GET /scenarios": {
+      "response": {
+        "scenarios": [
+          {
+            "family": "math_reasoning",
+            "difficulties": [
+              "easy",
+              "medium",
+              "hard"
+            ]
+          },
+          {
+            "family": "ml_benchmark",
+            "difficulties": [
+              "easy",
+              "medium",
+              "hard"
+            ]
+          },
+          {
+            "family": "finance_trading",
+            "difficulties": [
+              "easy",
+              "medium",
+              "hard"
+            ]
+          }
+        ]
+      }
+    },
+    "GET /replay/{episode_id}": {
+      "response": {
+        "episode_id": "ep-deadbeef-1234-5678-9abc-def012345678",
+        "seed": 42,
+        "scenario_template": "math_reasoning",
+        "difficulty": "easy",
+        "final_state": {
+          "seed": 42,
+          "scenario_template": "math_reasoning",
+          "difficulty": "easy",
+          "paper_title": "Planning a proof of the Cauchy-Schwarz inequality",
+          "paper_hypothesis": "A square-expansion argument gives the cleanest proof path.",
+          "paper_method": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+          "paper_key_finding": "The proof is accepted only if every inequality step and equality case is justified.",
+          "experiment_goal": "Produce a proof-planning workflow for the Cauchy-Schwarz inequality for an undergraduate seminar handout.",
+          "lab_budget_total": 345.0,
+          "lab_budget_remaining": 345.0,
+          "lab_equipment": [
+            "Structured proof notebook"
+          ],
+          "lab_reagents": [
+            "Reference theorem library",
+            "Graduate reviewer"
+          ],
+          "lab_staff_count": 1,
+          "lab_time_limit_days": 3,
+          "current_protocol": null,
+          "conversation_history": [],
+          "round_number": 3,
+          "max_rounds": 6,
+          "done": true,
+          "agreement_reached": true,
+          "reward": 5.0,
+          "rigor_score": 0.8,
+          "feasibility_score": 0.8,
+          "fidelity_score": 0.8
+        },
+        "transcript": [
+          {
+            "role": "scientist",
+            "message": "Initial proposal using available resources.",
+            "round_number": 1,
+            "action_type": "propose_protocol"
+          },
+          {
+            "role": "lab_manager",
+            "message": "Budget is within range. Equipment is available.",
+            "round_number": 1,
+            "action_type": "report_feasibility"
+          }
+        ],
+        "reward_breakdown": {
+          "rigor": 0.8,
+          "feasibility": 0.8,
+          "fidelity": 0.8,
+          "efficiency_bonus": 0.2,
+          "communication_bonus": 0.1,
+          "penalties": {
+            "timeout": 0.0
+          }
+        },
+        "total_reward": 5.0,
+        "rounds_used": 3,
+        "agreement_reached": true,
+        "judge_notes": "Stub audit until judge integration lands.",
+        "verdict": "accept"
+      }
+    }
+  },
+  "websocket": {
+    "reset": {
+      "client_sends": {
+        "type": "reset",
+        "seed": 42,
+        "scenario": "math_reasoning",
+        "difficulty": "easy"
+      },
+      "server_responds": {
+        "type": "reset_ok",
+        "episode_id": "ep-deadbeef-1234-5678-9abc-def012345678",
+        "observation": {
+          "scientist": {
+            "paper_title": "Planning a proof of the Cauchy-Schwarz inequality",
+            "paper_hypothesis": "A square-expansion argument gives the cleanest proof path.",
+            "paper_method": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+            "paper_key_finding": "The proof is accepted only if every inequality step and equality case is justified.",
+            "experiment_goal": "Produce a proof-planning workflow for the Cauchy-Schwarz inequality for an undergraduate seminar handout.",
+            "conversation_history": [],
+            "current_protocol": null,
+            "round_number": 0,
+            "max_rounds": 6
+          },
+          "lab_manager": {
+            "budget_total": 345.0,
+            "budget_remaining": 345.0,
+            "equipment_available": [
+              "Structured proof notebook"
+            ],
+            "equipment_booked": [],
+            "reagents_in_stock": [
+              "Reference theorem library",
+              "Graduate reviewer"
+            ],
+            "reagents_out_of_stock": [],
+            "staff_count": 1,
+            "time_limit_days": 3,
+            "safety_restrictions": [
+              "The outline should stay concise enough for seminar notes."
+            ],
+            "conversation_history": [],
+            "current_protocol": null,
+            "round_number": 0,
+            "max_rounds": 6
+          }
+        }
+      }
+    },
+    "step": {
+      "client_sends": {
+        "type": "step",
+        "action": {
+          "action_type": "propose_protocol",
+          "sample_size": 30,
+          "controls": [
+            "positive_control",
+            "negative_control"
+          ],
+          "technique": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+          "duration_days": 5,
+          "required_equipment": [
+            "Structured proof notebook"
+          ],
+          "required_reagents": [
+            "Reference theorem library",
+            "Graduate reviewer"
+          ],
+          "questions": [],
+          "rationale": "Initial proposal using available resources."
+        }
+      },
+      "server_responds": {
+        "type": "step_ok",
+        "observation": {
+          "scientist": {
+            "paper_title": "Planning a proof of the Cauchy-Schwarz inequality",
+            "paper_hypothesis": "A square-expansion argument gives the cleanest proof path.",
+            "paper_method": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+            "paper_key_finding": "The proof is accepted only if every inequality step and equality case is justified.",
+            "experiment_goal": "Produce a proof-planning workflow for the Cauchy-Schwarz inequality for an undergraduate seminar handout.",
+            "conversation_history": [
+              {
+                "role": "scientist",
+                "message": "Initial proposal using available resources.",
+                "round_number": 1,
+                "action_type": "propose_protocol"
+              },
+              {
+                "role": "lab_manager",
+                "message": "Budget is within range. Equipment is available.",
+                "round_number": 1,
+                "action_type": "report_feasibility"
+              }
+            ],
+            "current_protocol": {
+              "sample_size": 30,
+              "controls": [
+                "positive_control",
+                "negative_control"
+              ],
+              "technique": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+              "duration_days": 5,
+              "required_equipment": [
+                "Structured proof notebook"
+              ],
+              "required_reagents": [
+                "Reference theorem library",
+                "Graduate reviewer"
+              ],
+              "rationale": "Initial proposal using available resources."
+            },
+            "round_number": 1,
+            "max_rounds": 6
+          },
+          "lab_manager": {
+            "budget_total": 345.0,
+            "budget_remaining": 345.0,
+            "equipment_available": [
+              "Structured proof notebook"
+            ],
+            "equipment_booked": [],
+            "reagents_in_stock": [
+              "Reference theorem library",
+              "Graduate reviewer"
+            ],
+            "reagents_out_of_stock": [],
+            "staff_count": 1,
+            "time_limit_days": 3,
+            "safety_restrictions": [
+              "The outline should stay concise enough for seminar notes."
+            ],
+            "conversation_history": [
+              {
+                "role": "scientist",
+                "message": "Initial proposal using available resources.",
+                "round_number": 1,
+                "action_type": "propose_protocol"
+              },
+              {
+                "role": "lab_manager",
+                "message": "Budget is within range. Equipment is available.",
+                "round_number": 1,
+                "action_type": "report_feasibility"
+              }
+            ],
+            "current_protocol": {
+              "sample_size": 30,
+              "controls": [
+                "positive_control",
+                "negative_control"
+              ],
+              "technique": "Outline the proof using one algebraic identity, one equality-case check, and reviewer notes.",
+              "duration_days": 5,
+              "required_equipment": [
+                "Structured proof notebook"
+              ],
+              "required_reagents": [
+                "Reference theorem library",
+                "Graduate reviewer"
+              ],
+              "rationale": "Initial proposal using available resources."
+            },
+            "round_number": 1,
+            "max_rounds": 6
+          }
+        },
+        "reward": 0.0,
+        "done": false,
+        "info": {
+          "agreement_reached": false,
+          "error": null,
+          "reward_breakdown": null,
+          "judge_notes": null,
+          "verdict": null
+        }
+      }
+    },
+    "ping": {
+      "client_sends": {
+        "type": "ping"
+      },
+      "server_responds": {
+        "type": "pong"
+      }
+    }
+  }
+}

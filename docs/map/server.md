@@ -1,128 +1,80 @@
-# Server Map — `server/app.py`
+# Server Map - `server/app.py`
 
-> FastAPI backend with REST + WebSocket endpoints and stub environment.
+> FastAPI backend with REST + WebSocket endpoints. The normal path now uses
+> the real `ReplicaLabEnv`; `_StubEnv` remains only as a fallback if the env
+> package cannot be imported.
 >
-> **Tasks implemented:** API 01-04, 06 (partial)
+> **Tasks implemented:** API 01-09, 13, 15
 
-## Environment
+## Environment path
+
+### `ReplicaLabEnv`
+Primary environment implementation imported from
+`replicalab.env.replicalab_env`.
 
 ### `_StubEnv`
-Minimal environment stub used until the real `ReplicaLabEnv` is implemented (ENV 01-11).
+Legacy fallback kept so the server can still boot if the real env import
+fails. It is no longer the intended local or Docker runtime.
 
-**State:**
-| Attribute | Type | Purpose |
-|-----------|------|---------|
-| `_state` | `EpisodeState` | Full episode state |
-| `_episode_id` | `str` | UUID for this episode |
-| `_scenario_pack` | `NormalizedScenarioPack \| None` | Stored for lab manager pipeline |
-| `_logs` | `list[ConversationEntry]` | Conversation transcript |
+### `_make_env()`
+Factory that prefers `ReplicaLabEnv` and falls back to `_StubEnv` only on
+import failure.
 
-**Methods:**
-
-| Method | Returns | Behavior |
-|--------|---------|----------|
-| `reset(seed, scenario, difficulty)` | `Observation` | Generates scenario, builds initial observations |
-| `step(action: ScientistAction)` | `StepResult` | Processes scientist action, runs lab manager pipeline |
-| `state()` | `EpisodeState` | Returns current state snapshot |
-| `episode_id()` | `str` | Returns episode UUID |
-| `close()` | `None` | No-op |
-
-**Lab Manager Integration (AGT 07):**
-The `_lab_manager_action()` method runs the full deterministic pipeline:
-1. `check_feasibility(protocol, scenario_pack)` → `FeasibilityCheckResult`
-2. `suggest_alternative(protocol, check_result, scenario_pack)` → `AlternativeSuggestion | None`
-3. `compose_lab_manager_response(check_result, suggestion)` → `LabManagerAction`
-
-**Termination logic:**
-- Episode ends (`done=True`) when `agreement_reached=True` (both agents accept)
-- `agreement_reached` when lab manager action_type is `accept` (2-round stub logic)
-- On termination: reward = `STUB_ACCEPT_REWARD` (5.0)
-
-### `_make_env() -> _StubEnv`
-Factory that tries to import `ReplicaLabEnv` from `replicalab.env`, falls back to `_StubEnv`.
-
-## REST Endpoints
+## REST endpoints
 
 ### `GET /health`
-Returns `{"status": "ok"}`.
+Returns a liveness payload. When the real env path is active, the response
+includes `env: "real"`.
 
 ### `POST /reset`
-**Request:** `ResetRequest`
-| Field | Type | Default |
-|-------|------|---------|
-| `seed` | `int \| None` | `None` (random) |
-| `scenario` | `str` | `DEFAULT_SCENARIO_TEMPLATE` |
-| `difficulty` | `str` | `DEFAULT_DIFFICULTY` |
-| `session_id` | `str \| None` | `None` (auto-generated) |
+Starts a new episode and returns:
 
-**Response:** `ResetResponse`
-| Field | Type |
-|-------|------|
-| `session_id` | `str` |
-| `episode_id` | `str` |
-| `observation` | `Observation` |
+- `session_id`
+- `episode_id`
+- typed `Observation`
 
 ### `POST /step`
-**Request:** `StepRequest`
-| Field | Type |
-|-------|------|
-| `session_id` | `str` |
-| `action` | `ScientistAction` |
+Submits a typed `ScientistAction` and returns `StepResult`.
 
-**Response:** `StepResult` (observation, reward, done, info)
-
-When `done=True`, the episode log is stored in `_replay_store`.
+When `done=true`, the terminal `StepResult` is also used to build the replay
+log so `reward_breakdown`, `judge_notes`, and `verdict` stay aligned with the
+real env result.
 
 ### `GET /scenarios`
-Returns `available_scenario_families()` — list of families with difficulties.
+Returns the available scenario families and supported difficulties.
 
 ### `GET /replay/{episode_id}`
-Returns `EpisodeLog` for a completed episode, or 404 if not found.
+Returns the stored `EpisodeLog` for a completed episode or 404 if not found.
 
-## WebSocket Endpoint
+## WebSocket endpoint
 
 ### `WS /ws`
-Bidirectional session with JSON messages.
+Per-connection isolated environment session supporting:
 
-**Client → Server messages:**
-| Type | Payload | Behavior |
-|------|---------|----------|
-| `reset` | `{seed, scenario, difficulty}` | Creates env, returns initial state |
-| `step` | `{action: ScientistAction}` | Steps env, returns result |
-| `ping` | — | Returns `{"type": "pong"}` |
+- `reset`
+- `step`
+- `ping`
 
-**Server → Client messages:**
-| Type | Payload |
-|------|---------|
-| `state` | `{observation, episode_id}` |
-| `step_result` | `StepResult.info.model_dump()` |
-| `pong` | `{}` |
-| `error` | `{message}` |
+Idle timeout and disconnect cleanup are implemented and verified.
 
-## Session Management
+## Session management
 
-| Store | Type | Purpose |
-|-------|------|---------|
-| `_sessions` | `dict[str, dict]` | Active REST sessions (env + last_active) |
-| `_replay_store` | `dict[str, EpisodeLog]` | Completed episode logs |
+| Store | Purpose |
+| --- | --- |
+| `_sessions` | Active REST sessions |
+| `_replay_store` | Completed episode logs |
 
-**Cleanup:** Background task runs every 60s, removes sessions older than `SESSION_TTL_SECONDS` (300s).
-
-## Helper Functions
+## Key helpers
 
 | Function | Purpose |
-|----------|---------|
-| `_reward_breakdown_from_state(state)` | Extract RewardBreakdown from EpisodeState scores |
-| `_build_episode_log(episode_id, state)` | Build EpisodeLog from final state |
-| `_touch(session_id)` | Update last_active timestamp |
-| `_cleanup_stale_sessions()` | Remove expired sessions |
+| --- | --- |
+| `_build_episode_log(episode_id, state, result)` | Build replay log from final state and terminal step result |
+| `_touch(session_id)` | Refresh REST session last-active timestamp |
+| `_cleanup_stale_sessions()` | Remove expired REST sessions |
 
-## Dependencies
+## Current deployment state
 
-```python
-from replicalab.agents import check_feasibility, compose_lab_manager_response, suggest_alternative
-from replicalab.config import API_HOST, API_PORT, DEFAULT_DIFFICULTY, ...
-from replicalab.models import (ConversationEntry, EpisodeLog, EpisodeState, LabManagerAction,
-                                Observation, Protocol, RewardBreakdown, ScientistAction, StepInfo, StepResult, ...)
-from replicalab.scenarios import NormalizedScenarioPack, available_scenario_families, generate_scenario
-```
+- Local OpenEnv validation passes
+- Local Docker build and run verification passes
+- HF Spaces metadata is present in the root `README.md` and root `Dockerfile`
+- Live hosted verification remains `API 10`

@@ -1,19 +1,21 @@
 # Scoring Map — `replicalab/scoring/`
 
 > Judge scoring engine for protocol evaluation.
-> Pure deterministic functions — no LLM calls, no side effects.
+> Pure deterministic functions — no model calls, no side effects.
 >
-> **Tasks implemented:** JDG 01, JDG 02, JDG 03
-> **Tasks remaining:** JDG 04-08
+> **Tasks implemented:** JDG 01, JDG 02, JDG 03, JDG 04, JDG 05
+> **Tasks remaining:** JDG 06-08
 
 ## Architecture
 
 ```
 replicalab/scoring/
-    __init__.py          # exports: score_rigor, score_feasibility, score_fidelity
+    __init__.py          # exports: score_rigor, score_feasibility, score_fidelity,
+                         #          build_reward_breakdown, compute_total_reward
     rigor.py             # JDG 01 — protocol structural quality
     feasibility.py       # JDG 02 — resource feasibility (wraps AGT 05)
     fidelity.py          # JDG 03 — adherence to hidden reference spec
+    rubric.py            # JDG 04-05 — total reward formula and breakdown builder
 ```
 
 ## Shared Utilities
@@ -142,15 +144,40 @@ This is the key difference from JDG 01's element check.
 
 ---
 
+---
+
+## JDG 04 — `compute_total_reward(breakdown) -> float`
+
+**File:** `rubric.py`
+**Formula:** `10 × rigor × feasibility × fidelity + efficiency_bonus + communication_bonus − sum(penalties)`
+
+Returns a scalar reward from a `RewardBreakdown` object.
+
+## JDG 05 — `build_reward_breakdown(protocol, scenario, rounds_used, max_rounds, *, check=None) -> RewardBreakdown`
+
+**File:** `rubric.py`
+**Composes:** rigor (JDG 01) + feasibility (JDG 02) + fidelity (JDG 03) + efficiency bonus.
+
+### Efficiency Bonus
+- Max bonus: 1.0 (configurable via `_MAX_EFFICIENCY_BONUS`)
+- Formula: `bonus × (max_rounds - rounds_used) / (max_rounds - 1)`
+- Finishing in round 1 of 6 → maximum bonus; using all rounds → 0
+
+### Internal Functions
+
+| Function | Purpose |
+|----------|---------|
+| `compute_total_reward(breakdown)` | Apply the reward formula |
+| `build_reward_breakdown(...)` | Compose all sub-scores into a breakdown |
+| `_efficiency_bonus(rounds_used, max_rounds)` | Compute efficiency bonus |
+
+---
+
 ## Not Yet Implemented
 
-### `compute_reward(protocol, scenario, ...) -> RewardBreakdown` — JDG 04/05
-Combines rigor + feasibility + fidelity with weights.
-Applies efficiency bonus (rounds used), communication bonus, and penalties.
-
 ### Bonuses & Penalties — JDG 06-08
-- `efficiency_bonus`: reward for finishing in fewer rounds
-- `communication_bonus`: reward for clear negotiation
+- `explanation_function`: optional plain English from reward breakdown (JDG 06)
+- `communication_bonus`: reward for clear negotiation (reserved)
 - `penalties`: policy violations, hallucinated resources, etc.
 
 ## Data Consumed
