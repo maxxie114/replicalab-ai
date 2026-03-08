@@ -9,8 +9,8 @@ No assumptions from other documents are used to reclassify blocked status.
 
 ## 1. Blocking Status
 
-Per the source of truth, Person B now has one unblocked task.
-The immediate next task is `FND 08` because `FND 04` is complete in `replicalab/models.py`.
+Per the source of truth, Person B has finished the draft portion of `FND 08`.
+The immediate next action is Person A review and sign-off on `docs/fnd08_frozen_json_contract.md`.
 
 ---
 
@@ -116,9 +116,9 @@ are done.
 
 All phases are gated by the listed external dependency being delivered first.
 
-### Phase 1: Available now
+### Phase 1: Active now
 
-1. **FND 08** -- Freeze JSON contract (shared with Person A; unblocked because `FND 04` is complete)
+1. **FND 08** -- Draft complete in `docs/fnd08_frozen_json_contract.md`; waiting on Person A sign-off
 
 ### Phase 2: After Person A and B complete FND 08, and Person A delivers MOD 01 + SCN 09
 
@@ -172,7 +172,7 @@ All phases are gated by the listed external dependency being delivered first.
 
 | Category | Count | Hours |
 |----------|-------|-------|
-| Currently unblocked | 1 | 0.75h |
+| Active shared task | 1 | 0.75h |
 | Blocked by Person A (first-order) | 5 | 4.0h |
 | Blocked by Person A then Person B chain | 8 | 6.25h |
 | Blocked by Person C | 3 | 2.5h |
