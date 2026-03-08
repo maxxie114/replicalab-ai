@@ -1,43 +1,38 @@
 export type ActionType = 'propose_protocol' | 'revise_protocol' | 'request_info' | 'accept';
-export type LabManagerActionType = 'report_feasibility' | 'suggest_substitution' | 'reject' | 'accept';
+export type LabManagerActionType = 'report_feasibility' | 'suggest_alternative' | 'reject' | 'accept';
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export type ScenarioTemplate = 'cell_biology' | 'ml_benchmark' | 'behavioral_psych';
-export type Role = 'scientist' | 'lab_manager' | 'judge';
+export type ScenarioTemplate = 'math_reasoning' | 'ml_benchmark' | 'finance_trading';
+export type Role = 'scientist' | 'lab_manager' | 'judge' | 'system';
+
+// --- Backend-aligned action contracts ---
 
 export interface ScientistAction {
   action_type: ActionType;
-  sample_size?: number;
-  controls?: string[];
-  technique?: string;
-  duration_days?: number;
-  required_equipment?: string[];
-  required_reagents?: string[];
-  questions?: string[];
-  rationale?: string;
+  sample_size: number;
+  controls: string[];
+  technique: string;
+  duration_days: number;
+  required_equipment: string[];
+  required_reagents: string[];
+  questions: string[];
+  rationale: string;
 }
 
 export interface LabManagerAction {
   action_type: LabManagerActionType;
-  feasibility_report?: FeasibilityReport;
-  suggested_changes?: SuggestedChange[];
-  message?: string;
-}
-
-export interface FeasibilityReport {
+  feasible: boolean;
   budget_ok: boolean;
   equipment_ok: boolean;
   reagents_ok: boolean;
   schedule_ok: boolean;
-  personnel_ok: boolean;
-  issues: string[];
+  staff_ok: boolean;
+  suggested_technique: string;
+  suggested_sample_size: number;
+  suggested_controls: string[];
+  explanation: string;
 }
 
-export interface SuggestedChange {
-  field: string;
-  original: string;
-  suggested: string;
-  reason: string;
-}
+// --- Protocol ---
 
 export interface Protocol {
   sample_size: number;
@@ -46,7 +41,10 @@ export interface Protocol {
   duration_days: number;
   required_equipment: string[];
   required_reagents: string[];
+  rationale: string;
 }
+
+// --- Paper summary (derived from ScientistObservation) ---
 
 export interface PaperSummary {
   title: string;
@@ -59,6 +57,8 @@ export interface PaperSummary {
   original_duration_days: number;
 }
 
+// --- Lab constraints (derived from LabManagerObservation) ---
+
 export interface LabConstraints {
   budget: number;
   budget_remaining: number;
@@ -69,13 +69,17 @@ export interface LabConstraints {
   safety_rules: string[];
 }
 
+// --- Conversation entry (matches backend ConversationEntry) ---
+
 export interface NegotiationMessage {
   role: Role;
   round: number;
-  action: ScientistAction | LabManagerAction;
+  action_type?: string;
   message: string;
   timestamp: number;
 }
+
+// --- Score breakdown (matches backend RewardBreakdown) ---
 
 export interface ScoreBreakdown {
   rigor: number;
@@ -88,15 +92,20 @@ export interface ScoreBreakdown {
   penalty_reasons: string[];
 }
 
+// --- Judge audit (derived from StepInfo when done) ---
+
 export interface JudgeAudit {
-  verdict: 'success' | 'partial' | 'failure';
+  verdict: string;
   judge_notes: string[];
   top_failure_reasons: string[];
   score_breakdown: ScoreBreakdown;
 }
 
+// --- Frontend episode state (assembled from backend responses) ---
+
 export interface EpisodeState {
   episode_id: string;
+  session_id: string;
   seed: number;
   template: ScenarioTemplate;
   difficulty: Difficulty;
@@ -117,16 +126,85 @@ export interface ResetParams {
   difficulty?: Difficulty;
 }
 
-export interface StepResult {
-  observation: Record<string, unknown>;
+// --- Backend response types ---
+
+export interface BackendConversationEntry {
+  role: string;
+  message: string;
+  round_number: number;
+  action_type: string | null;
+}
+
+export interface BackendObservation {
+  scientist: {
+    paper_title: string;
+    paper_hypothesis: string;
+    paper_method: string;
+    paper_key_finding: string;
+    experiment_goal: string;
+    conversation_history: BackendConversationEntry[];
+    current_protocol: Protocol | null;
+    round_number: number;
+    max_rounds: number;
+  } | null;
+  lab_manager: {
+    budget_total: number;
+    budget_remaining: number;
+    equipment_available: string[];
+    equipment_booked: string[];
+    reagents_in_stock: string[];
+    reagents_out_of_stock: string[];
+    staff_count: number;
+    time_limit_days: number;
+    safety_restrictions: string[];
+    conversation_history: BackendConversationEntry[];
+    current_protocol: Protocol | null;
+    round_number: number;
+    max_rounds: number;
+  } | null;
+}
+
+export interface BackendResetResponse {
+  session_id: string;
+  episode_id: string;
+  observation: BackendObservation;
+}
+
+export interface BackendRewardBreakdown {
+  rigor: number;
+  feasibility: number;
+  fidelity: number;
+  parsimony: number;
+  efficiency_bonus: number;
+  communication_bonus: number;
+  penalties: Record<string, number>;
+}
+
+export interface BackendStepInfo {
+  agreement_reached: boolean;
+  error: string | null;
+  reward_breakdown: BackendRewardBreakdown | null;
+  judge_notes: string | null;
+  verdict: string | null;
+  top_failure_reasons: string[];
+  round: number;
+  stub: boolean;
+  episode_id: string;
+}
+
+export interface BackendStepResult {
+  observation: BackendObservation | null;
   reward: number;
   done: boolean;
-  info: {
-    round: number;
-    scores?: ScoreBreakdown;
-    judge_audit?: JudgeAudit;
-  };
+  info: BackendStepInfo;
 }
+
+export interface BackendScenarioFamily {
+  family: string;
+  difficulties: string[];
+}
+
+// --- Training metrics ---
 
 export interface TrainingMetrics {
   episode: number;
