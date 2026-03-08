@@ -13,10 +13,18 @@ build/
 .venv/
 venv/
 env/
+.mypy_cache/
+.ruff_cache/
+.nox/
+.tox/
+.python-version
+pip-wheel-metadata/
 
 # Node
 node_modules/
 frontend/dist/
+frontend/.vite/
+coverage/
 
 # Environment
 .env
@@ -37,5 +45,23 @@ Thumbs.db
 
 # Testing
 .coverage
+.coverage.*
 htmlcov/
 .pytest_cache/
+coverage.xml
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Generated outputs
+replicalab/outputs/*
+!replicalab/outputs/.gitkeep
+!replicalab/outputs/logs/
+!replicalab/outputs/replays/
+!replicalab/outputs/plots/
+replicalab/outputs/logs/*
+!replicalab/outputs/logs/.gitkeep
+replicalab/outputs/replays/*
+!replicalab/outputs/replays/.gitkeep
+replicalab/outputs/plots/*
+!replicalab/outputs/plots/.gitkeep

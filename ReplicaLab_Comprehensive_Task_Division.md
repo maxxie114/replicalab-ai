@@ -231,18 +231,32 @@ Create a stable shared codebase, contracts, and development workflow so all work
 
 - `FND 01` status: completed on 2026-03-07
 - `FND 01` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
+- `FND 02` status: completed on 2026-03-08
+- `FND 02` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
 - `FND 04` status: completed on 2026-03-08
 - `FND 04` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `FND 05` status: completed on 2026-03-08
+- `FND 05` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
+- `FND 06` status: completed on 2026-03-08
+- `FND 06` completed by: `Person B (Ayush)` while the assigned owner remains `Person D`
+- `FND 07` status: completed on 2026-03-08
+- `FND 07` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
 - `FND 08` status: partial on 2026-03-08
 - `FND 08` draft completed by: `Person B (Ayush)`; Person A sign-off is still pending
 - `FND 10` status: completed on 2026-03-07
 - `FND 10` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
 - Completed scope for `FND 01`: created the agreed repo scaffold for `replicalab/`, `server/`, `frontend/`, `notebooks/`, and `tests/`, including the initial `replicalab/*` and `frontend/src/*` subfolders from the planned layout
+- Completed scope for `FND 02`: added `pyproject.toml` with package metadata, Python version floor, runtime dependencies, dev extras, and basic pytest discovery settings; verified editable install and shared-model imports
 - Completed scope for `FND 04`: added importable empty Pydantic model stubs in `replicalab/models.py` for the shared action, observation, step, state, and log contracts
+- Completed scope for `FND 05`: created `.dockerignore` and expanded `.gitignore` to cover Python, Node, notebook, coverage, cache, and generated output artifacts while preserving tracked `.gitkeep` scaffold files
+- Completed scope for `FND 06`: replaced the aspirational README with a temporary foundation stub that reflects the actual repo state, mission, team ownership, and current local setup placeholder
+- Completed scope for `FND 07`: added GitHub PR and task-issue templates and tightened the repo workflow rules for branch naming and required tracking-doc updates
 - Completed scope for `FND 08` draft: added `docs/fnd08_frozen_json_contract.md` with field semantics, enums, nested object schemas, null-vs-empty rules, and canonical JSON examples for all 8 shared models
 - Completed scope for `FND 10`: created `replicalab/outputs/` with tracked `logs/`, `replays/`, and `plots/` subdirectories
-- Remaining work now unblocked by `FND 01`: `FND 02`, `FND 03`, `FND 05`, `FND 06`, `FND 07`
+- Remaining work now unblocked by `FND 01`: `FND 03`
+- Newly unblocked by `FND 02`: `FND 11`
 - Newly unblocked by `FND 04`: `FND 08`, `FND 09`
+- Newly unblocked by `FND 06`: `DOC 01`
 - Remaining Epic E01 work still gated by follow-on dependencies: `FND 11`, `FND 12`, `FND 13`
 - Remaining completion item for `FND 08`: Person A review and sign-off
 
@@ -259,12 +273,12 @@ As a team, we want agreed schemas and coding rules so integration risk stays low
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | FND 01 | E01.1 | Person C | repo root | Create repo structure and base folders from agreed layout | none | 0.5h | all top level folders exist and repo clones cleanly | ✅ Completed | Person B (Ayush) |
-| FND 02 | E01.1 | Person C | `pyproject.toml` | Add Python project config and dependencies placeholder | FND 01 | 0.5h | project installs locally without missing package errors for base modules | ⬜ Not started | — |
+| FND 02 | E01.1 | Person C | `pyproject.toml` | Add Python project config and dependencies placeholder | FND 01 | 0.5h | project installs locally without missing package errors for base modules | ✅ Completed | Person B (Ayush) |
 | FND 03 | E01.1 | Person C | `frontend/package.json` | Initialize React plus Vite frontend shell | FND 01 | 0.5h | `npm install` and dev server run successfully | ⬜ Not started | — |
 | FND 04 | E01.2 | Person A | `replicalab/models.py` | Add empty Pydantic models and shared type names | FND 01 | 0.5h | import paths resolve for all placeholder models | ✅ Completed | Person B (Ayush) |
-| FND 05 | E01.2 | Person C | `.gitignore` and `.dockerignore` | Add ignore rules for Python, Node, logs, notebooks, and build artifacts. `.dockerignore` must explicitly exclude `.git`, `node_modules`, `notebooks/`, `tests/`, `__pycache__`, `.venv`, and output files to keep the Docker image lean | FND 01 | 0.25h | repo status stays clean after local run and build, and Docker build excludes non-runtime files | ⬜ Not started | — |
-| FND 06 | E01.2 | Person D | `README.md` | Add temporary project stub with title, mission, team roles, and local setup placeholder | FND 01 | 0.5h | new contributor can understand repo purpose in under two minutes | ⬜ Not started | — |
-| FND 07 | E01.2 | Person C | repo settings | Define branch naming, PR template, and issue template | FND 01 | 0.5h | all future PRs auto show the template and issue fields | ⬜ Not started | — |
+| FND 05 | E01.2 | Person C | `.gitignore` and `.dockerignore` | Add ignore rules for Python, Node, logs, notebooks, and build artifacts. `.dockerignore` must explicitly exclude `.git`, `node_modules`, `notebooks/`, `tests/`, `__pycache__`, `.venv`, and output files to keep the Docker image lean | FND 01 | 0.25h | repo status stays clean after local run and build, and Docker build excludes non-runtime files | ✅ Completed | Person B (Ayush) |
+| FND 06 | E01.2 | Person D | `README.md` | Add temporary project stub with title, mission, team roles, and local setup placeholder | FND 01 | 0.5h | new contributor can understand repo purpose in under two minutes | ✅ Completed | Person B (Ayush) |
+| FND 07 | E01.2 | Person C | repo settings | Define branch naming, PR template, and issue template | FND 01 | 0.5h | all future PRs auto show the template and issue fields | ✅ Completed | Person B (Ayush) |
 | FND 08 | E01.2 | Person A and B | docs or backlog file | Freeze JSON contract for actions and observations | FND 04 | 0.75h | all owners sign off and no blocking contract ambiguity remains | 🟡 Partial | — |
 | FND 09 | E01.2 | Person A | `openenv.yaml` | Create OpenEnv configuration file specifying environment class, action and observation types, and server settings | FND 04 | 0.5h | OpenEnv can discover and serve the environment using this config file | ⬜ Not started | — |
 | FND 10 | E01.1 | Person C | `replicalab/outputs/` | Create output directory structure with `logs/`, `replays/`, and `plots/` subdirectories and add to gitignore | FND 01 | 0.25h | output directories exist and generated files are not committed to git | ✅ Completed | Person B (Ayush) |
