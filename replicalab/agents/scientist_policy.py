@@ -7,6 +7,8 @@ instead of hard-coded domain text. AGT 02 adds the per-turn observation
 formatter that converts a ``ScientistObservation`` into the user message
 sent to the LLM each round. AGT 03 wraps the formatter and parser in a
 retry loop with error-specific correction prompts and exposed telemetry.
+AGT 04 adds a deterministic baseline Scientist so smoke tests can run
+without a trained model.
 """
 
 from __future__ import annotations
@@ -30,6 +32,44 @@ from replicalab.scenarios import NormalizedScenarioPack
 log = logging.getLogger(__name__)
 
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.IGNORECASE | re.DOTALL)
+_ML_HINTS = (
+    "benchmark",
+    "dataset",
+    "accuracy",
+    "tokenizer",
+    "train",
+    "gpu",
+    "cifar",
+    "ag news",
+    "bert",
+    "resnet",
+)
+_FINANCE_HINTS = (
+    "backtest",
+    "drawdown",
+    "sharpe",
+    "trading",
+    "slippage",
+    "capital",
+    "spy",
+    "qqq",
+    "futures",
+)
+_BLOCKER_HINTS = (
+    "booked",
+    "unavailable",
+    "not available",
+    "exceeds",
+    "tight",
+    "limited",
+    "deadline",
+    "budget",
+    "cost",
+    "drawdown",
+    "slippage",
+    "risk",
+    "conflict",
+)
 
 
 class ScientistOutputParseError(ValueError):
@@ -301,6 +341,30 @@ def format_scientist_observation(obs: ScientistObservation) -> str:
     return "\n\n".join(sections)
 
 
+def build_baseline_scientist_action(
+    observation: ScientistObservation,
+) -> ScientistAction:
+    """Return a deterministic non-LLM Scientist action for smoke tests.
+
+    The baseline follows a conservative policy:
+    - propose a valid protocol when no protocol exists yet
+    - revise the current protocol if the latest Lab Manager message contains
+      an obvious feasibility blocker
+    - otherwise accept the current protocol to complete the episode cleanly
+    """
+
+    latest_feedback = _latest_lab_manager_feedback(observation)
+
+    if observation.current_protocol is not None:
+        if observation.round_number >= max(1, observation.max_rounds - 1):
+            return _build_accept_action()
+        if latest_feedback and _feedback_requires_revision(latest_feedback.message):
+            return _build_revision_action(observation.current_protocol, latest_feedback)
+        return _build_accept_action()
+
+    return _build_initial_protocol_action(observation)
+
+
 def _render_history(entries: list[ConversationEntry]) -> str:
     lines: list[str] = []
     for entry in entries:
@@ -510,3 +574,119 @@ def _render_substitutions(pack: NormalizedScenarioPack) -> str:
             )
         )
     return "\n".join(lines)
+
+
+def _build_accept_action() -> ScientistAction:
+    return ScientistAction(
+        action_type=ScientistActionType.ACCEPT,
+        sample_size=0,
+        controls=[],
+        technique="",
+        duration_days=0,
+        required_equipment=[],
+        required_reagents=[],
+        questions=[],
+        rationale="",
+    )
+
+
+def _build_initial_protocol_action(
+    observation: ScientistObservation,
+) -> ScientistAction:
+    domain = _infer_domain(observation)
+    defaults = _baseline_defaults_for_domain(domain)
+
+    return ScientistAction(
+        action_type=ScientistActionType.PROPOSE_PROTOCOL,
+        sample_size=defaults["sample_size"],
+        controls=list(defaults["controls"]),
+        technique=defaults["technique"],
+        duration_days=defaults["duration_days"],
+        required_equipment=[],
+        required_reagents=[],
+        questions=[],
+        rationale=(
+            f"Baseline proposal for {observation.paper_title}: "
+            f"use a concise {defaults['technique']} plan aligned to the stated goal "
+            f"'{observation.experiment_goal}'."
+        ),
+    )
+
+
+def _build_revision_action(
+    protocol: Protocol,
+    feedback: ConversationEntry,
+) -> ScientistAction:
+    reduced_sample_size = max(1, protocol.sample_size // 2) if protocol.sample_size else 1
+    reduced_duration = max(1, protocol.duration_days - 1) if protocol.duration_days else 1
+    revised_controls = list(protocol.controls) or ["fallback_review"]
+
+    return ScientistAction(
+        action_type=ScientistActionType.REVISE_PROTOCOL,
+        sample_size=reduced_sample_size,
+        controls=revised_controls,
+        technique=protocol.technique,
+        duration_days=reduced_duration,
+        required_equipment=list(protocol.required_equipment),
+        required_reagents=list(protocol.required_reagents),
+        questions=[],
+        rationale=(
+            "Baseline revision reduces scope to address the latest Lab Manager "
+            f"concern: {feedback.message}"
+        ),
+    )
+
+
+def _latest_lab_manager_feedback(
+    observation: ScientistObservation,
+) -> ConversationEntry | None:
+    for entry in reversed(observation.conversation_history):
+        if entry.role == "lab_manager":
+            return entry
+    return None
+
+
+def _feedback_requires_revision(message: str) -> bool:
+    lowered = message.lower()
+    return any(token in lowered for token in _BLOCKER_HINTS)
+
+
+def _infer_domain(observation: ScientistObservation) -> str:
+    haystack = " ".join(
+        [
+            observation.paper_title,
+            observation.paper_hypothesis,
+            observation.paper_method,
+            observation.paper_key_finding,
+            observation.experiment_goal,
+        ]
+    ).lower()
+
+    if any(token in haystack for token in _ML_HINTS):
+        return "machine_learning"
+    if any(token in haystack for token in _FINANCE_HINTS):
+        return "finance_trading"
+    return "mathematics"
+
+
+def _baseline_defaults_for_domain(domain: str) -> dict[str, Any]:
+    if domain == "machine_learning":
+        return {
+            "sample_size": 8,
+            "controls": ["published_split_check", "heldout_evaluation"],
+            "technique": "published_split_replication",
+            "duration_days": 2,
+        }
+    if domain == "finance_trading":
+        return {
+            "sample_size": 12,
+            "controls": ["drawdown_guardrail", "offline_evaluation_split"],
+            "technique": "offline_backtest_workflow",
+            "duration_days": 2,
+        }
+    return {
+        "sample_size": 4,
+        "controls": ["equality_case_check", "final_verification_pass"],
+        "technique": "structured_proof_outline",
+        "duration_days": 1,
+    }

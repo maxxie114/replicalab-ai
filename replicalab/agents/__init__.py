@@ -5,6 +5,7 @@ from .lab_manager_policy import (
     FeasibilityCheckResult,
     SuggestionChange,
     check_feasibility,
+    compose_lab_manager_response,
     suggest_alternative,
 )
 from .scientist_policy import (
@@ -29,6 +30,7 @@ __all__ = [
     "build_scientist_system_prompt",
     "call_scientist_with_retry",
     "check_feasibility",
+    "compose_lab_manager_response",
     "format_scientist_observation",
     "parse_scientist_output",
     "suggest_alternative",

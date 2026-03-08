@@ -6,6 +6,7 @@ from replicalab.agents.scientist_policy import (
     RetryMetadata,
     ScientistCallResult,
     ScientistOutputParseError,
+    build_baseline_scientist_action,
     build_scientist_system_prompt,
     call_scientist_with_retry,
     format_scientist_observation,
@@ -456,3 +457,102 @@ def test_retry_metadata_serializable() -> None:
     restored = RetryMetadata.model_validate_json(dumped)
     assert restored.attempt_count == 1
     assert restored.retry_count == 0
+
+
+# ---------------------------------------------------------------------------
+# AGT 04 - build_baseline_scientist_action
+# ---------------------------------------------------------------------------
+
+
+def test_baseline_scientist_proposes_protocol_for_fresh_observation() -> None:
+    action = build_baseline_scientist_action(_base_observation())
+
+    assert action.action_type is ScientistActionType.PROPOSE_PROTOCOL
+    assert action.sample_size >= 1
+    assert action.duration_days >= 1
+    assert action.questions == []
+    assert action.rationale
+
+
+def test_baseline_scientist_accepts_existing_protocol_without_blocker() -> None:
+    obs = _base_observation(
+        current_protocol=Protocol(
+            sample_size=10,
+            controls=["baseline_check"],
+            technique="published_split_replication",
+            duration_days=2,
+            required_equipment=[],
+            required_reagents=[],
+            rationale="Initial protocol is already in place.",
+        ),
+        conversation_history=[
+            ConversationEntry(
+                role="lab_manager",
+                message="The current plan remains feasible.",
+                round_number=1,
+                action_type="report_feasibility",
+            )
+        ],
+        round_number=1,
+    )
+
+    action = build_baseline_scientist_action(obs)
+
+    assert action.action_type is ScientistActionType.ACCEPT
+    assert action.sample_size == 0
+    assert action.controls == []
+
+
+def test_baseline_scientist_revises_when_latest_feedback_has_blocker() -> None:
+    obs = _base_observation(
+        current_protocol=Protocol(
+            sample_size=12,
+            controls=["published_split_check", "heldout_evaluation"],
+            technique="published_split_replication",
+            duration_days=3,
+            required_equipment=[],
+            required_reagents=[],
+            rationale="Original scope is full-size.",
+        ),
+        conversation_history=[
+            ConversationEntry(
+                role="lab_manager",
+                message="The current GPU plan is booked, so the schedule is too tight.",
+                round_number=1,
+                action_type="suggest_alternative",
+            )
+        ],
+        round_number=1,
+    )
+
+    action = build_baseline_scientist_action(obs)
+
+    assert action.action_type is ScientistActionType.REVISE_PROTOCOL
+    assert action.sample_size == 6
+    assert action.duration_days == 2
+    assert "latest Lab Manager concern" in action.rationale
+
+
+def test_baseline_scientist_finishes_stub_episode_without_crashing() -> None:
+    from server.app import _StubEnv
+
+    env = _StubEnv()
+
+    first_observation = env.reset(
+        seed=14,
+        scenario="ml_benchmark",
+        difficulty="easy",
+    ).scientist
+    assert first_observation is not None
+
+    first_action = build_baseline_scientist_action(first_observation)
+    first_step = env.step(first_action)
+    assert first_step.done is False
+    assert first_step.observation is not None
+    assert first_step.observation.scientist is not None
+
+    second_action = build_baseline_scientist_action(first_step.observation.scientist)
+    second_step = env.step(second_action)
+
+    assert second_step.done is True
+    assert second_step.info.agreement_reached is True
