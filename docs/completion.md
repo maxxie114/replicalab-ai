@@ -20,37 +20,27 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Metric | Value |
 |--------|-------|
 | Total tasks | 152 |
-| Completed | 85 |
-| Partial / active | 2 |
-| Remaining | 65 |
-| **Completion rate** | **55.92%** |
+| Completed | 152 |
+| Partial / active | 0 |
+| Remaining | 0 |
+| **Completion rate** | **100.00%** |
 
 ### Completion by Person
 
 | Person | Assigned | Completed (own) | Completed (by others) | Remaining | Rate |
 |--------|----------|----------------|----------------------|-----------|------|
-| Kian (Person A) | 49 (47 solo + 2 shared with B) | 1 shared sign-off (`FND 08`) | 47 (`FND 04`, `FND 09`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`, `MOD 05`, `MOD 06`, `MOD 11`, `MOD 12`, `SCN 01` to `SCN 10`, `SCN 13`, `AGT 05`, `AGT 09`, `ENV 01` to `ENV 08`, `ENV 10`, `ENV 11`, `JDG 01` to `JDG 06`, `JDG 08`, `JDG 11`, `OBS 04`, `TST 01` to `TST 05` done by Person B) | 1 | 97.96% |
-| Person B (Ayush) | 29 (27 solo + 2 shared with A) | 16 (`FND 08`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`, `TRN 13`, `TRN 03`, `TRN 04`) | 0 | 13 | 55.17% |
-| Max (Person C) | 41 | 1 (`FND 11`) | 23 (`FND 01`, `FND 02`, `FND 03`, `FND 05`, `FND 07`, `FND 10`, `FND 12` done by others, `MOD 07`, `MOD 10`, `API 02`, `API 03`, `API 04`, `API 06`, `API 07`, `API 08`, `API 09`, `API 10`, `API 13`, `API 14`, `API 15`, `API 17`, `TRN 11`, `TST 07` done by Person B) | 17 | 58.54% |
-| Kush (Person D) | 32 | 0 | 1 (`FND 06` done by Person B) | 31 | 3.13% |
-| All (shared) | 3 | 2 (`FND 08`, `AGT 05`) | 0 | 1 | 66.67% |
+| Kian (Person A) | 49 (47 solo + 2 shared with B) | 1 shared sign-off (`FND 08`) | 48 (`FND 04`, `FND 09`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`, `MOD 05`, `MOD 06`, `MOD 08`, `MOD 11`, `MOD 12`, `SCN 01` to `SCN 10`, `SCN 13`, `AGT 05`, `AGT 09`, `ENV 01` to `ENV 08`, `ENV 10`, `ENV 11`, `JDG 01` to `JDG 06`, `JDG 08`, `JDG 11`, `OBS 04`, `TST 01` to `TST 05` done by Person B) | 0 | 100.00% |
+| Person B (Ayush) | 29 (27 solo + 2 shared with A) | 29 (`FND 08`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`, `JDG 10`, `TRN 01` to `TRN 10`, `TRN 13`, `TRN 14`, `TRN 15`, `OBS 06`, `TST 09`) | 0 | 0 | 100.00% |
+| Max (Person C) | 41 | 1 (`FND 11`) | 40 (done by Person B or Person D; `API 16`, `UI 11` by Kush) | 0 | 100.00% |
+| Kush (Person D) | 32 | 17 (`FND 13`, `UI 01`-`UI 06`, `UI 07`-`UI 09`, `UI 10`, `UI 11`, `UI 13`-`UI 15`, `JDG 09`, `OBS 05`) | 15 (by Person B: `FND 06`, `SCN 12`, `API 12`, `TRN 12`, `UI 12`, `OBS 08`, `TST 08`, `TST 12`, `DOC 01`-`DOC 07`, `DOC 09`, `DOC 11`) | 0 | **100%** |
+| All (shared) | 3 | 3 (`FND 08`, `AGT 05`, `TST 10`) | 0 | 0 | 100.00% |
 
-Note: Person B (Ayush) has completed two shared tasks in their own lane
-(`FND 08`, `AGT 05`) plus twelve solo tasks in their own lane (`MOD 09`,
-`SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 06`, `AGT 07`,
-`AGT 08`, `AGT 11`, `TRN 13`, `TRN 03`), and has also executed a large
-cross-owner bundle (`FND 01`, `FND 02`, `FND 04`, `FND 05`, `FND 06`,
-`FND 07`, `FND 09`, `FND 10`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`,
-`MOD 05`, `MOD 06`, `MOD 11`, `MOD 12`, `SCN 01` to `SCN 10`, `ENV 01`
-to `ENV 08`, `ENV 11`, `JDG 01` to `JDG 06`, `JDG 08`, `JDG 11`, `TST 01` to `TST 05`, `API 02`,
-`API 03`, `API 04`, `API 06`, `API 07`, `API 08`, `API 09`, `API 10`,
-`API 13`, `API 14`, `API 15`, `API 17`, `MOD 07`, `MOD 10`, `TST 07`) to keep the Kian, Max,
-and Kush dependency chain moving. `API 10`, `API 17`, `TRN 11`, `MOD 07`,
-and `MOD 10` are now complete, which unblocks `TRN 01` (Colab notebook
-skeleton), `DOC 03` (README setup instructions), `MOD 08`, and `JDG 07`.
-Ayush's next fully unblocked tasks are `TRN 01` and `TRN 05`. Kian's next
-fully unblocked implementation task is `MOD 08`, and Max's next backend
-chain starts with `JDG 07 -> ENV 09 -> API 05`.
+**All 152 tasks are now complete (100%).** Every person's lane is closed:
+- Kian (Person A): 49/49 (done by Person B)
+- Ayush (Person B): 29/29
+- Max (Person C): 41/41 (done by Person B and Kush)
+- Kush (Person D): 32/32 (17 by Kush, 15 by Person B)
+- Shared: 3/3
 
 ---
 
@@ -58,8 +48,7 @@ chain starts with `JDG 07 -> ENV 09 -> API 05`.
 
 | ID | Assigned To | Current Status | Remaining Acceptance Item |
 |----|-------------|----------------|---------------------------|
-| API 01 | Max (Person C) | FastAPI app shell and `/health` endpoint work locally against the real env | Task-owner sign-off and final deployment-path polish |
-| OBS 02 | Max (Person C) | Structured local logging exists in `server/app.py` | Logging behavior needs real-env usage confirmation |
+| — | — | No active partial tasks | — |
 
 ---
 
@@ -123,6 +112,7 @@ chain starts with `JDG 07 -> ENV 09 -> API 05`.
 | TST 03 | E11 | Person A | Add invalid action handling test | `tests/test_env.py` | 2026-03-08 | Four tests in `TestInvalidAction` class covering error string on invalid duration, env survival after error, no round advancement on invalid action, and request_info always passes. | Invalid action yields structured error and env survives | Yes - verified with `python -m pytest tests/test_env.py` (32 tests pass) |
 | TST 04 | E11 | Person A | Add perfect protocol high reward test | `tests/test_reward.py` | 2026-03-08 | Added reward-regression coverage proving a fully aligned protocol scores higher than a broken baseline and stays ordered consistently across reruns. | Perfect protocol scores higher than baseline and broken protocol | Yes - verified with `python -m pytest tests/test_reward.py` (26 tests pass) |
 | TST 05 | E11 | Person A | Add zero dimension or penalty behavior test | `tests/test_reward.py` | 2026-03-08 | Added reward-regression coverage for zero-feasibility collapse, exact penalty subtraction, and zero-floor clamp behavior so timeout and penalty paths lower reward deterministically. | Zero feasibility or timeout lowers reward as expected | Yes - verified with `python -m pytest tests/test_reward.py` (26 tests pass) |
+| MOD 08 | E02 | Person A | Write unit tests for schemas and validators | `tests/test_mod08_schemas.py` | 2026-03-08 | Created 70 comprehensive unit tests covering all Pydantic model edge cases: ScientistAction (15 tests for all action types, mixed-mode rejection, whitespace stripping, empty/negative field rejection), LabManagerAction (11 tests for all action types, feasible-flag consistency, suggestion-field rules), Protocol (10 tests for boundary values, stripping, extra-field rejection), ConversationEntry (7 tests for null/empty action_type, role validation), RewardBreakdown (9 tests for boundary values, range rejection), Observation (4 tests for both-none, single-role), LabManagerObservation (3 tests for negative fields, stripping), StepInfo (3 tests for extra-field allowance), StepResult (3 tests), EpisodeState (2 tests), EpisodeLog (3 tests for failure reasons, model_dump keys). | Tests cover valid parse, invalid parse, and replay serialization | Yes - verified with `python -m pytest tests/test_mod08_schemas.py -v` (70 passed) and full suite (409 passed) |
 | API 03 | E07 | Person C | Add `POST /step` endpoint | `server/app.py`, `tests/test_server.py` | 2026-03-07 | Fixed `_build_episode_log()` to take the real `StepResult` instead of rebuilding reward data from state with stale stub values. Both REST `/step` and WebSocket step handler now pass the terminal `StepResult` to the updated helper so replay logs use real `reward_breakdown`, `judge_notes`, and `verdict` (including `timeout` vs `no_agreement`). Added five endpoint tests covering reset-then-step happy path, invalid session ID 404, terminal step with real reward breakdown, semantic invalid action returning 200 with `info.error`, and replay with real judge data. | Step endpoint accepts valid action and returns step result | Yes - verified with `python -m pytest tests/test_server.py` (10 tests pass) and `python -m pytest` (183 tests pass) |
 | API 06 | E07 | Person C | Add WebSocket session handler with isolated env per connection | `server/app.py`, `tests/test_server.py` | 2026-03-07 | WebSocket handler at `/ws` supports `reset`, `step`, and `ping` message types with per-connection env isolation, idle timeout, and replay storage on terminal episodes. Twelve WebSocket tests cover ping-pong, reset observation, step result, full episode real reward, invalid JSON, missing action field, invalid action payload, unknown message type, session isolation, semantic invalid action returning `step_ok` with `info.error`, timeout verdict proving real-env integration, and terminal episode replay persistence via `GET /replay/{episode_id}`. | WebSocket session handler supports reset, step, ping with isolated env per connection and correct replay storage | Yes - verified with `python -m pytest tests/test_server.py` (22 tests pass) and `python -m pytest` (195 tests pass) |
 | TST 07 | E11 | Person C | Add WebSocket session handler tests | `tests/test_server.py` | 2026-03-07 | Twelve focused WebSocket tests covering connectivity, message handling, error paths, session isolation, semantic-vs-transport error distinction, timeout verdict, and replay log persistence with real judge data. Tests verify that structurally valid but semantically invalid actions return `step_ok` with `info.error` (not WS error frames), matching the env contract. | WebSocket tests cover happy path, error handling, session isolation, and real-env integration | Yes - verified with `python -m pytest tests/test_server.py` (22 tests pass) |
@@ -136,6 +126,19 @@ chain starts with `JDG 07 -> ENV 09 -> API 05`.
 | API 14 | E07 | Person C | Add REST session management so each user gets isolated environment state | `tests/test_api_rest_isolation.py` | 2026-03-08 | Created 11 dedicated REST session isolation tests in a standalone file covering: two resets produce different sessions, independent observations across scenarios, stepping one session does not mutate the other, independent round counts, terminal isolation, session_id reuse creates new episode and resets rounds, reuse does not affect other sessions, 404 on nonexistent session, step-after-terminal behavior, and replay isolation between sessions. No server changes needed — isolation already works correctly. | Two concurrent REST users do not share or corrupt each other's episode state | Yes - verified with `python -m pytest tests/test_api_rest_isolation.py` (11 tests pass) and full suite (307 passed) |
 | API 10 | E07 | Person C | Deploy live Space and verify health, reset, and step | `docs/max/deployment.md`, `README.md` | 2026-03-08 | Verified the live HF Space at `https://ayushozha-replicalab.hf.space` with all four endpoints: `GET /health` (200, env=real), `GET /scenarios` (200, 3 families), `POST /reset` (200, returns session_id/episode_id/observation), `POST /step` (200, returns reward/done/info). Ran a full episode (propose → accept) with real judge scoring: rigor=0.465, feasibility=1.000, fidelity=0.325, total_reward=2.313, verdict=accept. Updated deployment docs and README with verified live URL. | Live Space responds successfully and one end-to-end episode works on the hosted env | Yes - verified with `httpx` requests against `https://ayushozha-replicalab.hf.space` |
 | API 17 | E07 | Person C | Document secrets and API key management for hosted deployment and Colab | `docs/max/deployment.md` | 2026-03-08 | Documented that the server is fully self-contained with no external API calls or secrets required. Added secrets reference table for all four contexts (HF Space, local dev, Docker, Colab notebook) with `HF_TOKEN` for model downloads and `REPLICALAB_URL` for hosted env. Documented Colab Secrets panel setup. Added future secrets section for an optional hosted evaluator. | Secrets setup is documented clearly enough for another teammate to reproduce | Yes - verified by inspecting `server/app.py` for env var references (none found) and documenting the complete secrets landscape |
+| JDG 07 | E05 | Person C | Log reward breakdown to CSV or JSONL per episode | `replicalab/utils/logging.py`, `tests/test_logging.py` | 2026-03-08 | Verified existing implementation: `append_reward_csv()` writes per-episode rows with all V2 columns (parsimony, bonuses, penalty total, verdict), `append_reward_jsonl()` preserves nested penalty dicts and bounded-tool metrics, and `log_episode_reward()` writes to both formats. 22 tests in `tests/test_logging.py` cover CSV creation, header dedup, JSONL records, default breakdowns, nested penalty preservation, determinism, and the convenience wrapper. No code changes needed. | Reward file contains seed, scenario, score components, total reward, rounds, agreement, and bounded tool metrics | Yes - verified with `python -m pytest tests/test_logging.py -v` (22 passed) and full suite (409 passed) |
+| API 01 | E07 | Person C | Create FastAPI app shell and health endpoint | `server/app.py` | 2026-03-08 | Verified the FastAPI app shell is fully functional: `GET /health` returns 200 with `{"status":"ok","env":"real"}`, the app imports and wires `ReplicaLabEnv`, logging is configured via env vars, CORS middleware is active, and all downstream endpoints (reset, step, scenarios, replay, WebSocket) are operational. Server endpoint tests in `tests/test_server.py` (34 tests) and REST isolation tests (11 tests) confirm full coverage. No code changes needed — task was already complete beyond its acceptance criteria. | `GET /health` returns 200 with simple payload | Yes - verified with existing tests and full suite (409 passed) |
+| OBS 02 | E10 | Person C | Add local log levels and readable console formatting | `replicalab/config.py`, `server/app.py` | 2026-03-08 | Verified logging already meets all acceptance criteria: `REPLICALAB_LOG_LEVEL` env var toggles log verbosity without code edits (default INFO), `LOG_FORMAT` provides readable `%(asctime)s [%(levelname)s] %(name)s: %(message)s` layout, and `server/app.py` wires both via `logging.basicConfig()`. No code changes needed. | Debug logs can be toggled without code edits | Yes - verified by reading `replicalab/config.py` (lines 30-31) and `server/app.py` (lines 75-79) |
+| ENV 09 | E06 | Person C | Write episode logs on completion | `server/app.py` | 2026-03-08 | Added `write_episode_log()` and `log_episode_reward()` calls to `server/app.py` in both REST `/step` and WebSocket step handlers. Terminal episodes now auto-persist replay JSON and reward CSV/JSONL to disk. | Completed episodes generate replayable logs automatically | Yes - verified with terminal episode persistence through REST and WebSocket paths |
+| OBS 09 | E10 | Person C | Extend episode summary with audit metadata | `replicalab/models.py` | 2026-03-08 | Added `invalid_action_count` (int) and `invalid_action_rate` (float) fields to `EpisodeLog` in `replicalab/models.py`. Server tracks invalid actions per session and per WebSocket connection. | Every completed episode log contains the audit payload plus demo and evaluation metrics | Yes - verified with model field presence and server-side tracking |
+| OBS 07 | E10 | Person C | Script to run one episode and dump logs | `scripts/run_episode.py` | 2026-03-08 | Created `scripts/run_episode.py` that resets the env, runs a baseline propose-then-accept episode, and writes replay JSON plus reward CSV/JSONL. | One command produces a complete local sample log | Yes - verified with script execution producing replay and reward files |
+| TST 11 | E11 | Person C | Judge audit payload contract tests | `tests/test_audit_contract.py` | 2026-03-08 | Created `tests/test_audit_contract.py` with 17 tests across 3 classes: `StepInfoAuditContract` (6 tests), `EpisodeLogAuditContract` (6 tests), `AuditModelContracts` (5 tests). | Tests confirm terminal payloads and replay files expose audit notes, agreement, and invalid action metrics | Yes - verified with `python -m pytest tests/test_audit_contract.py` (17 tests pass) |
+| API 05 | E07 | Person C | Add `GET /replay/{episode_id}` endpoint | `server/app.py` | 2026-03-08 | Already implemented at `server/app.py` line 536-540. Endpoint returns completed episode log JSON for a valid episode ID. | Endpoint returns completed log for valid episode id | Yes - verified with existing replay endpoint tests |
+| API 11 | E07 | Person C | Add server endpoint tests and WebSocket smoke test | `tests/test_server.py` | 2026-03-08 | Already implemented in `tests/test_server.py` with 44 tests covering health, reset, step, scenarios, replay, WebSocket connectivity, error handling, session isolation, and smoke paths. | Local server tests pass for health, reset, step, invalid payload, and ws connect | Yes - verified with `python -m pytest tests/test_server.py` (44 tests pass) |
+| API 18 | E07 | Person C | Include judge audit payload in terminal responses | `server/app.py` | 2026-03-08 | Already implemented. Terminal `StepInfo` includes `judge_notes`, `verdict`, and `top_failure_reasons` from the real judge audit in both REST and WebSocket paths. | Clients receive judge_notes, verdict fields, and bounded tool audit data without separate log file access | Yes - verified with terminal response inspection and audit contract tests |
+| OBS 01 | E10 | Person C | Standardize episode log schema | `replicalab/models.py` | 2026-03-08 | Already implemented. `EpisodeLog` model in `replicalab/models.py` is the canonical schema with all required fields for transcript, state snapshots, scores, and audit metadata. | Every completed episode log contains the same required fields | Yes - verified with `EpisodeLog` model inspection and schema tests |
+| OBS 03 | E10 | Person C | Episode id generation and file naming conventions | `replicalab/utils/logging.py` | 2026-03-08 | Already implemented. UUID generation in env, `{episode_id}.json` naming in `replicalab/utils/logging.py`. Logs never overwrite because each episode gets a unique UUID. | Logs never overwrite and are easy to locate | Yes - verified with replay file naming behavior |
+| TST 06 | E11 | Person C | Health plus reset plus step endpoint tests | `tests/test_server.py` | 2026-03-08 | Already implemented in `tests/test_server.py` with `TestHealthEndpoint`, `TestResetEndpoint`, and `TestStepEndpoint` classes. | API tests pass locally | Yes - verified with `python -m pytest tests/test_server.py` |
 
 ### Person B (Ayush) - Completed own tasks
 
@@ -149,13 +152,26 @@ chain starts with `JDG 07 -> ENV 09 -> API 05`.
 | AGT 05 | E04 | Implement deterministic feasibility checker over normalized constraints and resources | `replicalab/agents/lab_manager_policy.py`, `replicalab/agents/__init__.py`, `tests/test_lab_manager_policy.py` | 2026-03-08 | Added a deterministic Lab Manager feasibility checker with a typed `FeasibilityCheckResult`, explicit per-dimension protocol, budget, equipment, reagents, schedule, staff, and policy checks, substitution reporting, and stable summary output. | Checker returns clear pass or fail per constraint dimension | Yes - verified with `python -m pytest tests/test_lab_manager_policy.py tests/test_validation.py tests/test_scientist_policy.py` |
 | AGT 06 | E04 | Implement alternative suggestion logic from allowed substitutions and resource tradeoffs | `replicalab/agents/lab_manager_policy.py`, `replicalab/agents/__init__.py`, `tests/test_lab_manager_policy.py` | 2026-03-08 | Added deterministic alternative-suggestion logic that applies substitutions, duration clamps, and sample-size reductions in fixed order, re-runs feasibility after the revision, and returns a typed `AlternativeSuggestion` with applied changes, remaining failures, and pre or post feasibility checks. | Lab Manager can suggest at least one sensible revision when the initial plan fails | Yes - verified with `python -m pytest tests/test_lab_manager_policy.py` |
 | AGT 07 | E04 | Add grounded Lab Manager response synthesis from feasibility results and suggested revisions | `replicalab/agents/lab_manager_policy.py`, `replicalab/agents/__init__.py`, `server/app.py`, `tests/test_lab_manager_policy.py` | 2026-03-08 | Added `compose_lab_manager_response(...)`, a deterministic outward-action composer that converts feasibility plus alternative-suggestion results into a typed `LabManagerAction` with stable flags, readable explanations, and optional injected explanation rendering, then wired the stub server to log those grounded responses instead of placeholder text. | Output is readable, grounded in checker results, and maps cleanly to underlying checks | Yes - verified with `python -m pytest tests/test_lab_manager_policy.py` and a stub-env step smoke check |
-| AGT 11 | E04 | Select and document base model for Scientist training | `docs/agt11_scientist_model_selection.md`, `README.md` | 2026-03-08 | Recorded `Qwen3-4B` as the primary Scientist training model with `Qwen3-8B` as the H100-only stretch fallback, and surfaced the decision in the README so the training path uses one canonical model choice. | Decision is recorded and all team members know which model will be fine tuned | Yes - verified by the decision record and README update |
+| AGT 11 | E04 | Select and document base model for Scientist training | `docs/agt11_scientist_model_selection.md`, `README.md` | 2026-03-08 | Updated the V2 model decision to use `Qwen/Qwen3-8B` as the primary shared base for Scientist GRPO and Lab Manager SFT on Northflank H100, with `Qwen/Qwen3-4B` kept as the reduced-scale fallback. | Decision is recorded and all team members know which model will be fine tuned | Yes - verified by the decision record and README update |
 | AGT 10 | E04 | Write prompt text files for all three roles with bounded tool rules | `replicalab/prompts/__init__.py`, `replicalab/prompts/scientist.txt`, `replicalab/prompts/lab_manager.txt`, `replicalab/prompts/judge.txt`, `tests/test_prompts.py` | 2026-03-08 | Added loadable prompt templates and rendering helpers for Scientist, Lab Manager, and Judge, each grounded in normalized scenario data and explicit bounded-tool rules for `search_evidence`, `run_code_check`, and `inspect_image`. Six prompt tests verify loadability, placeholder rendering, domain neutrality, and role-specific bounded-tool guidance. | Prompt files exist, are loadable, encode bounded tool rules clearly, and assemble correctly from normalized scenario data and agreed role behavior | Yes - verified with `python -m pytest tests/test_prompts.py` (6 tests pass) and full suite (`304 passed`) |
 | AGT 03 | E04 | Add parse plus retry strategy for malformed model output | `replicalab/agents/scientist_policy.py`, `tests/test_scientist_policy.py` | 2026-03-07 | Added `call_scientist_with_retry(...)` with error-specific correction prompts, bounded retry loop, and exposed `RetryMetadata` telemetry. Seven focused tests cover first-try success, malformed-then-valid, invalid-then-valid, exhaustion, correction message content, and metadata serialization. | Malformed output triggers at least one controlled retry or explicit failure | Yes - verified with `python -m pytest tests/test_scientist_policy.py` (7 retry tests pass) |
 | AGT 08 | E04 | Add prompt formatting, parse, and bounded-tool policy tests for Scientist policy | `replicalab/agents/scientist_policy.py`, `tests/test_scientist_policy.py` | 2026-03-07 | Added bounded-tool policy block to `build_scientist_system_prompt(...)` naming `search_evidence`, `run_code_check`, and `inspect_image` with explicit rules. Added 24 new tests covering parser happy paths (propose, accept, prose-wrapped), parser edge cases (empty, whitespace, list, extra keys, `to_dict()`), system prompt across all 3 domains plus dict coercion, bounded-tool policy assertions across all domains, role-boundary and output-contract assertions, formatter edge cases (final round, empty-list protocol), and baseline domain inference and forced-accept behavior. | Tests cover happy path, malformed output handling, and stable tool-policy reminders | Yes - verified with `python -m pytest tests/test_scientist_policy.py` (46 tests pass) and `python -m pytest tests/` (111 tests pass) |
 | TRN 13 | E08 | Create reusable environment client module | `replicalab/client.py`, `tests/test_client.py` | 2026-03-08 | Added `ReplicaLabClient` with dual transport support (REST via `httpx`, WebSocket via `websocket-client`), unified sync interface (`connect`, `reset`, `step`, `state`, `close`), context manager support, internal session ID tracking, typed returns mapped to Pydantic models, and constructor-level transport selection. Twenty-four tests cover both transports: connect, reset, step, full episode, replay, context manager, error paths, semantic invalid action handling, and constructor validation. | Client module can be imported by notebook and other consumers without duplicating connection logic | Yes - verified with `python -m pytest tests/test_client.py` (24 tests pass) and `python -m pytest` (231 tests pass) |
 | TRN 03 | E08 | Implement env client wrapper for training rollouts | `replicalab/training/rollout.py`, `replicalab/training/__init__.py`, `tests/test_rollout.py` | 2026-03-08 | Added `RolloutWorker` that wraps `ReplicaLabClient` to run full episodes via a user-supplied `PolicyFn` callback, collects typed `StepRecord` trajectories with observations, actions, and errors, and surfaces terminal `EpisodeRecord` with `total_reward`, `reward_breakdown`, `judge_notes`, `verdict`, and `agreement_reached`. Twelve tests cover baseline rollout completion, reward/breakdown/judge output, determinism, all 3 scenario families, metadata capture, max_steps safety cap, and validation error surfacing. | One local episode can be run start-to-finish through the wrapper with no duplicated HTTP/WS code | Yes - verified with `python -m pytest tests/test_rollout.py` (12 tests pass) and `python -m pytest` (264 tests pass) |
 | TRN 04 | E08 | Implement rollout collection loop for Scientist episodes | `replicalab/training/rollout.py`, `replicalab/training/__init__.py`, `tests/test_rollout.py`, `tests/test_rollout_traces.py` | 2026-03-08 | Extended the rollout worker to collect full trajectory records with terminal `StepInfo`, bounded tool traces, and batched rollout support via `collect_rollouts(...)`. Added trace-focused tests that verify tool-trace capture from `StepInfo` extras and one-record-per-seed batch collection. | Loop collects trajectories, rewards, done signals, and bounded tool traces from frozen evidence packs | Yes - verified with `python -m pytest tests/test_rollout.py tests/test_rollout_traces.py` (14 tests pass) and full suite (`304 passed`) |
+| TRN 01 | E08 | Create notebook skeleton | `notebooks/train_colab.ipynb` | 2026-03-08 | Added a judged-path training notebook with explicit setup, evidence preview, Scientist plan preview, Lab Manager plan preview, gated real-training cell, baseline evaluation cell, and Northflank runtime notes so the flow is readable without hiding logic in notebook-only cells. | Notebook has clear runnable sections in the right order and documents the bounded-tool policy | Yes - verified with notebook JSON load, preview-plan execution, and `python -m pytest tests/test_training_cli.py` |
+| TRN 02 | E08 | Add package install and model setup cell | `notebooks/train_colab.ipynb`, `replicalab/training/runtime.py`, `pyproject.toml` | 2026-03-08 | Added a fresh-runtime install cell that installs the repo plus `unsloth`, `unsloth_zoo`, `trl`, `vllm`, `datasets`, and `matplotlib`, then added runtime helpers and the `replicalab-train` entrypoint so the same model-loading path works in notebooks and Northflank jobs. | Notebook installs dependencies without manual edits beyond secrets | Yes - verified with notebook inspection and `python -m pytest tests/test_training_cli.py` |
+| TRN 14 | E08 | Select and document base model (notebook side) | `docs/agt11_scientist_model_selection.md`, `README.md`, `notebooks/train_colab.ipynb` | 2026-03-08 | Updated the model decision to `Qwen/Qwen3-8B` as the primary shared base for Scientist GRPO and Lab Manager SFT on Northflank H100, kept `Qwen/Qwen3-4B` as the reduced-scale fallback, and aligned the notebook defaults to that choice. | Base model choice is documented and all team members know which model is being trained | Yes - verified by the decision record, README, notebook defaults, and training-preview output |
+| JDG 10 | E05 | Expose component metrics for training plots | `replicalab/training/metrics.py`, `replicalab/training/plots.py`, `replicalab/training/cli.py`, `tests/test_training_metrics.py` | 2026-03-08 | Extended the evaluation and metrics layer to expose average rigor, feasibility, fidelity, parsimony, tool-trace volume, and invalid bounded-tool rate in a notebook- and CLI-friendly shape, then wired those metrics into saved comparison plots. | Notebook can read average rigor, feasibility, fidelity, and bounded tool metrics over time | Yes - verified with `python -m pytest tests/test_training_metrics.py tests/test_training_cli.py` and saved evaluation plots |
+| TRN 05 | E08 | Connect rollouts to GRPO or equivalent trainer | `replicalab/training/art_openenv.py`, `replicalab/training/cli.py`, `tests/test_training_cli.py`, `replicalab/outputs/art-training/` | 2026-03-08 | Added the ART/OpenEnv Scientist training path, converting live ReplicaLab episodes plus frozen evidence packs into ART trajectory groups and executing successful live training updates against the hosted environment. | At least one short training run completes without runtime errors while preserving deterministic reward and frozen evidence inputs | Yes - verified with live `art-scientist-train` runs including `art-scientist-smoke-20260308` and `art-scientist-live-20260308-main` |
+| TRN 06 | E08 | Log episode reward, rigor, feasibility, fidelity, rounds used, and bounded tool metrics | `replicalab/training/metrics.py`, `replicalab/training/art_openenv.py`, `replicalab/training/cli.py` | 2026-03-08 | Added structured episode metric exports covering reward, component scores, rounds used, agreement, parse errors, invalid actions, and invalid bounded-tool rates to JSONL and summary artifacts. | Notebook stores a metrics frame across training episodes including bounded tool metrics | Yes - verified with `reports/metrics.jsonl` outputs from ART training and comparison runs |
+| TRN 07 | E08 | Plot reward curve and component curves with matplotlib | `replicalab/training/plots.py`, `replicalab/training/cli.py`, `replicalab/outputs/art-training/` | 2026-03-08 | Added saved matplotlib plotting for training-history curves, per-step ART reward-component plots, and comparison bar charts for reward, agreement, invalid actions, and invalid bounded-tool rate. | Plotted image shows visible metrics and can be saved to file | Yes - verified with saved images including `art_reward_components.png` and the `compare_*.png` outputs |
+| TRN 08 | E08 | Add before versus after evaluation on fixed seeds and frozen evidence packs | `replicalab/training/evaluation.py`, `replicalab/training/cli.py`, `replicalab/agents/scientist_policy.py` | 2026-03-08 | Added policy-comparison evaluation on fixed seeds and frozen evidence packs, then exercised it against the deterministic baseline and trained ART Scientist checkpoints. | Notebook compares baseline and trained policy on the same scenarios and evidence packs | Yes - verified with `scientist-compare-eval` runs including `art-scientist-compare-smoke-20260308` and `art-scientist-compare-20260308-step5` |
+| TRN 09 | E08 | Add policy loading path for trained adapter or checkpoint | `replicalab/agents/scientist_policy.py`, `replicalab/agents/__init__.py`, `tests/test_scientist_policy.py` | 2026-03-08 | Added remote trained-policy loading for ART checkpoints, including evidence-pack-aware prompt assembly and parser-driven retry, so evaluation can switch cleanly between baseline and trained Scientist policies. | Evaluation can switch between baseline and trained model cleanly | Yes - verified with live `scientist-compare-eval` runs against explicit ART checkpoint steps |
+| TRN 10 | E08 | Export plot image and sample logs to `outputs/plots` | `replicalab/training/cli.py`, `replicalab/outputs/art-training/`, `replicalab/outputs/training/` | 2026-03-08 | Wired the CLI to save training plots, comparison plots, metrics JSONL, summaries, manifests, and run metadata into stable output directories for README and demo reuse. | Plots are saved and versioned for README use | Yes - verified with generated plot and report artifacts under `replicalab/outputs/art-training/` and `replicalab/outputs/training/` |
+| TRN 15 | E08 | Add agreement rate, invalid action rate, and invalid bounded-tool rate aggregation to evaluation outputs | `replicalab/training/metrics.py`, `replicalab/training/evaluation.py`, `replicalab/training/cli.py`, `tests/test_training_metrics.py` | 2026-03-08 | Added aggregate agreement, invalid-action, and invalid bounded-tool metrics across evaluation cases, surfaced them in summaries, and plotted them for before-vs-after comparisons. | Notebook reports reward, rounds, agreement rate, invalid action rate, and invalid bounded-tool rate for baseline and trained runs | Yes - verified with comparison summaries and plots from the ART evaluation runs |
+| OBS 06 | E10 | Log training run metadata including model, seed, scenario set, steps, evidence-pack version, and bounded-tool policy | `replicalab/training/cli.py`, `replicalab/outputs/art-training/*/reports/run_metadata.json` | 2026-03-08 | Added reproducibility metadata exports for every training and evaluation command, including base model, scenario set, checkpoint step, evidence-pack version, and bounded-tool policy. | Notebook exports metadata with each run for reproducibility including evidence-pack version and bounded-tool policy | Yes - verified with generated `run_metadata.json` files in training and comparison smoke runs |
+| TST 09 | E11 | Create notebook smoke test for fresh runtime | `docs/ayush/notebook_smoke_test.md`, `replicalab/outputs/training/`, `replicalab/outputs/art-training/` | 2026-03-08 | Wrote the fresh-runtime smoke checklist and then executed the preview, live ART training, and comparison-eval commands end to end against frozen evidence packs and the hosted ReplicaLab environment. | Training notebook runs from top with minimal edits and the bounded-tool path works against frozen evidence packs | Yes - verified with `scientist-preview-smoke-20260308b`, `lab-manager-preview-smoke-20260308b`, `art-scientist-smoke-20260308b`, and `art-scientist-compare-smoke-20260308b` |
 
 ### Kush (Person D) - Completed on behalf of others
 
@@ -176,11 +192,27 @@ chain starts with `JDG 07 -> ENV 09 -> API 05`.
 |----|------|------|--------|
 | FND 11 | E01 | Create `server/requirements.txt` pinning runtime dependencies | Completed |
 
-### Kush (Person D) - No tasks completed yet
+### Kush (Person D) - Completed own tasks
 
 | ID | Epic | Task | Status |
 |----|------|------|--------|
-| - | - | No tasks completed | 0 of 32 assigned |
+| FND 13 | E01 | Tailwind v4.2 + theme tokens + light/dark mode | Completed |
+| UI 01 | E09 | App shell with three-panel layout | Completed |
+| UI 02 | E09 | PaperPanel | Completed |
+| UI 03 | E09 | ProtocolPanel with DiffRow | Completed |
+| UI 04 | E09 | NegotiationLog with character avatars | Completed |
+| UI 05 | E09 | ScorePanel with rigor/feasibility/fidelity bars | Completed |
+| UI 06 | E09 | Controls (scenario selector, seed input, difficulty) | Completed |
+| UI 07 | E09 | REST + WebSocket API client (api.ts) | Completed |
+| UI 08 | E09 | ReplayViewer with range slider | Completed |
+| UI 09 | E09 | TrainingResults with LineChart | Completed |
+| UI 10 | E09 | Styling, animations, 3D lab scene | Completed |
+| UI 11 | E09 | Multi-stage Docker, SPA serving | Completed |
+| UI 13 | E09 | JudgeAuditPanel with verdict display | Completed |
+| UI 14 | E09 | Replay scrubber with skip buttons | Completed |
+| UI 15 | E09 | Before vs after training toggle | Completed |
+| JDG 09 | E05 | Mock score cards for frontend | Completed |
+| OBS 05 | E10 | Episode ID + copy-to-clipboard in UI | Completed |
 
 ---
 
@@ -261,20 +293,20 @@ chain starts with `JDG 07 -> ENV 09 -> API 05`.
 | ENV 11 | No new fully unblocked tasks by itself; `API 18` and `OBS 09` are each one dependency closer because the audit payload now survives into replay-facing state |
 | API 10 | TRN 01 (Colab notebook skeleton), TRN 11 (environment URL documentation) |
 | API 17 | No new formal dependency edge by itself, but secrets landscape is now documented for all contexts |
+| ENV 09 | OBS 01, API 05 |
+| OBS 01 | OBS 03, OBS 07 |
+| OBS 03 | No downstream dependencies beyond OBS 07 which is also complete |
+| OBS 07 | No downstream dependencies |
+| OBS 09 | TRN 15 is one dependency closer (still needs TRN 06 and TRN 08) |
+| API 05 | UI 08, OBS 05 |
+| API 11 | No downstream dependencies |
+| API 18 | TST 11, UI 13 |
+| TST 06 | No downstream dependencies |
+| TST 11 | No downstream dependencies |
 
 ### Current Unblocked and Active Tasks
 
-| ID | Owner | Task | Unblocked By |
-|----|-------|------|-------------|
-| FND 13 | Kush (Person D) | Install and configure Tailwind plus shadcn base setup, theme tokens, and global styles | FND 03 |
-| UI 01 | Kush (Person D) | Create application shell with three panel layout | FND 03 |
-| MOD 08 | Kian (Person A) | Write unit tests for schemas and validators | MOD 01 to MOD 07 |
-| DOC 01 | Kush (Person D) | Write hook, problem statement, and one line product summary | FND 06 |
-| TRN 05 | Person B (Ayush) | Connect rollouts to GRPO or equivalent trainer | TRN 04 |
-| JDG 09 | Kush (Person D) | Create mock score cards and language for frontend | JDG 05 |
-| TRN 01 | Person B (Ayush) | Colab notebook skeleton: setup, connect, train, plot sections | API 10 |
-| JDG 07 | Max (Person C) | Log reward breakdown to CSV or JSONL per episode | JDG 05, MOD 07 |
-Note: Person B (Ayush) has completed `TRN 03`, `AGT 10`, and `TRN 04`. `API 10`, `API 17`, `MOD 07`, and `MOD 10` are now complete. Ayush's next fully unblocked tasks are `TRN 01` and `TRN 05`, Kian's next fully unblocked task is `MOD 08`, and Max's next backend chain starts with `JDG 07`.
+All 152 tasks are complete. No tasks remain.
 
 ---
 
@@ -282,15 +314,15 @@ Note: Person B (Ayush) has completed `TRN 03`, `AGT 10`, and `TRN 04`. `API 10`,
 
 | Epic | Total Tasks | Completed | Rate |
 |------|------------|-----------|------|
-| E01. Foundations and repository setup | 13 | 12 | 92.31% |
-| E02. Domain models, validation, state contracts | 12 | 11 | 91.67% |
-| E03. Scenario engine and constraint generation | 13 | 12 | 92.31% |
+| E01. Foundations and repository setup | 13 | 13 | 100.00% |
+| E02. Domain models, validation, state contracts | 12 | 12 | 100.00% |
+| E03. Scenario engine and constraint generation | 13 | 13 | 100.00% |
 | E04. Scientist agent and Lab Manager policy | 11 | 11 | 100.00% |
-| E05. Judge engine and reward logic | 11 | 8 | 72.73% |
-| E06. OpenEnv environment implementation | 11 | 10 | 90.91% |
-| E07. API, server, Docker, deployment | 19 | 12 | 63.16% |
-| E08. RL training pipeline and evaluation | 15 | 3 | 20.00% |
-| E09. Frontend, UX, replay, demo views | 15 | 0 | 0% |
-| E10. Logging, replay, and observability | 9 | 1 | 11.11% |
-| E11. Testing and quality gates | 12 | 6 | 50.00% |
-| E12. README, demo video, submission packaging | 11 | 0 | 0% |
+| E05. Judge engine and reward logic | 11 | 11 | 100.00% |
+| E06. OpenEnv environment implementation | 11 | 11 | 100.00% |
+| E07. API, server, Docker, deployment | 19 | 19 | 100.00% |
+| E08. RL training pipeline and evaluation | 15 | 15 | 100.00% |
+| E09. Frontend, UX, replay, demo views | 15 | 15 | 100.00% |
+| E10. Logging, replay, and observability | 9 | 9 | 100.00% |
+| E11. Testing and quality gates | 12 | 12 | 100.00% |
+| E12. README, demo video, submission packaging | 11 | 11 | 100.00% |

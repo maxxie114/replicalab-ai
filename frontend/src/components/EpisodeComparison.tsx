@@ -4,7 +4,6 @@ import { GitCompareArrows, Play, Loader2 } from 'lucide-react';
 import type { EpisodeState, ScenarioTemplate, Difficulty } from '@/types';
 import { resetEpisode, stepEpisode, buildDefaultScientistAction, buildAcceptAction } from '@/lib/api';
 import { cn, formatScore, formatReward } from '@/lib/utils';
-import CharacterAvatar from '@/components/CharacterAvatar';
 
 interface ComparisonRun {
   label: string;
@@ -18,9 +17,9 @@ interface ComparisonRun {
 
 export default function EpisodeComparison({ className }: { className?: string }) {
   const [runs, setRuns] = useState<ComparisonRun[]>([
-    { label: 'Run A', seed: 42, difficulty: 'easy', template: 'math_reasoning', state: null, status: 'idle' },
-    { label: 'Run B', seed: 42, difficulty: 'medium', template: 'math_reasoning', state: null, status: 'idle' },
-    { label: 'Run C', seed: 42, difficulty: 'hard', template: 'math_reasoning', state: null, status: 'idle' },
+    { label: 'Math', seed: 42, difficulty: 'medium', template: 'math_reasoning', state: null, status: 'idle' },
+    { label: 'ML', seed: 42, difficulty: 'medium', template: 'ml_benchmark', state: null, status: 'idle' },
+    { label: 'Finance', seed: 42, difficulty: 'medium', template: 'finance_trading', state: null, status: 'idle' },
   ]);
   const [running, setRunning] = useState(false);
 
@@ -66,7 +65,7 @@ export default function EpisodeComparison({ className }: { className?: string })
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GitCompareArrows className="h-5 w-5 text-primary" />
-          <h2 className="text-base font-bold">Episode Comparison</h2>
+          <h2 className="text-base font-bold">Seeded Benchmark Comparison</h2>
         </div>
         <button
           onClick={runAll}
@@ -74,9 +73,12 @@ export default function EpisodeComparison({ className }: { className?: string })
           className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
         >
           {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-          Run All
+          Run Bench
         </button>
       </div>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Compare one seeded case from each domain, or edit the rows below to stress-test the same family across seeds and difficulties.
+      </p>
 
       {/* Config rows */}
       <div className="mb-4 grid grid-cols-3 gap-3">

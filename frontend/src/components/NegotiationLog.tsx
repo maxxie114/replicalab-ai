@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Play, Pencil } from 'lucide-react';
 import type { NegotiationMessage } from '@/types';
 import { cn, roleBgColor, roleLabel } from '@/lib/utils';
 import AnimatedCharacter from '@/components/AnimatedCharacter';
@@ -8,10 +8,21 @@ import TypingText from '@/components/TypingText';
 
 interface NegotiationLogProps {
   messages: NegotiationMessage[];
+  episodeActive?: boolean;
+  disabled?: boolean;
+  onKickoff?: () => void;
+  onOpenEditor?: () => void;
   className?: string;
 }
 
-export default function NegotiationLog({ messages, className }: NegotiationLogProps) {
+export default function NegotiationLog({
+  messages,
+  episodeActive = false,
+  disabled = false,
+  onKickoff,
+  onOpenEditor,
+  className,
+}: NegotiationLogProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,7 +47,31 @@ export default function NegotiationLog({ messages, className }: NegotiationLogPr
               <span className="text-xl font-bold text-muted-foreground/30">VS</span>
               <AnimatedCharacter role="lab_manager" emotion="idle" size="lg" showEmoji={false} showAura={false} />
             </div>
-            <p>Start an episode to see them negotiate</p>
+            <p>
+              {episodeActive
+                ? 'Episode ready. Start the first round to see the negotiation.'
+                : 'Start an episode to see them negotiate.'}
+            </p>
+            {episodeActive && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  onClick={onKickoff}
+                  disabled={disabled || !onKickoff}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                >
+                  <Play className="h-3.5 w-3.5" />
+                  Advance First Round
+                </button>
+                <button
+                  onClick={onOpenEditor}
+                  disabled={disabled || !onOpenEditor}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Open Protocol Editor
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           messages.map((msg, i) => (

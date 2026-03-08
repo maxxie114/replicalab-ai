@@ -6,6 +6,10 @@ import {
   BarChart3,
   Cpu,
   ArrowRight,
+  FileText,
+  MessageSquare,
+  Scale,
+  TrendingUp,
 } from 'lucide-react';
 import TrainingResults from '@/components/TrainingResults';
 import AnimatedCharacter from '@/components/AnimatedCharacter';
@@ -73,6 +77,29 @@ const ROLES = [
   },
 ];
 
+const FLOW = [
+  {
+    title: 'Start From a Paper',
+    description: 'Load a paper or evidence pack, then freeze it into a seeded replication brief.',
+    icon: FileText,
+  },
+  {
+    title: 'Negotiate the Protocol',
+    description: 'Scientist and Lab Manager iterate until the plan is both rigorous and feasible.',
+    icon: MessageSquare,
+  },
+  {
+    title: 'Judge Deterministically',
+    description: 'The final protocol is scored on rigor, feasibility, and fidelity under a fixed rubric.',
+    icon: Scale,
+  },
+  {
+    title: 'Train the Scientist',
+    description: 'The same judged environment feeds Unsloth + TRL training and fixed-seed evaluation.',
+    icon: TrendingUp,
+  },
+];
+
 export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-screen-xl px-4 py-8">
@@ -95,8 +122,8 @@ export default function DashboardPage() {
             Replica<span className="text-primary">Lab</span>
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            A multi-agent ML replication environment where a Scientist and Lab Manager
-            negotiate how to reproduce benchmark results under real compute constraints.
+            Start from a paper, turn it into a constrained replication benchmark, watch the Scientist and
+            Lab Manager negotiate the protocol, then train the Scientist with deterministic reward.
           </p>
 
           {/* Hero character lineup - all three characters */}
@@ -149,19 +176,29 @@ export default function DashboardPage() {
 
           <div className="mt-8 flex items-center justify-center gap-3">
             <Link
-              to="/episode"
+              to="/episode?template=ml_benchmark&difficulty=medium&seed=101&demo=1&autoplay=1"
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 shadow-lg shadow-primary/25"
             >
               <Play className="h-4 w-4" />
-              Run Episode
+              Replicate a Paper
             </Link>
             <a
               href="#training"
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-background/80 backdrop-blur-sm px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               <BarChart3 className="h-4 w-4" />
-              Training Results
+              See Training Flow
             </a>
+          </div>
+
+          <div className="mx-auto mt-8 grid max-w-4xl gap-3 text-left md:grid-cols-4">
+            {FLOW.map((item) => (
+              <div key={item.title} className="rounded-xl border border-border/70 bg-background/75 p-4 backdrop-blur-sm">
+                <item.icon className="mb-3 h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold">{item.title}</h2>
+                <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -234,16 +271,16 @@ export default function DashboardPage() {
 
       {/* Episode Flow */}
       <section className="mb-16">
-        <h2 className="mb-2 text-center text-xl font-semibold">How It Works</h2>
+        <h2 className="mb-2 text-center text-xl font-semibold">Demo Flow</h2>
         <p className="mb-8 text-center text-sm text-muted-foreground">
-          Each episode follows this cycle
+          The live demo should tell one story from source paper to trained agent
         </p>
         <div className="mx-auto flex max-w-3xl flex-col gap-0 md:flex-row md:items-start md:gap-0">
           {[
-            { step: 1, title: 'Reset', desc: 'Generate a paper and lab with constraints' },
-            { step: 2, title: 'Negotiate', desc: 'Scientist and Lab Manager exchange proposals' },
-            { step: 3, title: 'Judge', desc: 'Score the plan on rigor, feasibility, fidelity' },
-            { step: 4, title: 'Learn', desc: 'RL training improves the Scientist over time' },
+            { step: 1, title: 'Source', desc: 'Show the paper and the original experiment that must be replicated.' },
+            { step: 2, title: 'Brief', desc: 'Freeze the paper into a seeded ReplicaLab task with lab constraints.' },
+            { step: 3, title: 'Negotiate', desc: 'Let the Scientist and Lab Manager revise the protocol live.' },
+            { step: 4, title: 'Train', desc: 'Close with the deterministic judge and the minimal Colab training path.' },
           ].map(({ step, title, desc }, i) => (
             <div key={step} className="flex flex-1 flex-col items-center text-center">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20">
@@ -263,10 +300,19 @@ export default function DashboardPage() {
       <section id="training" className="mb-12">
         <h2 className="mb-2 text-center text-xl font-semibold">Training Results</h2>
         <p className="mb-8 text-center text-sm text-muted-foreground">
-          Dr. Elara improves through reinforcement learning
+          The judged episode becomes a reproducible training signal for the Scientist policy
         </p>
         <div className="mx-auto max-w-2xl">
           <TrainingResults />
+        </div>
+        <div className="mt-4 text-center">
+          <Link
+            to="/compare"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            Open the seeded evaluation bench
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
     </div>
