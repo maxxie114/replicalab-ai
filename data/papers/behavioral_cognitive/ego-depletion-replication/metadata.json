@@ -1,0 +1,21 @@
+{
+  "id": 29,
+  "field": "behavioral_cognitive",
+  "scenario_title": "Ego Depletion Replication",
+  "download_folder": "data/papers/behavioral_cognitive/ego-depletion-replication",
+  "requested_paper_title": "Ego Depletion Replication",
+  "downloaded_paper_title": "Commentary: A Multilab Preregistered Replication of the Ego-Depletion Effect",
+  "planned_reference_title": "A Multilab Preregistered Replication of the Ego-Depletion Effect",
+  "match_type": "exact",
+  "query": "A Multilab Preregistered Replication of the Ego-Depletion Effect",
+  "status": "downloaded",
+  "source_url": "https://public-pages-files-2025.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2016.01155/pdf",
+  "manual_url": "https://journals.sagepub.com/doi/pdf/10.1177/1745691616652873",
+  "sha256": "cbd1aacfa540fc6c82bae7a3c557d566f6dc060b0dfe90b6c1188d6d0eb12b24",
+  "bytes": 275057,
+  "candidates_tried": [
+    "https://journals.sagepub.com/doi/pdf/10.1177/1745691616652873",
+    "https://doi.org/10.1177/1745691616652873",
+    "https://www.frontiersin.org/articles/10.3389/fpsyg.2016.01155/pdf"
+  ]
+}

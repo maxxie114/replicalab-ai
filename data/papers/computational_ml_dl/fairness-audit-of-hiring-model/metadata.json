@@ -1,0 +1,19 @@
+{
+  "id": 9,
+  "field": "computational_ml_dl",
+  "scenario_title": "Fairness Audit of Hiring Model",
+  "download_folder": "data/papers/computational_ml_dl/fairness-audit-of-hiring-model",
+  "requested_paper_title": "Fairness Audit of Hiring Model",
+  "downloaded_paper_title": "JobFair: A Framework for Benchmarking Gender Hiring Bias in Large Language Models",
+  "planned_reference_title": "JobFair: A Framework for Benchmarking Gender Hiring Bias in Large Language Models",
+  "match_type": "alternative",
+  "query": "JobFair: A Framework for Benchmarking Gender Hiring Bias in Large Language Models",
+  "status": "downloaded",
+  "source_url": "https://aclanthology.org/2024.findings-emnlp.184.pdf",
+  "manual_url": "https://aclanthology.org/2024.findings-emnlp.184.pdf",
+  "sha256": "2616380dc9ca945225e2f99e9f50455976dcc7fbe95513652b1846a2fa4fe39d",
+  "bytes": 1832399,
+  "candidates_tried": [
+    "https://aclanthology.org/2024.findings-emnlp.184.pdf"
+  ]
+}

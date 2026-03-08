@@ -1,0 +1,19 @@
+{
+  "id": 7,
+  "field": "computational_ml_dl",
+  "scenario_title": "LLM Instruction Tuning",
+  "download_folder": "data/papers/computational_ml_dl/llm-instruction-tuning",
+  "requested_paper_title": "LLM Instruction Tuning",
+  "downloaded_paper_title": "Self-Instruct: Aligning Language Models with Self-Generated Instructions",
+  "planned_reference_title": "Self-Instruct: Aligning Language Models with Self-Generated Instructions",
+  "match_type": "alternative",
+  "query": "Self-Instruct: Aligning Language Models with Self-Generated Instructions",
+  "status": "downloaded",
+  "source_url": "https://aclanthology.org/2023.acl-long.754.pdf",
+  "manual_url": "https://aclanthology.org/2023.acl-long.754.pdf",
+  "sha256": "87f1d8476fa041d0c6b09b9239253ed698c4efac973347aebe83c487eab91c78",
+  "bytes": 4193312,
+  "candidates_tried": [
+    "https://aclanthology.org/2023.acl-long.754.pdf"
+  ]
+}

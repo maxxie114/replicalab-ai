@@ -1,0 +1,22 @@
+{
+  "id": 27,
+  "field": "wet_lab_biology",
+  "scenario_title": "Enzyme Kinetics",
+  "download_folder": "data/papers/wet_lab_biology/enzyme-kinetics",
+  "requested_paper_title": "Enzyme Kinetics",
+  "downloaded_paper_title": "Phosphorylation-Independent Regulation of the Diguanylate Cyclase WspR",
+  "planned_reference_title": "A continuous spectrophotometric assay for inorganic phosphate and for measuring phosphate release kinetics in biological systems",
+  "match_type": "alternative",
+  "query": "A continuous spectrophotometric assay for inorganic phosphate and for measuring phosphate release kinetics in biological systems",
+  "status": "downloaded",
+  "source_url": "https://journals.plos.org/plosbiology/article/file?id=10.1371/journal.pbio.0060067&type=printable",
+  "manual_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC49192/",
+  "sha256": "0ec5e3a3a32ba863aab875a18fd3eec430900e3172288bf16dc0cfb88801dcca",
+  "bytes": 1155472,
+  "candidates_tried": [
+    "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC49192/",
+    "https://www.ncbi.nlm.nih.gov/pmc/articles/49192",
+    "https://doi.org/10.1073/pnas.89.11.4884",
+    "https://journals.plos.org/plosbiology/article/file?id=10.1371/journal.pbio.0060067&type=printable"
+  ]
+}

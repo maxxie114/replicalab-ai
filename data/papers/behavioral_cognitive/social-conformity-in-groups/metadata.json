@@ -1,0 +1,19 @@
+{
+  "id": 32,
+  "field": "behavioral_cognitive",
+  "scenario_title": "Social Conformity in Groups",
+  "download_folder": "data/papers/behavioral_cognitive/social-conformity-in-groups",
+  "requested_paper_title": "Social Conformity in Groups",
+  "downloaded_paper_title": "The power of social influence: A replication and extension of the Asch experiment",
+  "planned_reference_title": "The power of social influence: A replication and extension of the Asch experiment",
+  "match_type": "alternative",
+  "query": "The power of social influence: A replication and extension of the Asch experiment",
+  "status": "downloaded",
+  "source_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0294325&type=printable",
+  "manual_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0294325&type=printable",
+  "sha256": "9ca67a55c3df6baf79a5375e0989e19d51e66d5e9b5c82a6489a798713e5c499",
+  "bytes": 880776,
+  "candidates_tried": [
+    "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0294325&type=printable"
+  ]
+}

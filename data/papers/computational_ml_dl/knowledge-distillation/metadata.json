@@ -1,0 +1,19 @@
+{
+  "id": 17,
+  "field": "computational_ml_dl",
+  "scenario_title": "Knowledge Distillation",
+  "download_folder": "data/papers/computational_ml_dl/knowledge-distillation",
+  "requested_paper_title": "Knowledge Distillation",
+  "downloaded_paper_title": "DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter",
+  "planned_reference_title": "DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter",
+  "match_type": "alternative",
+  "query": "DistilBERT, a distilled version of BERT",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1910.01108",
+  "manual_url": "https://arxiv.org/pdf/1910.01108.pdf",
+  "sha256": "a70c78e2b4db85bfee7696e19829571a3b05f69c616db5c039f6f4eb33b1a0b6",
+  "bytes": 436085,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1910.01108.pdf"
+  ]
+}

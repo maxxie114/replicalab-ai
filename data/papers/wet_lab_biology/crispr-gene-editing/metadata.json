@@ -1,0 +1,22 @@
+{
+  "id": 26,
+  "field": "wet_lab_biology",
+  "scenario_title": "CRISPR Gene Editing",
+  "download_folder": "data/papers/wet_lab_biology/crispr-gene-editing",
+  "requested_paper_title": "CRISPR Gene Editing",
+  "downloaded_paper_title": "Atox1-Cyclin D1 Loop Activity is Critical for Survival of Tumor Cells with Inactivated TP53",
+  "planned_reference_title": "Creation of A549 and MCF7 tumor sublines with knockout of TP53 using CRISPR/Cas9",
+  "match_type": "alternative",
+  "query": "Creation of A549 and MCF7 tumor sublines with knockout of TP53 using CRISPR/Cas9",
+  "status": "downloaded",
+  "source_url": "https://www.biorxiv.org/content/biorxiv/early/2024/02/18/2024.02.14.580254.full.pdf",
+  "manual_url": "https://www.medgen-journal.ru/jour/article/download/2371/1750",
+  "sha256": "3e1660ff4ea24ac712458116da574f0414380d6db22de024bed4e8fed2563eb7",
+  "bytes": 11484730,
+  "candidates_tried": [
+    "https://www.medgen-journal.ru/jour/article/download/2371/1750",
+    "http://dx.doi.org/10.25557/2073-7998.2023.11.27-34",
+    "https://doi.org/10.25557/2073-7998.2023.11.27-34",
+    "https://www.biorxiv.org/content/biorxiv/early/2024/02/18/2024.02.14.580254.full.pdf"
+  ]
+}

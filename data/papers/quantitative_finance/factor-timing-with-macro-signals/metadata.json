@@ -1,0 +1,20 @@
+{
+  "id": 42,
+  "field": "quantitative_finance",
+  "scenario_title": "Factor Timing with Macro Signals",
+  "download_folder": "data/papers/quantitative_finance/factor-timing-with-macro-signals",
+  "requested_paper_title": "Factor Timing with Macro Signals",
+  "downloaded_paper_title": "Macro Factors in Bond Risk Premia",
+  "planned_reference_title": "Bond Risk Premia",
+  "match_type": "alternative",
+  "query": "Bond Risk Premia",
+  "status": "downloaded",
+  "source_url": "https://www.nber.org/system/files/working_papers/w11703/w11703.pdf",
+  "manual_url": "https://papers.ssrn.com/sol3/Delivery.cfm/nber_w9178.pdf?abstractid=330317&mirid=1",
+  "sha256": "46c89ce67b56566c4c3f479b75b6e2cc84610246aac59fd68b137eba59aa019b",
+  "bytes": 938909,
+  "candidates_tried": [
+    "https://papers.ssrn.com/sol3/Delivery.cfm/nber_w9178.pdf?abstractid=330317&mirid=1",
+    "https://doi.org/10.3386/w11703"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": 2,
+  "field": "computational_ml_dl",
+  "scenario_title": "BERT Fine-Tuning for Sentiment",
+  "download_folder": "data/papers/computational_ml_dl/bert-fine-tuning-for-sentiment",
+  "requested_paper_title": "BERT Fine-Tuning for Sentiment",
+  "downloaded_paper_title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+  "planned_reference_title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+  "match_type": "alternative",
+  "query": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1810.04805",
+  "manual_url": "https://arxiv.org/pdf/1810.04805.pdf",
+  "sha256": "5692a5514787a8c6727b4ff3b726a3385798bc68e12138d1d4af83947e2acf6e",
+  "bytes": 775166,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1810.04805.pdf"
+  ]
+}

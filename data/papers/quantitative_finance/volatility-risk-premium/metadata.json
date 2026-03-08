@@ -1,0 +1,19 @@
+{
+  "id": 39,
+  "field": "quantitative_finance",
+  "scenario_title": "Volatility Risk Premium",
+  "download_folder": "data/papers/quantitative_finance/volatility-risk-premium",
+  "requested_paper_title": "Volatility Risk Premium",
+  "downloaded_paper_title": "Downside Variance Risk Premium",
+  "planned_reference_title": "Downside Variance Risk Premium",
+  "match_type": "alternative",
+  "query": "Downside Variance Risk Premium",
+  "status": "downloaded",
+  "source_url": "https://www.federalreserve.gov/econresdata/feds/2015/files/2015020pap.pdf",
+  "manual_url": "https://doi.org/10.17016/feds.2015.020",
+  "sha256": "1dd5a82ff26661ee987f2cd2e26d6775cd14b3d1e6ae16c29ec270fff31fadf3",
+  "bytes": 654791,
+  "candidates_tried": [
+    "https://doi.org/10.17016/feds.2015.020"
+  ]
+}

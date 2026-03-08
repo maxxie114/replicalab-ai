@@ -1,0 +1,21 @@
+{
+  "id": 50,
+  "field": "quantitative_finance",
+  "scenario_title": "IPO Underpricing",
+  "download_folder": "data/papers/quantitative_finance/ipo-underpricing",
+  "requested_paper_title": "IPO Underpricing",
+  "downloaded_paper_title": "A Review of IPO Activity, Pricing, and Allocations",
+  "planned_reference_title": "A Review of IPO Activity, Pricing and Allocations",
+  "match_type": "alternative",
+  "query": "A Review of IPO Activity, Pricing and Allocations",
+  "status": "downloaded",
+  "source_url": "https://www.nber.org/system/files/working_papers/w8805/w8805.pdf",
+  "manual_url": "https://papers.ssrn.com/sol3/Delivery.cfm?abstractid=296393",
+  "sha256": "de0caea0977c7660aef2f94219ba4820c0bdf1c8105278db664a3791e5b52146",
+  "bytes": 162321,
+  "candidates_tried": [
+    "https://papers.ssrn.com/sol3/Delivery.cfm?abstractid=296393",
+    "https://doi.org/10.2139/ssrn.296393",
+    "https://doi.org/10.3386/w8805"
+  ]
+}

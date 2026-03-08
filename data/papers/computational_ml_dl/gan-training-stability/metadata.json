@@ -1,0 +1,19 @@
+{
+  "id": 5,
+  "field": "computational_ml_dl",
+  "scenario_title": "GAN Training Stability",
+  "download_folder": "data/papers/computational_ml_dl/gan-training-stability",
+  "requested_paper_title": "GAN Training Stability",
+  "downloaded_paper_title": "Analyzing and Improving the Image Quality of StyleGAN",
+  "planned_reference_title": "Analyzing and Improving the Image Quality of StyleGAN",
+  "match_type": "alternative",
+  "query": "Analyzing and Improving the Image Quality of StyleGAN",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1912.04958",
+  "manual_url": "https://arxiv.org/pdf/1912.04958.pdf",
+  "sha256": "6fb2da3be6e9d7c1429697dc82dd63858983ff86adb34c76c2a52398aca02730",
+  "bytes": 18613269,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1912.04958.pdf"
+  ]
+}

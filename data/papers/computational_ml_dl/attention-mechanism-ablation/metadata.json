@@ -1,0 +1,19 @@
+{
+  "id": 14,
+  "field": "computational_ml_dl",
+  "scenario_title": "Attention Mechanism Ablation",
+  "download_folder": "data/papers/computational_ml_dl/attention-mechanism-ablation",
+  "requested_paper_title": "Attention Mechanism Ablation",
+  "downloaded_paper_title": "Attention Is All You Need",
+  "planned_reference_title": "Attention Is All You Need",
+  "match_type": "alternative",
+  "query": "Attention Is All You Need",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1706.03762",
+  "manual_url": "https://arxiv.org/pdf/1706.03762.pdf",
+  "sha256": "bdfaa68d8984f0dc02beaca527b76f207d99b666d31d1da728ee0728182df697",
+  "bytes": 2215244,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1706.03762.pdf"
+  ]
+}

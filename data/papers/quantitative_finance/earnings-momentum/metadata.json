@@ -1,0 +1,30 @@
+{
+  "id": 40,
+  "field": "quantitative_finance",
+  "scenario_title": "Earnings Momentum",
+  "download_folder": "data/papers/quantitative_finance/earnings-momentum",
+  "requested_paper_title": "Earnings Momentum",
+  "downloaded_paper_title": "Limited attention and the earnings announcement returns of past stock market winners",
+  "planned_reference_title": "Limited attention and the earnings announcement returns of past stock market winners",
+  "match_type": "alternative",
+  "query": "Information Uncertainty and Post-Earnings-Announcement Drift",
+  "status": "downloaded",
+  "source_url": "https://link.springer.com/content/pdf/10.1007/s11142-009-9104-9.pdf",
+  "manual_url": "https://link.springer.com/content/pdf/10.1007/s11142-009-9104-9.pdf",
+  "sha256": "ecfc141cf4c951c895fa1e4c2472bbb9ea0cf403248ae7455159f2225b97dda4",
+  "bytes": 580136,
+  "candidates_tried": [
+    "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1468-5957.2007.02030.x",
+    "https://doi.org/10.1111/j.1468-5957.2007.02030.x",
+    "https://doi.org/10.2139/ssrn.1014022",
+    "https://papers.ssrn.com/sol3/Delivery.cfm?abstractid=1633542",
+    "https://doi.org/10.1007/s11146-010-9275-y",
+    "https://papers.ssrn.com/sol3/Delivery.cfm/SSRN_ID1943586_code742668.pdf?abstractid=1625863&mirid=1&type=2",
+    "https://doi.org/10.1016/j.jbankfin.2011.10.013",
+    "https://doi.org/10.2139/ssrn.532262",
+    "https://autopapers.ssrn.com/sol3/papers.cfm?abstract_id=2029281",
+    "http://deepblue.lib.umich.edu/bitstream/2027.42/73431/1/0022-1082.00077.pdf",
+    "https://doi.org/10.1111/0022-1082.00077",
+    "https://doi.org/10.2139/ssrn.1652700"
+  ]
+}

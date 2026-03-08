@@ -1,0 +1,19 @@
+{
+  "id": 11,
+  "field": "computational_ml_dl",
+  "scenario_title": "OOD Detection Benchmark",
+  "download_folder": "data/papers/computational_ml_dl/ood-detection-benchmark",
+  "requested_paper_title": "OOD Detection Benchmark",
+  "downloaded_paper_title": "Energy-based Out-of-distribution Detection",
+  "planned_reference_title": "Energy-based Out-of-distribution Detection",
+  "match_type": "alternative",
+  "query": "Energy-based Out-of-distribution Detection",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/2010.03759",
+  "manual_url": "https://arxiv.org/pdf/2010.03759.pdf",
+  "sha256": "202c4d502f682bd31c5979be6fe930e505553a47a0acf39a15d24bff3e9bc4f7",
+  "bytes": 673885,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/2010.03759.pdf"
+  ]
+}
