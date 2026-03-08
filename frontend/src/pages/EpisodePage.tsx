@@ -236,7 +236,16 @@ export default function EpisodePage() {
 
     try {
       const isLastRound = episode.round >= episode.max_rounds - 1;
-      const finalAction = action ?? buildDemoScientistAction(episode, demoCase);
+      let finalAction: ScientistAction;
+      if (action) {
+        finalAction = action;
+      } else {
+        try {
+          finalAction = await suggestScientistAction(episode.session_id);
+        } catch {
+          finalAction = buildDemoScientistAction(episode, demoCase);
+        }
+      }
 
       if (isLastRound && !action) {
         setIsJudging(true);

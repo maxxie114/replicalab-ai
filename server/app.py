@@ -23,6 +23,7 @@ import asyncio
 import json
 import logging
 import os
+import threading
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -111,6 +112,251 @@ logging.basicConfig(
     format=LOG_FORMAT,
 )
 log = logging.getLogger("replicalab.server")
+
+# ---------------------------------------------------------------------------
+# Scientist model — loaded once at startup from the GRPO checkpoint
+# ---------------------------------------------------------------------------
+
+_SCIENTIST_CHECKPOINT = os.environ.get(
+    "SCIENTIST_CHECKPOINT",
+    "/home/jovyan/replicalab-qwen3.5-grpo/checkpoint-200",
+)
+_scientist_model: Any = None
+_scientist_tokenizer: Any = None
+_scientist_lock = threading.Lock()
+_scientist_ready = threading.Event()  # set when load attempt completes
+
+
+def _load_scientist_model() -> None:
+    """Load the fine-tuned Qwen LoRA adapter in a background thread."""
+    global _scientist_model, _scientist_tokenizer
+    checkpoint = Path(_SCIENTIST_CHECKPOINT)
+    if not checkpoint.exists():
+        log.warning(
+            "Scientist checkpoint not found at %s — suggest endpoint will use deterministic baseline",
+            checkpoint,
+        )
+        _scientist_ready.set()
+        return
+    try:
+        from unsloth import FastLanguageModel  # type: ignore
+        log.info("Loading Scientist model from %s …", checkpoint)
+        model, tokenizer = FastLanguageModel.from_pretrained(
+            model_name=str(checkpoint),
+            max_seq_length=2048,
+            load_in_4bit=False,
+        )
+        FastLanguageModel.for_inference(model)
+        _scientist_model = model
+        _scientist_tokenizer = tokenizer
+        log.info("Scientist model loaded ✓")
+    except Exception:
+        log.exception("Failed to load Scientist model — suggest endpoint will use deterministic baseline")
+    _scientist_ready.set()
+
+
+def _run_scientist_inference(sci_obs: "ScientistObservation", scenario_pack: Any) -> "ScientistAction":
+    """Blocking inference call — run via executor to avoid blocking the event loop."""
+    from replicalab.agents.scientist_policy import (
+        build_baseline_scientist_action,
+        build_scientist_system_prompt,
+        format_scientist_observation,
+        parse_scientist_output,
+    )
+
+    if _scientist_model is None:
+        return build_baseline_scientist_action(sci_obs)
+
+    try:
+        system = (
+            build_scientist_system_prompt(scenario_pack)
+            if scenario_pack is not None
+            else _generic_scientist_system_prompt()
+        )
+        user = format_scientist_observation(sci_obs)
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+
+        with _scientist_lock:
+            import torch  # type: ignore
+            # Use tokenize=False first to get the formatted string, then tokenize
+            # separately. This avoids the Jinja template "string indices must be
+            # integers" error that occurs when the tokenizer template expects
+            # multimodal content dicts but receives plain strings.
+            prompt_text = _scientist_tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+            device = next(_scientist_model.parameters()).device
+            enc = _scientist_tokenizer(prompt_text, return_tensors="pt").to(device)
+            with torch.no_grad():
+                outputs = _scientist_model.generate(
+                    input_ids=enc["input_ids"],
+                    attention_mask=enc["attention_mask"],
+                    max_new_tokens=512,
+                    temperature=0.7,
+                    do_sample=True,
+                )
+            generated_ids = outputs[0][enc["input_ids"].shape[1]:]
+            raw_text = _scientist_tokenizer.decode(generated_ids, skip_special_tokens=True)
+
+        return parse_scientist_output(raw_text)
+
+    except Exception:
+        log.exception("Scientist model inference failed — falling back to baseline")
+        from replicalab.agents.scientist_policy import build_baseline_scientist_action
+        return build_baseline_scientist_action(sci_obs)
+
+
+def _generic_scientist_system_prompt() -> str:
+    from replicalab.models import ScientistActionType
+    allowed = ", ".join(a.value for a in ScientistActionType)
+    return (
+        "You are the Scientist agent in ReplicaLab. "
+        "Negotiate toward the strongest feasible replication plan under the given constraints. "
+        f"Return exactly one JSON object with all ScientistAction fields. Allowed action_type values: {allowed}."
+    )
+
+# ---------------------------------------------------------------------------
+# Oracle LLM judge — optional; requires OPENAI_API_KEY or ANTHROPIC_API_KEY
+# ---------------------------------------------------------------------------
+
+_ORACLE_ENABLED = os.environ.get("REPLICALAB_ORACLE_ENABLED", "1") == "1"
+_ORACLE_MODEL = os.environ.get("REPLICALAB_ORACLE_MODEL", "gpt-5.4")
+
+
+def _build_llm_client() -> Optional[Any]:
+    """Return (client, backend) where backend is 'openai' or 'anthropic'."""
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key:
+        try:
+            import openai as _openai  # type: ignore
+            return (_openai.OpenAI(api_key=openai_key), "openai")
+        except ImportError:
+            log.warning("openai package not installed — Oracle judge unavailable")
+
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    if anthropic_key:
+        try:
+            import anthropic as _anthropic  # type: ignore
+            return (_anthropic.Anthropic(api_key=anthropic_key), "anthropic")
+        except ImportError:
+            log.warning("anthropic package not installed — Oracle judge unavailable")
+
+    return None
+
+
+def _generate_judge_verdict(
+    state: "EpisodeState",
+    scenario_pack: Any,
+    conversation_history: list,
+) -> str:
+    """Call an LLM to produce Judge Aldric's comprehensive verdict."""
+    if not _ORACLE_ENABLED:
+        return "Deterministic scoring only. Set REPLICALAB_ORACLE_ENABLED=1 and OPENAI_API_KEY for LLM verdicts."
+
+    result = _build_llm_client()
+    if result is None:
+        return "No LLM API key configured (OPENAI_API_KEY or ANTHROPIC_API_KEY). Deterministic scoring applied."
+    client, backend = result
+
+    # Format final protocol
+    if state.current_protocol:
+        p = state.current_protocol
+        protocol_summary = (
+            f"Technique: {p.technique}\n"
+            f"Sample size: {p.sample_size}\n"
+            f"Duration: {p.duration_days} days\n"
+            f"Controls: {', '.join(p.controls)}\n"
+            f"Equipment: {', '.join(p.required_equipment)}\n"
+            f"Reagents: {', '.join(p.required_reagents)}\n"
+            f"Rationale: {p.rationale}"
+        )
+    else:
+        protocol_summary = "No concrete protocol was finalized."
+
+    # Format conversation transcript
+    if conversation_history:
+        conv_text = "\n".join(
+            f"[Round {e.round_number}] {e.role.upper()}: {e.message}"
+            for e in conversation_history
+        )
+    else:
+        conv_text = "No conversation recorded."
+
+    # Scenario context from pack
+    scenario_context = ""
+    if scenario_pack is not None:
+        try:
+            sci = scenario_pack.scientist_observation
+            lab = scenario_pack.lab_manager_observation
+            scenario_context = (
+                f"Paper: {getattr(sci, 'paper_title', 'N/A')}\n"
+                f"Hypothesis: {getattr(sci, 'paper_hypothesis', 'N/A')}\n"
+                f"Goal: {getattr(sci, 'experiment_goal', 'N/A')}\n"
+                f"Budget: ${getattr(lab, 'budget_total', '?')}\n"
+                f"Time limit: {getattr(lab, 'time_limit_days', '?')} days\n"
+                f"Available equipment: {', '.join(getattr(lab, 'equipment_available', []))}\n"
+            )
+        except Exception:
+            scenario_context = "(scenario details unavailable)"
+
+    outcome = (
+        f"Agreement reached after {state.round_number} rounds"
+        if state.agreement_reached
+        else f"No agreement reached — rounds exhausted ({state.round_number}/{state.max_rounds})"
+    )
+
+    user_prompt = (
+        f"Evaluate this scientific replication negotiation and produce a comprehensive judge's verdict.\n\n"
+        f"SCENARIO:\n{scenario_context}\n"
+        f"OUTCOME: {outcome}\n\n"
+        f"FINAL PROTOCOL:\n{protocol_summary}\n\n"
+        f"NEGOTIATION TRANSCRIPT:\n{conv_text}\n\n"
+        "Write a comprehensive verdict covering:\n"
+        "1. Overall assessment (2-3 sentences)\n"
+        "2. Scientific rigor of the proposed protocol\n"
+        "3. Feasibility within lab constraints\n"
+        "4. Fidelity to the original paper's methodology\n"
+        "5. Key decisions that shaped the outcome\n"
+        "6. Missed opportunities or weaknesses\n"
+        "7. How this compares to an optimal negotiation strategy\n\n"
+        "Be specific, reference actual protocol details and conversation turns. "
+        "Write as Judge Aldric, the impartial arbiter of ReplicaLab."
+    )
+    system_prompt = (
+        "You are Judge Aldric, the impartial arbiter of ReplicaLab — an RL environment where AI scientists "
+        "negotiate replication protocols with lab managers under real resource constraints. "
+        "Produce comprehensive, evidence-based verdicts evaluating scientific rigor, feasibility, and fidelity. "
+        "Be specific, fair, and insightful. Write in clear prose paragraphs."
+    )
+
+    try:
+        if backend == "openai":
+            response = client.chat.completions.create(
+                model=_ORACLE_MODEL,
+                max_completion_tokens=1024,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            return response.choices[0].message.content
+        else:  # anthropic
+            response = client.messages.create(
+                model=_ORACLE_MODEL,
+                max_tokens=1024,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            return response.content[0].text
+    except Exception:
+        log.exception("Oracle verdict generation failed")
+        return "Judge Aldric was unable to render a verdict due to an API error."
+
 
 # ---------------------------------------------------------------------------
 # Environment factory — prefer ReplicaLabEnv, retain _StubEnv only as fallback
@@ -235,6 +481,12 @@ class _StubEnv:
                 self._state.rigor_score = 0.8
                 self._state.feasibility_score = 0.8
                 self._state.fidelity_score = 0.8
+        judge_notes = None
+        if done:
+            judge_notes = _generate_judge_verdict(
+                self._state, self._scenario_pack, self._logs
+            )
+
         return StepResult(
             observation=self._make_observation(),
             reward=reward,
@@ -247,7 +499,7 @@ class _StubEnv:
                     feasibility=self._state.feasibility_score,
                     fidelity=self._state.fidelity_score,
                 ) if done else None,
-                judge_notes="Stub audit until judge integration lands." if done else None,
+                judge_notes=judge_notes,
                 verdict=("accept" if self._state.agreement_reached else "revise") if done else None,
                 round=self._state.round_number,
                 stub=True,
@@ -630,6 +882,7 @@ async def _session_cleanup_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    threading.Thread(target=_load_scientist_model, daemon=True, name="scientist-model-loader").start()
     task = asyncio.create_task(_session_cleanup_loop())
     log.info("ReplicaLab server starting up")
     yield
@@ -653,8 +906,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",   # Vite dev server
         "http://localhost:7860",
+        "http://localhost:3000",
+        "http://localhost:8000",
     ],
-    allow_origin_regex=r"https://.*\.hf\.space",
+    allow_origin_regex=r"https://.*\.(hf\.space|code\.run)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1129,6 +1384,58 @@ async def agent_step_episode(req: AgentStepRequest):
         **metadata,
     })
     return _record_session_step(req.session_id, result)
+
+
+class SuggestRequest(BaseModel):
+    session_id: str
+
+
+@_api.post("/scientist/suggest", response_model=ScientistAction)
+async def suggest_scientist_action(req: SuggestRequest):
+    """Return a model-generated ScientistAction for the current session state.
+
+    Uses the fine-tuned Qwen LoRA checkpoint if available, otherwise falls
+    back to the deterministic baseline policy.
+    """
+    if req.session_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found. Call /reset first.")
+
+    _touch(req.session_id)
+    session = _sessions[req.session_id]
+    env = session["env"]
+
+    # Get current observation — works for both _StubEnv and ReplicaLabEnv
+    obs: Optional[Observation] = None
+    if hasattr(env, "_make_observation"):
+        obs = env._make_observation()
+    elif hasattr(env, "state"):
+        pass  # fall through to baseline
+
+    if obs is None or obs.scientist is None:
+        raise HTTPException(status_code=400, detail="No observation available for this session.")
+
+    sci_obs = obs.scientist
+    scenario_pack = getattr(env, "_scenario_pack", None)
+
+    # Wait for model load to complete (non-blocking with timeout)
+    await asyncio.get_event_loop().run_in_executor(
+        None, lambda: _scientist_ready.wait(timeout=5)
+    )
+
+    action = await asyncio.get_event_loop().run_in_executor(
+        None, _run_scientist_inference, sci_obs, scenario_pack
+    )
+    return action
+
+
+@_api.get("/scientist/status")
+async def scientist_model_status():
+    """Report whether the Scientist model is loaded."""
+    return {
+        "loaded": _scientist_model is not None,
+        "ready": _scientist_ready.is_set(),
+        "checkpoint": _SCIENTIST_CHECKPOINT,
+    }
 
 
 @_api.get("/replay/{episode_id}", response_model=EpisodeLog)
