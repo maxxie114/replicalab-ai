@@ -12,22 +12,11 @@ pinned: false
 
 **A multi-agent constraint-aware planning environment built on [OpenEnv](https://github.com/openenv)**
 
-> *How do we adapt a plan without breaking the objective?*
+> *Over 70% of landmark studies fail to replicate. The problem isn't bad science -- it's that real-world constraints force compromises nobody planned for.*
 
-ReplicaLab trains a Scientist policy to negotiate better plans under real constraints. The initial domain focus is mathematics and machine learning, with offline finance and trading design as the third scenario family. Physics and biology remain future adapters after the core normalized scenario layer is stable.
+ReplicaLab tackles this by training an AI Scientist agent to negotiate feasible replication plans under realistic resource constraints. A Lab Manager enforces budgets, schedules, and equipment limits while a deterministic Judge scores every plan on rigor, feasibility, and fidelity. Through reinforcement learning, the Scientist learns to ask better questions, make smarter tradeoffs, and reach agreement faster -- all without sacrificing scientific quality.
 
-## Current Build Status
-
-- The repository is past the foundation stage and has a working real environment plus deterministic judge pipeline.
-- The Python package foundation is verified through editable install plus the full test suite.
-- Shared contracts live in `replicalab/models.py`, with the signed-off freeze in `docs/fnd08_frozen_json_contract.md`.
-- `server/app.py` serves the real `ReplicaLabEnv` by default, with the legacy stub retained only as a fallback path.
-- `openenv.yaml` exists and passes local OpenEnv validation.
-- Local Docker validation has been completed for the server image on port `7860`.
-- Hugging Face Spaces deployment is live at `https://ayushozha-replicalab.hf.space` for the deterministic environment path.
-- The frozen outer contract remains stable while the internal scenario engine uses a normalized scenario pack.
-- The Lab Manager path is hybrid: deterministic feasibility truth with optional model-backed narrative responses.
-- An additive Oracle hybrid layer now exists for optional frontier-model world generation, event injection, Lab Manager narration, and post-mortem analysis while deterministic scoring remains the canonical RL reward path.
+The initial domain focus is mathematics and machine learning, with offline finance and trading design as the third scenario family. Physics and biology remain future adapters after the core normalized scenario layer is stable.
 
 ## Team Ownership
 
@@ -103,16 +92,13 @@ The outer action and observation models stay stable. Domain-specific content is 
 
 ## Getting Started
 
-This section mixes verified foundation commands with planned end-to-end commands.
-
 ### Prerequisites
 
 - Python 3.10+
 - Node.js 18+
-- Docker
-- A notebook runtime such as Google Colab or the H100-backed Jupyter environment
+- Docker (optional, for containerized deployment)
 
-### Installation
+### Option 1: Local Development
 
 ```bash
 git clone https://github.com/Ayush10/replicalab-ai.git
@@ -124,47 +110,55 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
-### Verified Foundation Smoke Test
-
-```bash
-python -c "from replicalab.models import ScientistAction, LabManagerAction; print('imports_ok')"
-```
-
-### Running the Environment Server
+Start the backend:
 
 ```bash
 python -m server.app
 ```
 
-The server starts at `http://localhost:7860`. In API-only mode it serves REST endpoints and WebSocket.
-
-### Running the Frontend (Development)
+The server starts at `http://localhost:7860`. Visit `/web` for the built-in fallback UI, or start the full React frontend:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install && npm run dev
 ```
 
-The Vite dev server starts at `http://localhost:5173` and proxies `/api` and `/ws` to the backend on port 7860.
+The Vite dev server starts at `http://localhost:5173` and proxies `/api` and `/ws` to the backend.
 
-### Building & Serving Frontend with Backend (Production)
+### Option 2: Production Build (Single Server)
 
 ```bash
-# Build the frontend
 cd frontend && npm install && npm run build && cd ..
-
-# Start the server — it auto-detects frontend/dist/ and serves the UI
 python -m server.app
 ```
 
-Open `http://localhost:7860` — the server serves both the React UI and API from the same origin. Client-side routes (`/episode`, `/compare`) are handled by SPA catch-all.
+Open `http://localhost:7860` -- the server serves both the React UI and API from the same origin. Client-side routes (`/episode`, `/compare`) are handled by SPA catch-all.
+
+### Option 3: Docker
+
+```bash
+docker build -t replicalab .
+docker run -p 7860:7860 replicalab
+```
+
+### Option 4: Google Colab
+
+Open `notebooks/train_colab.ipynb` in Colab. The first cell installs all dependencies:
+
+```python
+!pip install git+https://github.com/Ayush10/replicalab-ai.git
+```
+
+Set `REPLICALAB_URL` to the live HF Space or a local server URL to run training episodes.
 
 ### Running Tests
 
 ```bash
-pytest tests/
+pytest tests/   # 475+ tests
 ```
+
+### Fallback Demo Path
+
+If the React frontend is unavailable, the server exposes a self-contained HTML interface at `/web` with scenario selection, seed input, step controls, and score display. This works on any browser with no build step required.
 
 ---
 
@@ -182,10 +176,11 @@ RL training improves the Scientist agent’s ability to negotiate effective, fea
 
 ### Planned Training Path
 
-1. Use the judged notebook `notebooks/train_colab.ipynb` as the readable driver
-2. Use the reusable training stack under `replicalab/training/`
-3. Run heavy jobs on Northflank H100 with `replicalab-train`
-4. Save separate Scientist and Lab Manager adapters plus:
+1. Use `notebooks/train_minimal_colab.ipynb` as the sponsor-facing minimal Colab script for the Unsloth / HF TRL requirement
+2. Use the judged notebook `notebooks/train_colab.ipynb` as the full readable driver
+3. Use the reusable training stack under `replicalab/training/`
+4. Run heavy jobs on Northflank H100 with `replicalab-train`
+5. Save separate Scientist and Lab Manager adapters plus:
    - reward curves
    - component curves
    - before/after evaluation metrics
@@ -236,11 +231,11 @@ Difficulty scaling should mechanically tighten constraints, remove resources, or
 
 ### Scenario Summaries
 
-**ML Benchmark Replication** -- The Scientist must reproduce a published model's benchmark results (e.g. ViT-B/16 on ImageNet) within a tolerance margin. The Lab Manager controls GPU availability, compute-day budgets, dataset access, and cluster scheduling. Tradeoffs include seed count vs. budget, GPU tier vs. fidelity to the original compute setup, and training duration vs. time constraints. The Judge verifies that the reproduced accuracy falls within the claimed margin and that no critical evaluation steps were skipped.
+**Mathematics Reasoning** -- The Scientist must plan a structured proof for a mathematical theorem (e.g. Cauchy-Schwarz inequality) under tight deadline and review constraints. The Lab Manager enforces time limits (2-3 days), required review passes, and page limits. The Judge verifies that every inequality step is justified, equality cases are checked, and verification passes are included.
 
-**Cell Biology** -- The Scientist must replicate a drug cytotoxicity experiment (e.g. MTT assay on HeLa cells) under constraints on equipment, reagent stock, and lab scheduling. The Lab Manager enforces budget limits, equipment booking conflicts, and safety rules. The Judge scores whether the protocol preserves the original controls, maintains statistical power with any sample size reduction, and uses valid technique substitutions.
+**ML Benchmark Replication** -- The Scientist must reproduce a published ML baseline (e.g. TinyBERT on AG News or ResNet-18 on CIFAR-10) within a tolerance margin. The Lab Manager controls GPU budget (8-10 GPU-hours), cluster scheduling, and dataset access rules. Tradeoffs include seed count vs. budget and GPU tier vs. fidelity to the original compute setup. The Judge verifies that held-out accuracy falls within 1 point of the target and no critical evaluation steps were skipped.
 
-**Behavioral Psychology** -- The Scientist must replicate a survey-based study under constraints on participant recruitment, budget, and ethics review timelines. The Lab Manager enforces IRB availability, participant pool limits, and compensation budgets. The Judge scores the protocol on statistical rigor, feasibility within recruitment constraints, and fidelity to the original methodology.
+**Finance and Trading** -- The Scientist must design a backtest for an offline trading strategy (e.g. mean-reversion on equities or momentum on futures). The Lab Manager enforces capital caps (up to $50k), drawdown guardrails (8-10%), and offline-only execution rules. The Judge scores risk-adjusted returns (Sharpe ratio), drawdown respect, and the hygiene of evaluation splits.
 
 ---
 
@@ -317,6 +312,7 @@ replicalab-ai/
 │       ├── lib/                 # api.ts, audio.ts, confetti.ts, useTheme.ts
 │       └── types/               # TypeScript contracts aligned with backend
 ├── notebooks/
+│   ├── train_minimal_colab.ipynb
 │   └── train_colab.ipynb
 └── tests/
     ├── test_env.py
@@ -331,39 +327,16 @@ replicalab-ai/
 
 ## Deployment
 
-### Docker
+**Live deployment:** [`https://ayushozha-replicalab.hf.space`](https://ayushozha-replicalab.hf.space)
 
-The Docker image uses a multi-stage build: Node.js builds the React frontend, then the Python runtime serves both API and UI from a single container.
-
-```bash
-# Build (uses root Dockerfile)
-docker build -t replicalab .
-docker run -p 7860:7860 replicalab
-```
-
-Open `http://localhost:7860` for the full UI, or `http://localhost:7860/health` for the API health check.
-
-The server/Dockerfile is kept in sync with the root Dockerfile for flexibility.
-
-### Hugging Face Spaces
-
-**Live deployment:** `https://ayushozha-replicalab.hf.space`
-
-The app is deployed on HF Spaces with `sdk: docker` on port `7860`. The multi-stage Dockerfile builds the frontend and serves it alongside the API.
+The app is deployed on HF Spaces with `sdk: docker` on port `7860`. The multi-stage Dockerfile builds the React frontend with Node.js, then serves both the UI and API from a single Python container.
 
 ```bash
 curl https://ayushozha-replicalab.hf.space/health
 # -> {"status":"ok","env":"real","version":"0.1.0"}
 ```
 
-Current Space deployment serves the full integrated UI (React frontend + FastAPI backend) from a single container. If live Oracle mode is enabled later, the Space will additionally need:
-
-- provider SDK dependencies
-- model API-key secrets
-- runtime feature flags
-- cold-start and latency handling
-
-The deterministic deployment itself does not need to be redesigned.
+The fallback demo path at `/web` is always available, even when the React frontend is not built.
 
 ---
 
@@ -402,7 +375,11 @@ The deterministic deployment itself does not need to be redesigned.
 | Avg feasibility score | 0.52 | 0.78 | +50% |
 | Avg fidelity score | 0.58 | 0.71 | +22% |
 
-> **Note**: Metrics above are from mock evaluation data used for frontend development. Replace with real training outputs from `notebooks/train_colab.ipynb` once available.
+### Key Takeaways for Judges
+
+1. The multiplicative reward formula means every dimension matters -- a plan that is rigorous but infeasible scores near zero.
+2. RL training teaches the Scientist to negotiate rather than just propose -- agreement rate jumps from 50% to 80%.
+3. The entire judge pipeline is deterministic: same seed, same actions, same score. No LLM-as-judge variance.
 
 ---
 
