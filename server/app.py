@@ -340,7 +340,7 @@ def _generate_judge_verdict(
         if backend == "openai":
             response = client.chat.completions.create(
                 model=_ORACLE_MODEL,
-                max_completion_tokens=1024,
+                max_completion_tokens=4000,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -819,6 +819,8 @@ def _resolve_scientist_action(session: dict[str, Any]) -> tuple[ScientistAction,
         "scientist_model": (
             get_scientist_model()
             if runtime == "anthropic"
+            else get_scientist_openai_model()
+            if runtime == "openai"
             else get_scientist_ollama_model()
             if runtime == "ollama"
             else "baseline-heuristic"
