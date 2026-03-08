@@ -48,6 +48,7 @@ from replicalab.config import (
     STUB_ACCEPT_REWARD,
     WS_IDLE_TIMEOUT_SECONDS,
 )
+from replicalab.utils.logging import log_episode_reward, write_episode_log
 from replicalab.scenarios import (
     NormalizedScenarioPack,
     available_scenario_families,
@@ -96,6 +97,9 @@ def _build_episode_log(
     episode_id: str,
     state: EpisodeState,
     result: StepResult,
+    *,
+    invalid_action_count: int = 0,
+    total_steps: int = 0,
 ) -> EpisodeLog:
     """Build an EpisodeLog from the terminal StepResult.
 
@@ -103,6 +107,11 @@ def _build_episode_log(
     instead of rebuilding from state with stale stub values.
     """
     info = result.info
+    invalid_rate = (
+        round(invalid_action_count / total_steps, 6)
+        if total_steps > 0
+        else 0.0
+    )
     return EpisodeLog(
         episode_id=episode_id,
         seed=state.seed,
@@ -117,6 +126,8 @@ def _build_episode_log(
         judge_notes=info.judge_notes or "",
         verdict=info.verdict or "",
         top_failure_reasons=list(info.top_failure_reasons),
+        invalid_action_count=invalid_action_count,
+        invalid_action_rate=invalid_rate,
     )
 
 
@@ -327,7 +338,8 @@ def _make_env() -> "_StubEnv":
 _SESSION_TTL_SECONDS = SESSION_TTL_SECONDS
 
 _sessions: dict[str, dict[str, Any]] = {}
-# { session_id: { "env": env_instance, "last_active": float, "episode_id": str } }
+# { session_id: { "env": env_instance, "last_active": float, "episode_id": str,
+#                  "total_steps": int, "invalid_action_count": int } }
 
 _replay_store: dict[str, EpisodeLog] = {}
 # { episode_id: EpisodeLog }
@@ -498,6 +510,8 @@ async def reset_episode(req: ResetRequest):
         "env": env,
         "last_active": time.monotonic(),
         "episode_id": episode_id,
+        "total_steps": 0,
+        "invalid_action_count": 0,
     }
 
     log.info("REST reset | session=%s episode=%s", session_id, episode_id)
@@ -515,14 +529,39 @@ async def step_episode(req: StepRequest):
 
     result = env.step(req.action)
 
-    # Store completed episode log for replay
+    session["total_steps"] = session.get("total_steps", 0) + 1
+    if result.info.error is not None:
+        session["invalid_action_count"] = session.get("invalid_action_count", 0) + 1
+
+    # Store completed episode log for replay and persist to disk (ENV 09)
     if result.done:
         state = env.state()
-        _replay_store[session["episode_id"]] = _build_episode_log(
+        episode_log = _build_episode_log(
             session["episode_id"],
             state,
             result,
+            invalid_action_count=session.get("invalid_action_count", 0),
+            total_steps=session.get("total_steps", 0),
         )
+        _replay_store[session["episode_id"]] = episode_log
+
+        try:
+            write_episode_log(episode_log)
+            log_episode_reward(
+                episode_id=session["episode_id"],
+                seed=state.seed,
+                scenario_template=state.scenario_template,
+                difficulty=state.difficulty,
+                total_reward=state.reward,
+                breakdown=result.info.reward_breakdown,
+                rounds_used=state.round_number,
+                agreement_reached=result.info.agreement_reached,
+                verdict=result.info.verdict or "",
+                judge_notes=result.info.judge_notes or "",
+            )
+        except Exception:
+            log.exception("Failed to persist episode log to disk")
+
         log.info(
             "Episode done | session=%s episode=%s reward=%.2f",
             req.session_id,
@@ -575,6 +614,8 @@ async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     env = _make_env()
     episode_id: str = ""
+    ws_total_steps: int = 0
+    ws_invalid_action_count: int = 0
     log.info("WebSocket connected")
 
     try:
@@ -607,6 +648,8 @@ async def websocket_endpoint(ws: WebSocket):
                     episode_id = (
                         env.episode_id() if hasattr(env, "episode_id") else str(uuid.uuid4())
                     )
+                    ws_total_steps = 0
+                    ws_invalid_action_count = 0
                     await _ws_send(
                         ws,
                         {
@@ -637,12 +680,38 @@ async def websocket_endpoint(ws: WebSocket):
                 try:
                     result = env.step(action)
 
-                    # Store completed episode for REST replay
+                    ws_total_steps += 1
+                    if result.info.error is not None:
+                        ws_invalid_action_count += 1
+
+                    # Store completed episode for REST replay & persist to disk (ENV 09)
                     if result.done and episode_id:
                         state = env.state()
-                        _replay_store[episode_id] = _build_episode_log(
-                            episode_id, state, result
+                        episode_log = _build_episode_log(
+                            episode_id,
+                            state,
+                            result,
+                            invalid_action_count=ws_invalid_action_count,
+                            total_steps=ws_total_steps,
                         )
+                        _replay_store[episode_id] = episode_log
+
+                        try:
+                            write_episode_log(episode_log)
+                            log_episode_reward(
+                                episode_id=episode_id,
+                                seed=state.seed,
+                                scenario_template=state.scenario_template,
+                                difficulty=state.difficulty,
+                                total_reward=state.reward,
+                                breakdown=result.info.reward_breakdown,
+                                rounds_used=state.round_number,
+                                agreement_reached=result.info.agreement_reached,
+                                verdict=result.info.verdict or "",
+                                judge_notes=result.info.judge_notes or "",
+                            )
+                        except Exception:
+                            log.exception("Failed to persist WS episode log to disk")
 
                     await _ws_send(
                         ws,

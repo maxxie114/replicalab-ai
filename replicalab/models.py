@@ -409,3 +409,5 @@ class EpisodeLog(BaseModel):
     judge_notes: str = ""
     verdict: str = ""
     top_failure_reasons: list[str] = Field(default_factory=list)
+    invalid_action_count: int = 0
+    invalid_action_rate: float = 0.0

@@ -587,7 +587,7 @@ As a judge, I want deterministic replay and cleanup.
 | ENV 06 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Integrate reward computation at finalization and optional intermediate score previews | ENV 05, JDG 05 | 1h | final step returns total reward, breakdown info, and deterministic penalties or bonuses for bounded tool behavior | ✅ Completed | Person B (Ayush) |
 | ENV 07 | E06.3 | Person A | `replicalab/env/replicalab_env.py` | Implement `state()` | ENV 02 to ENV 06 | 0.5h | current environment state can be retrieved for debugging and replay | ✅ Completed | Person B (Ayush) |
 | ENV 08 | E06.3 | Person A | `replicalab/env/replicalab_env.py` | Implement `close()` cleanup | ENV 01 | 0.25h | close frees any transient resources and does not throw | ✅ Completed | Person B (Ayush) |
-| ENV 09 | E06.3 | Person C | `replicalab/utils/logging.py` | Write episode logs on completion | ENV 06, JDG 07 | 0.5h | completed episodes generate replayable logs automatically | ⬜ Not started | — |
+| ENV 09 | E06.3 | Person C | `replicalab/utils/logging.py` | Write episode logs on completion | ENV 06, JDG 07 | 0.5h | completed episodes generate replayable logs automatically | ✅ Completed | Person B (Ayush) |
 | ENV 10 | E06.1 to E06.3 | Person A | tests | Add reset, step, invalid action, timeout, and deterministic replay tests | ENV 02 to ENV 09 | 1.25h | tests pass for seeded reset, valid step, invalid step, and replay consistency | ✅ Completed | Person B (Ayush) |
 | ENV 11 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Attach judge audit payload to final `StepResult`, terminal observations, and replay state | ENV 06, JDG 11 | 0.5h | completed episodes expose audit notes alongside reward breakdown in a stable schema | ✅ Completed | Person B (Ayush) |
 
@@ -614,20 +614,20 @@ As the team, we want one click reproducible deployment to HF Spaces.
 | API 02 | E07.1 | Person C | `server/app.py` | Add `POST /reset` endpoint | ENV 02 | 0.75h | reset endpoint starts a new episode and returns initial observation | ✅ Completed | Person B (Ayush) |
 | API 03 | E07.1 | Person C | `server/app.py` | Add `POST /step` endpoint | ENV 06 | 0.75h | step endpoint accepts valid action and returns step result | ✅ Completed | Person B (Ayush) |
 | API 04 | E07.1 | Person C | `server/app.py` | Add `GET /scenarios` endpoint | SCN 03 to SCN 05 | 0.5h | endpoint lists available scenario families and difficulties | ✅ Completed | Person B (Ayush) |
-| API 05 | E07.1 | Person C | `server/app.py` | Add `GET /replay/{episode_id}` endpoint | ENV 09 | 0.75h | endpoint returns completed log for valid episode id | ⬜ Not started | — |
+| API 05 | E07.1 | Person C | `server/app.py` | Add `GET /replay/{episode_id}` endpoint | ENV 09 | 0.75h | endpoint returns completed log for valid episode id | ✅ Completed | Person B (Ayush) |
 | API 06 | E07.1 | Person C | `server/app.py` | Add WebSocket session handler | ENV 06 | 1.25h | each connection gets isolated environment state and can reset plus step | ✅ Completed | Person B (Ayush) |
 | API 07 | E07.1 | Person C | `server/app.py` | Add idle timeout and graceful disconnect cleanup | API 06, ENV 08 | 0.75h | stale connections close cleanly and environment closes without leak | ✅ Completed | Person B (Ayush) |
 | API 08 | E07.2 | Person C | `server/Dockerfile` | Build Dockerfile with Python app startup on port 7860 | API 01 to API 07 | 0.75h | local Docker run serves app on port 7860 | ✅ Completed | Person B (Ayush) |
 | API 09 | E07.2 | Person C | HF config files | Add Hugging Face Space metadata and deploy instructions | API 08 | 0.5h | Space config is valid for Docker app deployment | ✅ Completed | Person B (Ayush) |
 | API 10 | E07.2 | Person C | deployment docs | Deploy live Space and verify health, reset, and step | API 09 | 1h | live Space responds successfully to health and one end to end episode | ✅ Completed | Person B (Ayush) |
-| API 11 | E07.1 | Person C | tests | Add server endpoint tests and WebSocket smoke test | API 01 to API 07 | 1h | local server tests pass for health, reset, step, invalid payload, and ws connect | ⬜ Not started | — |
+| API 11 | E07.1 | Person C | tests | Add server endpoint tests and WebSocket smoke test | API 01 to API 07 | 1h | local server tests pass for health, reset, step, invalid payload, and ws connect | ✅ Completed | Person B (Ayush) |
 | API 12 | E07.2 | Person D | docs | Capture deployment screenshots and public link for README | API 10 | 0.25h | README ready screenshots and live link are available | ⬜ Not started | — |
 | API 13 | E07.1 | Person C | `server/app.py` | Add CORS middleware configuration for frontend origins in dev and production | API 01 | 0.25h | frontend on localhost:5173 and HF Space origin can reach the API without CORS errors | ✅ Completed | Person B (Ayush) |
 | API 14 | E07.1 | Person C | `server/app.py` | Add REST session management so each user gets isolated environment state | API 02, API 03 | 0.75h | two concurrent REST users do not share or corrupt each other's episode state | ✅ Completed | Person B (Ayush) |
 | API 15 | E07.2 | Person C | HF Space repo | Create HF Space README.md with YAML frontmatter specifying `sdk: docker`, `app_port: 7860`, title, and emoji | API 08 | 0.25h | HF Space config is valid and Space launches correctly from the metadata | ✅ Completed | Person B (Ayush) |
 | API 16 | E07.2 | Person C | `server/Dockerfile` | Configure Docker to build frontend and serve static assets from FastAPI in a single container | API 08, UI 10 | 0.75h | single Docker container serves both API and frontend on port 7860 | ⬜ Not started | — |
 | API 17 | E07.2 | Person C | deployment docs | Document secrets and API key management for hosted Scientist model access in deployment and notebook | API 09 | 0.5h | team knows how to set API keys in HF Space secrets, local env, and Colab secrets | ✅ Completed | Person B (Ayush) |
-| API 18 | E07.1 | Person C | `server/app.py` | Include judge audit payload plus bounded tool-trace summaries in REST, replay, and WebSocket responses for terminal episodes | API 03, API 05, API 06, ENV 11 | 0.5h | clients receive `judge_notes`, verdict fields, and bounded tool audit data without separate log file access | ⬜ Not started | — |
+| API 18 | E07.1 | Person C | `server/app.py` | Include judge audit payload plus bounded tool-trace summaries in REST, replay, and WebSocket responses for terminal episodes | API 03, API 05, API 06, ENV 11 | 0.5h | clients receive `judge_notes`, verdict fields, and bounded tool audit data without separate log file access | ✅ Completed | Person B (Ayush) |
 | API 19 | E07.2 | Person C | `openenv.yaml` and deployment docs | Expose and verify OpenEnv built in `/web` fallback route locally and on HF Space | FND 09, API 08, API 10 | 0.5h | `/web` is documented, reachable, and able to run a seeded episode when the custom UI is unavailable | ⬜ Not started | — |
 
 ---
@@ -724,15 +724,15 @@ As a judge, I want the same seeded scenario to be replayable.
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| OBS 01 | E10.1 | Person C | `replicalab/utils/logging.py` | Standardize episode log schema for transcript, state snapshots, and scores | ENV 09 | 0.5h | every completed episode log contains the same required fields | ⬜ Not started | — |
+| OBS 01 | E10.1 | Person C | `replicalab/utils/logging.py` | Standardize episode log schema for transcript, state snapshots, and scores | ENV 09 | 0.5h | every completed episode log contains the same required fields | ✅ Completed | Person B (Ayush) |
 | OBS 02 | E10.1 | Person C | logging config | Add local log levels and readable console formatting | API 01 | 0.5h | debug logs can be toggled without code edits | ✅ Completed | Person B (Ayush) |
-| OBS 03 | E10.1 | Person C | replay utilities | Add episode id generation and file naming conventions | OBS 01 | 0.25h | logs never overwrite and are easy to locate | ⬜ Not started | — |
+| OBS 03 | E10.1 | Person C | replay utilities | Add episode id generation and file naming conventions | OBS 01 | 0.25h | logs never overwrite and are easy to locate | ✅ Completed | Person B (Ayush) |
 | OBS 04 | E10.2 | Person A | tests | Add deterministic replay test using seed and action sequence | ENV 10 | 0.75h | replay of same seed and actions matches prior state sequence | ✅ Completed | Person B (Ayush) |
 | OBS 05 | E10.2 | Person D | UI | Surface episode id and replay link in UI | API 05, UI 08 | 0.5h | user can easily capture or revisit a past episode | ⬜ Not started | — |
 | OBS 06 | E10.1 | Person B | notebook | Log training run metadata including model, seed, scenario set, steps, evidence-pack version, and bounded-tool policy | TRN 06 | 0.5h | notebook exports metadata with each run for reproducibility including evidence-pack version and bounded-tool policy | ⬜ Not started | — |
-| OBS 07 | E10.1 | Person C | scripts | Add simple local script to run one episode and dump logs | ENV 06, OBS 01 | 0.5h | one command produces a complete local sample log | ⬜ Not started | — |
+| OBS 07 | E10.1 | Person C | scripts | Add simple local script to run one episode and dump logs | ENV 06, OBS 01 | 0.5h | one command produces a complete local sample log | ✅ Completed | Person B (Ayush) |
 | OBS 08 | E10.2 | Person D | storytelling | Create static replay screenshots or gifs for README and video | UI 08 | 0.5h | at least two crisp visual assets are ready for docs and demo | ⬜ Not started | — |
-| OBS 09 | E10.1 | Person C | `replicalab/utils/logging.py` | Extend episode summary schema with `judge_notes`, `agreement`, `invalid_action_count`, and `invalid_action_rate` for replay and evaluation consumers | OBS 01, JDG 11, ENV 11 | 0.5h | every completed episode log contains the audit payload plus demo and evaluation metrics needed by notebook, UI, and README | ⬜ Not started | — |
+| OBS 09 | E10.1 | Person C | `replicalab/utils/logging.py` | Extend episode summary schema with `judge_notes`, `agreement`, `invalid_action_count`, and `invalid_action_rate` for replay and evaluation consumers | OBS 01, JDG 11, ENV 11 | 0.5h | every completed episode log contains the audit payload plus demo and evaluation metrics needed by notebook, UI, and README | ✅ Completed | Person B (Ayush) |
 
 ---
 
@@ -758,12 +758,12 @@ As a judge, I want the system to work reliably when clicked live.
 | TST 03 | E11.1 | Person A | `tests/test_env.py` | Add invalid action handling test | MOD 05, ENV 03 | 0.5h | invalid action yields structured error and environment survives | ✅ Completed | Person B (Ayush) |
 | TST 04 | E11.1 | Person A | `tests/test_reward.py` | Add perfect protocol high reward test | JDG 04 | 0.5h | perfect protocol scores higher than baseline and broken protocol | ✅ Completed | Person B (Ayush) |
 | TST 05 | E11.1 | Person A | `tests/test_reward.py` | Add zero dimension or penalty behavior test | JDG 04 | 0.5h | zero feasibility or timeout lowers reward as expected | ✅ Completed | Person B (Ayush) |
-| TST 06 | E11.1 | Person C | `tests/test_server.py` | Add health plus reset plus step endpoint tests | API 01 to API 03 | 0.75h | API tests pass locally | ⬜ Not started | — |
+| TST 06 | E11.1 | Person C | `tests/test_server.py` | Add health plus reset plus step endpoint tests | API 01 to API 03 | 0.75h | API tests pass locally | ✅ Completed | Person B (Ayush) |
 | TST 07 | E11.1 | Person C | `tests/test_server.py` | Add WebSocket connection and invalid payload tests | API 06 | 0.75h | WebSocket errors are graceful and session stays isolated | ✅ Completed | Person B (Ayush) |
 | TST 08 | E11.2 | Person D | manual checklist | Create demo smoke checklist for local and hosted builds | UI 12, API 10 | 0.5h | team can verify full demo in under five minutes | ⬜ Not started | — |
 | TST 09 | E11.2 | Person B | notebook checklist | Create notebook smoke test for fresh runtime | TRN 12 | 0.5h | training notebook runs from top with minimal edits and the bounded-tool path works against frozen evidence packs | ⬜ Not started | — |
 | TST 10 | E11.2 | all | full run | Execute one integrated test pass before freeze | all prior TST tasks | 1h | environment, UI, Space, and notebook all pass their smoke tests the same day | ⬜ Not started | — |
-| TST 11 | E11.1 | Person C | `tests/test_server.py` and `tests/test_env.py` | Add contract tests for judge audit payloads and invalid action metrics in terminal responses and replay logs | API 18, OBS 09 | 0.75h | tests confirm terminal payloads and replay files expose audit notes, agreement, and invalid action metrics | ⬜ Not started | — |
+| TST 11 | E11.1 | Person C | `tests/test_server.py` and `tests/test_env.py` | Add contract tests for judge audit payloads and invalid action metrics in terminal responses and replay logs | API 18, OBS 09 | 0.75h | tests confirm terminal payloads and replay files expose audit notes, agreement, and invalid action metrics | ✅ Completed | Person B (Ayush) |
 | TST 12 | E11.2 | Person D | manual checklist | Add fallback `/web` smoke step plus replay slider and before versus after toggle checks to demo checklist | API 19, UI 14, UI 15 | 0.5h | checklist verifies custom UI path and fallback UI path are both demo ready | ⬜ Not started | — |
 
 ---

@@ -20,10 +20,10 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Metric | Value |
 |--------|-------|
 | Total tasks | 152 |
-| Completed | 92 |
+| Completed | 102 |
 | Partial / active | 0 |
-| Remaining | 60 |
-| **Completion rate** | **60.53%** |
+| Remaining | 50 |
+| **Completion rate** | **67.11%** |
 
 ### Completion by Person
 
@@ -31,7 +31,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 |--------|----------|----------------|----------------------|-----------|------|
 | Kian (Person A) | 49 (47 solo + 2 shared with B) | 1 shared sign-off (`FND 08`) | 48 (`FND 04`, `FND 09`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`, `MOD 05`, `MOD 06`, `MOD 08`, `MOD 11`, `MOD 12`, `SCN 01` to `SCN 10`, `SCN 13`, `AGT 05`, `AGT 09`, `ENV 01` to `ENV 08`, `ENV 10`, `ENV 11`, `JDG 01` to `JDG 06`, `JDG 08`, `JDG 11`, `OBS 04`, `TST 01` to `TST 05` done by Person B) | 0 | 100.00% |
 | Person B (Ayush) | 29 (27 solo + 2 shared with A) | 19 (`FND 08`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`, `TRN 13`, `TRN 03`, `TRN 04`, `TRN 01`, `TRN 02`, `TRN 14`) | 0 | 10 | 65.52% |
-| Max (Person C) | 41 | 1 (`FND 11`) | 26 (`FND 01`, `FND 02`, `FND 03`, `FND 05`, `FND 07`, `FND 10`, `FND 12` done by others, `MOD 07`, `MOD 10`, `API 01`, `API 02`, `API 03`, `API 04`, `API 06`, `API 07`, `API 08`, `API 09`, `API 10`, `API 13`, `API 14`, `API 15`, `API 17`, `JDG 07`, `OBS 02`, `TRN 11`, `TST 07` done by Person B) | 14 | 65.85% |
+| Max (Person C) | 41 | 1 (`FND 11`) | 36 (`FND 01`, `FND 02`, `FND 03`, `FND 05`, `FND 07`, `FND 10`, `FND 12` done by others, `MOD 07`, `MOD 10`, `API 01`, `API 02`, `API 03`, `API 04`, `API 05`, `API 06`, `API 07`, `API 08`, `API 09`, `API 10`, `API 11`, `API 13`, `API 14`, `API 15`, `API 17`, `API 18`, `JDG 07`, `OBS 01`, `OBS 02`, `OBS 03`, `OBS 07`, `OBS 09`, `TRN 11`, `TST 06`, `TST 07`, `TST 11`, `ENV 09` done by Person B) | 4 | 90.24% |
 | Kush (Person D) | 32 | 0 | 1 (`FND 06` done by Person B) | 31 | 3.13% |
 | All (shared) | 3 | 2 (`FND 08`, `AGT 05`) | 0 | 1 | 66.67% |
 
@@ -42,19 +42,16 @@ Note: Person B (Ayush) has completed two shared tasks in their own lane
 `TRN 02`, `TRN 14`), and has also executed a large
 cross-owner bundle (`FND 01`, `FND 02`, `FND 04`, `FND 05`, `FND 06`,
 `FND 07`, `FND 09`, `FND 10`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`,
-`MOD 05`, `MOD 06`, `MOD 11`, `MOD 12`, `SCN 01` to `SCN 10`, `ENV 01`
-to `ENV 08`, `ENV 11`, `JDG 01` to `JDG 06`, `JDG 08`, `JDG 11`, `TST 01` to `TST 05`, `API 02`,
-`API 03`, `API 04`, `API 06`, `API 07`, `API 08`, `API 09`, `API 10`,
-`API 13`, `API 14`, `API 15`, `API 17`, `MOD 07`, `MOD 10`, `TST 07`) to keep the Kian, Max,
-and Kush dependency chain moving. `API 10`, `API 17`, `TRN 11`, `MOD 07`,
-and `MOD 10` are now complete, which unblocks `TRN 01` (Colab notebook
-skeleton), `DOC 03` (README setup instructions), `MOD 08`, and `JDG 07`.
-`MOD 08` is now complete (Kian's lane is 100% done), `JDG 07` is complete
-(unblocking `ENV 09` and `JDG 10`), `API 01` and `OBS 02` are closed (no
-active partial tasks remain), and `TRN 01`, `TRN 02`, plus `TRN 14` are now
-complete on the Ayush lane. Ayush's next fully unblocked tasks are
-`TRN 05` and `JDG 10`. Max's next backend chain starts with
-`ENV 09 -> OBS 01 -> API 05`.
+`MOD 05`, `MOD 06`, `MOD 07`, `MOD 10`, `MOD 11`, `MOD 12`, `SCN 01`
+to `SCN 10`, `SCN 13`, `AGT 09`, `ENV 01` to `ENV 09`, `ENV 10`, `ENV 11`,
+`JDG 01` to `JDG 06`, `JDG 07`, `JDG 08`, `JDG 11`, `TST 01` to `TST 07`,
+`TST 11`, `API 01`, `API 02`, `API 03`, `API 04`, `API 05`, `API 06`,
+`API 07`, `API 08`, `API 09`, `API 10`, `API 11`, `API 13`, `API 14`,
+`API 15`, `API 17`, `API 18`, `OBS 01`, `OBS 02`, `OBS 03`, `OBS 04`,
+`OBS 07`, `OBS 09`, `TRN 11`) to keep the Kian, Max, and Kush dependency
+chain moving. All Person A and Person C implementation tasks are now complete
+except for 4 remaining Max tasks (`API 16`, `API 19`, `DOC 08`, `UI 11`).
+Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`.
 
 ---
 
@@ -143,6 +140,16 @@ complete on the Ayush lane. Ayush's next fully unblocked tasks are
 | JDG 07 | E05 | Person C | Log reward breakdown to CSV or JSONL per episode | `replicalab/utils/logging.py`, `tests/test_logging.py` | 2026-03-08 | Verified existing implementation: `append_reward_csv()` writes per-episode rows with all V2 columns (parsimony, bonuses, penalty total, verdict), `append_reward_jsonl()` preserves nested penalty dicts and bounded-tool metrics, and `log_episode_reward()` writes to both formats. 22 tests in `tests/test_logging.py` cover CSV creation, header dedup, JSONL records, default breakdowns, nested penalty preservation, determinism, and the convenience wrapper. No code changes needed. | Reward file contains seed, scenario, score components, total reward, rounds, agreement, and bounded tool metrics | Yes - verified with `python -m pytest tests/test_logging.py -v` (22 passed) and full suite (409 passed) |
 | API 01 | E07 | Person C | Create FastAPI app shell and health endpoint | `server/app.py` | 2026-03-08 | Verified the FastAPI app shell is fully functional: `GET /health` returns 200 with `{"status":"ok","env":"real"}`, the app imports and wires `ReplicaLabEnv`, logging is configured via env vars, CORS middleware is active, and all downstream endpoints (reset, step, scenarios, replay, WebSocket) are operational. Server endpoint tests in `tests/test_server.py` (34 tests) and REST isolation tests (11 tests) confirm full coverage. No code changes needed — task was already complete beyond its acceptance criteria. | `GET /health` returns 200 with simple payload | Yes - verified with existing tests and full suite (409 passed) |
 | OBS 02 | E10 | Person C | Add local log levels and readable console formatting | `replicalab/config.py`, `server/app.py` | 2026-03-08 | Verified logging already meets all acceptance criteria: `REPLICALAB_LOG_LEVEL` env var toggles log verbosity without code edits (default INFO), `LOG_FORMAT` provides readable `%(asctime)s [%(levelname)s] %(name)s: %(message)s` layout, and `server/app.py` wires both via `logging.basicConfig()`. No code changes needed. | Debug logs can be toggled without code edits | Yes - verified by reading `replicalab/config.py` (lines 30-31) and `server/app.py` (lines 75-79) |
+| ENV 09 | E06 | Person C | Write episode logs on completion | `server/app.py` | 2026-03-08 | Added `write_episode_log()` and `log_episode_reward()` calls to `server/app.py` in both REST `/step` and WebSocket step handlers. Terminal episodes now auto-persist replay JSON and reward CSV/JSONL to disk. | Completed episodes generate replayable logs automatically | Yes - verified with terminal episode persistence through REST and WebSocket paths |
+| OBS 09 | E10 | Person C | Extend episode summary with audit metadata | `replicalab/models.py` | 2026-03-08 | Added `invalid_action_count` (int) and `invalid_action_rate` (float) fields to `EpisodeLog` in `replicalab/models.py`. Server tracks invalid actions per session and per WebSocket connection. | Every completed episode log contains the audit payload plus demo and evaluation metrics | Yes - verified with model field presence and server-side tracking |
+| OBS 07 | E10 | Person C | Script to run one episode and dump logs | `scripts/run_episode.py` | 2026-03-08 | Created `scripts/run_episode.py` that resets the env, runs a baseline propose-then-accept episode, and writes replay JSON plus reward CSV/JSONL. | One command produces a complete local sample log | Yes - verified with script execution producing replay and reward files |
+| TST 11 | E11 | Person C | Judge audit payload contract tests | `tests/test_audit_contract.py` | 2026-03-08 | Created `tests/test_audit_contract.py` with 17 tests across 3 classes: `StepInfoAuditContract` (6 tests), `EpisodeLogAuditContract` (6 tests), `AuditModelContracts` (5 tests). | Tests confirm terminal payloads and replay files expose audit notes, agreement, and invalid action metrics | Yes - verified with `python -m pytest tests/test_audit_contract.py` (17 tests pass) |
+| API 05 | E07 | Person C | Add `GET /replay/{episode_id}` endpoint | `server/app.py` | 2026-03-08 | Already implemented at `server/app.py` line 536-540. Endpoint returns completed episode log JSON for a valid episode ID. | Endpoint returns completed log for valid episode id | Yes - verified with existing replay endpoint tests |
+| API 11 | E07 | Person C | Add server endpoint tests and WebSocket smoke test | `tests/test_server.py` | 2026-03-08 | Already implemented in `tests/test_server.py` with 44 tests covering health, reset, step, scenarios, replay, WebSocket connectivity, error handling, session isolation, and smoke paths. | Local server tests pass for health, reset, step, invalid payload, and ws connect | Yes - verified with `python -m pytest tests/test_server.py` (44 tests pass) |
+| API 18 | E07 | Person C | Include judge audit payload in terminal responses | `server/app.py` | 2026-03-08 | Already implemented. Terminal `StepInfo` includes `judge_notes`, `verdict`, and `top_failure_reasons` from the real judge audit in both REST and WebSocket paths. | Clients receive judge_notes, verdict fields, and bounded tool audit data without separate log file access | Yes - verified with terminal response inspection and audit contract tests |
+| OBS 01 | E10 | Person C | Standardize episode log schema | `replicalab/models.py` | 2026-03-08 | Already implemented. `EpisodeLog` model in `replicalab/models.py` is the canonical schema with all required fields for transcript, state snapshots, scores, and audit metadata. | Every completed episode log contains the same required fields | Yes - verified with `EpisodeLog` model inspection and schema tests |
+| OBS 03 | E10 | Person C | Episode id generation and file naming conventions | `replicalab/utils/logging.py` | 2026-03-08 | Already implemented. UUID generation in env, `{episode_id}.json` naming in `replicalab/utils/logging.py`. Logs never overwrite because each episode gets a unique UUID. | Logs never overwrite and are easy to locate | Yes - verified with replay file naming behavior |
+| TST 06 | E11 | Person C | Health plus reset plus step endpoint tests | `tests/test_server.py` | 2026-03-08 | Already implemented in `tests/test_server.py` with `TestHealthEndpoint`, `TestResetEndpoint`, and `TestStepEndpoint` classes. | API tests pass locally | Yes - verified with `python -m pytest tests/test_server.py` |
 
 ### Person B (Ayush) - Completed own tasks
 
@@ -271,6 +278,16 @@ complete on the Ayush lane. Ayush's next fully unblocked tasks are
 | ENV 11 | No new fully unblocked tasks by itself; `API 18` and `OBS 09` are each one dependency closer because the audit payload now survives into replay-facing state |
 | API 10 | TRN 01 (Colab notebook skeleton), TRN 11 (environment URL documentation) |
 | API 17 | No new formal dependency edge by itself, but secrets landscape is now documented for all contexts |
+| ENV 09 | OBS 01, API 05 |
+| OBS 01 | OBS 03, OBS 07 |
+| OBS 03 | No downstream dependencies beyond OBS 07 which is also complete |
+| OBS 07 | No downstream dependencies |
+| OBS 09 | TRN 15 is one dependency closer (still needs TRN 06 and TRN 08) |
+| API 05 | UI 08, OBS 05 |
+| API 11 | No downstream dependencies |
+| API 18 | TST 11, UI 13 |
+| TST 06 | No downstream dependencies |
+| TST 11 | No downstream dependencies |
 
 ### Current Unblocked and Active Tasks
 
@@ -282,7 +299,7 @@ complete on the Ayush lane. Ayush's next fully unblocked tasks are
 | TRN 05 | Person B (Ayush) | Connect rollouts to GRPO or equivalent trainer | TRN 04 |
 | JDG 10 | Person B (Ayush) | Expose component metrics for training plots | JDG 05, JDG 07 |
 | JDG 09 | Kush (Person D) | Create mock score cards and language for frontend | JDG 05 |
-Note: Person B (Ayush) has completed `TRN 01`, `TRN 02`, `TRN 03`, `TRN 04`, `TRN 13`, and `TRN 14`. Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`, while Max's next backend chain starts with `ENV 09`.
+Note: Person B (Ayush) has completed `TRN 01`, `TRN 02`, `TRN 03`, `TRN 04`, `TRN 13`, and `TRN 14`. Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`. Max's remaining tasks are `API 16`, `API 19`, `DOC 08`, and `UI 11`.
 
 ---
 
@@ -295,10 +312,10 @@ Note: Person B (Ayush) has completed `TRN 01`, `TRN 02`, `TRN 03`, `TRN 04`, `TR
 | E03. Scenario engine and constraint generation | 13 | 12 | 92.31% |
 | E04. Scientist agent and Lab Manager policy | 11 | 11 | 100.00% |
 | E05. Judge engine and reward logic | 11 | 9 | 81.82% |
-| E06. OpenEnv environment implementation | 11 | 10 | 90.91% |
-| E07. API, server, Docker, deployment | 19 | 13 | 68.42% |
+| E06. OpenEnv environment implementation | 11 | 11 | 100.00% |
+| E07. API, server, Docker, deployment | 19 | 16 | 84.21% |
 | E08. RL training pipeline and evaluation | 15 | 6 | 40.00% |
 | E09. Frontend, UX, replay, demo views | 15 | 0 | 0% |
-| E10. Logging, replay, and observability | 9 | 2 | 22.22% |
-| E11. Testing and quality gates | 12 | 6 | 50.00% |
+| E10. Logging, replay, and observability | 9 | 6 | 66.67% |
+| E11. Testing and quality gates | 12 | 8 | 66.67% |
 | E12. README, demo video, submission packaging | 11 | 0 | 0% |
