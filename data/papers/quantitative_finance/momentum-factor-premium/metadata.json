@@ -1,0 +1,22 @@
+{
+  "id": 37,
+  "field": "quantitative_finance",
+  "scenario_title": "Momentum Factor Premium",
+  "download_folder": "data/papers/quantitative_finance/momentum-factor-premium",
+  "requested_paper_title": "Momentum Factor Premium",
+  "downloaded_paper_title": "Global, regional, and national prevalence of overweight and obesity in children and adults during 1980\u20132013: a systematic analysis for the Global Burden of Disease Study 2013",
+  "planned_reference_title": "A Century of Evidence on Trend-Following Investing",
+  "match_type": "alternative",
+  "query": "A Century of Evidence on Trend-Following Investing",
+  "status": "downloaded",
+  "source_url": "https://openrepository.aut.ac.nz/server/api/core/bitstreams/3ec6d9d6-95b1-455b-ab99-d68f31c8e543/content",
+  "manual_url": "https://doi.org/10.2139/ssrn.2993026",
+  "sha256": "a1e49340daea74c66eba9ead191279e584cdd87ee9e04c5ed4c30ddb92c37a12",
+  "bytes": 793633,
+  "candidates_tried": [
+    "https://doi.org/10.2139/ssrn.2993026",
+    "https://onlinelibrary.wiley.com/doi/pdfdirect/10.3322/caac.20107",
+    "https://doi.org/10.3322/caac.20107",
+    "https://openrepository.aut.ac.nz/bitstreams/3ec6d9d6-95b1-455b-ab99-d68f31c8e543/download"
+  ]
+}

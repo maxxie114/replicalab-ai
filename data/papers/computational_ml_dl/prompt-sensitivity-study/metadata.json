@@ -1,0 +1,19 @@
+{
+  "id": 12,
+  "field": "computational_ml_dl",
+  "scenario_title": "Prompt Sensitivity Study",
+  "download_folder": "data/papers/computational_ml_dl/prompt-sensitivity-study",
+  "requested_paper_title": "Prompt Sensitivity Study",
+  "downloaded_paper_title": "Benchmarking Prompt Sensitivity in Large Language Models",
+  "planned_reference_title": "Benchmarking Prompt Sensitivity in Large Language Models",
+  "match_type": "alternative",
+  "query": "Benchmarking Prompt Sensitivity in Large Language Models",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/2502.06065",
+  "manual_url": "https://arxiv.org/pdf/2502.06065.pdf",
+  "sha256": "0641ad0fcfe27b8c0a2c3ca06f73685509b6a09578c162e2faf6b7b909e69354",
+  "bytes": 320287,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/2502.06065.pdf"
+  ]
+}

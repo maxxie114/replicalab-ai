@@ -1,0 +1,19 @@
+{
+  "id": 16,
+  "field": "computational_ml_dl",
+  "scenario_title": "Graph Neural Network for Molecules",
+  "download_folder": "data/papers/computational_ml_dl/graph-neural-network-for-molecules",
+  "requested_paper_title": "Graph Neural Network for Molecules",
+  "downloaded_paper_title": "How Powerful are Graph Neural Networks?",
+  "planned_reference_title": "How Powerful are Graph Neural Networks?",
+  "match_type": "alternative",
+  "query": "How Powerful are Graph Neural Networks?",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1810.00826",
+  "manual_url": "https://arxiv.org/pdf/1810.00826.pdf",
+  "sha256": "a6ebf80c2790b8bac1fa378902993eae26020cc6d0d95e3964eea42b0c66a974",
+  "bytes": 819821,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1810.00826.pdf"
+  ]
+}

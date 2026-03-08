@@ -1,0 +1,19 @@
+{
+  "id": 18,
+  "field": "computational_ml_dl",
+  "scenario_title": "Neural Architecture Search",
+  "download_folder": "data/papers/computational_ml_dl/neural-architecture-search",
+  "requested_paper_title": "Neural Architecture Search",
+  "downloaded_paper_title": "DARTS: Differentiable Architecture Search",
+  "planned_reference_title": "DARTS: Differentiable Architecture Search",
+  "match_type": "alternative",
+  "query": "DARTS: Differentiable Architecture Search",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1806.09055",
+  "manual_url": "https://arxiv.org/pdf/1806.09055.pdf",
+  "sha256": "81a65f80be6c954280a0eea679f6202eaf28d3d520d027c4857a770b8c12fdcf",
+  "bytes": 636787,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1806.09055.pdf"
+  ]
+}

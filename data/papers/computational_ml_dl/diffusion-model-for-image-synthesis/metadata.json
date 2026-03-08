@@ -1,0 +1,19 @@
+{
+  "id": 3,
+  "field": "computational_ml_dl",
+  "scenario_title": "Diffusion Model for Image Synthesis",
+  "download_folder": "data/papers/computational_ml_dl/diffusion-model-for-image-synthesis",
+  "requested_paper_title": "Diffusion Model for Image Synthesis",
+  "downloaded_paper_title": "Denoising Diffusion Probabilistic Models",
+  "planned_reference_title": "Denoising Diffusion Probabilistic Models",
+  "match_type": "alternative",
+  "query": "Denoising Diffusion Probabilistic Models",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/2006.11239",
+  "manual_url": "https://arxiv.org/pdf/2006.11239.pdf",
+  "sha256": "aee5e07a802e8dfd2a386374c94fd61d1d056cb7e1e0fec4f28e8120ff5d8505",
+  "bytes": 10267274,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/2006.11239.pdf"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": 10,
+  "field": "computational_ml_dl",
+  "scenario_title": "Cross-lingual Transfer",
+  "download_folder": "data/papers/computational_ml_dl/cross-lingual-transfer",
+  "requested_paper_title": "Cross-lingual Transfer",
+  "downloaded_paper_title": "Extending Multilingual BERT to Low-Resource Languages",
+  "planned_reference_title": "Extending Multilingual BERT to Low-Resource Languages",
+  "match_type": "alternative",
+  "query": "Extending Multilingual BERT to Low-Resource Languages",
+  "status": "downloaded",
+  "source_url": "https://aclanthology.org/2020.findings-emnlp.240.pdf",
+  "manual_url": "https://www.aclweb.org/anthology/2020.findings-emnlp.240.pdf",
+  "sha256": "9f037cab8c461adf9fcecdc65b272639f42feb7c49ffc455ce09f74039144f74",
+  "bytes": 406367,
+  "candidates_tried": [
+    "https://www.aclweb.org/anthology/2020.findings-emnlp.240.pdf"
+  ]
+}

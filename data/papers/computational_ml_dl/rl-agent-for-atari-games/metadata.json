@@ -1,0 +1,19 @@
+{
+  "id": 4,
+  "field": "computational_ml_dl",
+  "scenario_title": "RL Agent for Atari Games",
+  "download_folder": "data/papers/computational_ml_dl/rl-agent-for-atari-games",
+  "requested_paper_title": "RL Agent for Atari Games",
+  "downloaded_paper_title": "Proximal Policy Optimization Algorithms",
+  "planned_reference_title": "Proximal Policy Optimization Algorithms",
+  "match_type": "alternative",
+  "query": "Proximal Policy Optimization Algorithms Atari",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1707.06347",
+  "manual_url": "https://arxiv.org/pdf/1707.06347.pdf",
+  "sha256": "e78feadadbdbb0b601b3c2bcc81404722cd431a489b307545f9b7bea1e8c4f5b",
+  "bytes": 2923532,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1707.06347.pdf"
+  ]
+}

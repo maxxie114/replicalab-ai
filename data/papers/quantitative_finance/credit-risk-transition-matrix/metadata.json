@@ -1,0 +1,31 @@
+{
+  "id": 44,
+  "field": "quantitative_finance",
+  "scenario_title": "Credit Risk Transition Matrix",
+  "download_folder": "data/papers/quantitative_finance/credit-risk-transition-matrix",
+  "requested_paper_title": "Credit Risk Transition Matrix",
+  "downloaded_paper_title": "Service oriented architectures: approaches, technologies and research issues",
+  "planned_reference_title": "Credit Ratings Across Asset Classes: A Long-Term Perspective",
+  "match_type": "alternative",
+  "query": "Credit Ratings Across Asset Classes: A Long-Term Perspective",
+  "status": "downloaded",
+  "source_url": "https://link.springer.com/content/pdf/10.1007/s00778-007-0044-3.pdf",
+  "manual_url": "https://academic.oup.com/rof/article-pdf/21/2/465/26322052/rfx002.pdf",
+  "sha256": "4834f265f44d4c0329fbdcbd9e8783c6c17298dbd86e5eec18d12191074e07d3",
+  "bytes": 818676,
+  "candidates_tried": [
+    "https://academic.oup.com/rof/article-pdf/21/2/465/26322052/rfx002.pdf",
+    "https://doi.org/10.1093/rof/rfx002",
+    "https://academic.oup.com/rof/article-pdf/26/6/1315/47018560/rfac033.pdf",
+    "https://doi.org/10.1093/rof/rfac033",
+    "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1755-053X.2009.01026.x",
+    "https://doi.org/10.1111/j.1755-053x.2009.01026.x",
+    "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1540-6261.2004.00642.x",
+    "https://doi.org/10.1111/j.1540-6261.2004.00642.x",
+    "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1468-0335.2009.00843.x",
+    "https://doi.org/10.1111/j.1468-0335.2009.00843.x",
+    "https://academic.oup.com/rfs/article-pdf/29/1/5/24450794/hhv059.pdf",
+    "https://doi.org/10.1093/rfs/hhv059",
+    "https://link.springer.com/content/pdf/10.1007/s00778-007-0044-3.pdf"
+  ]
+}

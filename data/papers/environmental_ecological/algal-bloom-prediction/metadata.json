@@ -1,0 +1,30 @@
+{
+  "id": 36,
+  "field": "environmental_ecological",
+  "scenario_title": "Algal Bloom Prediction",
+  "download_folder": "data/papers/environmental_ecological/algal-bloom-prediction",
+  "requested_paper_title": "Algal Bloom Prediction",
+  "downloaded_paper_title": "Prediction of short-term algal bloom using the M5P model-tree and extreme learning machine",
+  "planned_reference_title": "Algal Bloom Prediction Using Extreme Learning Machine Models at Artificial Weirs in the Nakdong River, Korea",
+  "match_type": "alternative",
+  "query": "algal bloom phosphorus prediction",
+  "status": "downloaded",
+  "source_url": "https://www.eeer.org/upload/eer-2018-245.pdf",
+  "manual_url": "https://www.mdpi.com/1660-4601/15/10/2078/pdf?version=1537521061",
+  "sha256": "cb6378770ae4f899abb725dcdc579a3164f449e7c0c8e349cd2afb2ace1e1df1",
+  "bytes": 1729369,
+  "candidates_tried": [
+    "https://www.mdpi.com/1660-4601/15/10/2078/pdf?version=1537521061",
+    "https://www.sciencedirect.com/science/article/pii/S0048969721041127?via%3Dihub",
+    "https://doi.org/10.1016/j.scitotenv.2021.149040",
+    "https://doi.org/10.3390/ijerph15102078",
+    "https://www.tandfonline.com/doi/pdf/10.1080/07438148809354373?needAccess=true",
+    "https://doi.org/10.1080/07438148809354373",
+    "https://www.int-res.com/articles/meps/210/m210p223.pdf",
+    "https://doi.org/10.3354/meps210223",
+    "https://doi.org/10.1016/j.ecolind.2022.109190",
+    "https://www.mdpi.com/2073-4441/12/4/1035/pdf?version=1586312862",
+    "https://doi.org/10.3390/w12041035",
+    "http://eeer.org/upload/eer-2018-245.pdf"
+  ]
+}

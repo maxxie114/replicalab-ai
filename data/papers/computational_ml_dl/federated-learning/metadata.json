@@ -1,0 +1,19 @@
+{
+  "id": 20,
+  "field": "computational_ml_dl",
+  "scenario_title": "Federated Learning",
+  "download_folder": "data/papers/computational_ml_dl/federated-learning",
+  "requested_paper_title": "Federated Learning",
+  "downloaded_paper_title": "Communication-Efficient Learning of Deep Networks from Decentralized Data",
+  "planned_reference_title": "Communication-Efficient Learning of Deep Networks from Decentralized Data",
+  "match_type": "alternative",
+  "query": "Communication-Efficient Learning of Deep Networks from Decentralized Data",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1602.05629",
+  "manual_url": "https://arxiv.org/pdf/1602.05629.pdf",
+  "sha256": "2faf5593d9db413dee96a9be6ab9527cb0413b34fd5024aa60db3a5ad5795384",
+  "bytes": 1311201,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1602.05629.pdf"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": 24,
+  "field": "wet_lab_biology",
+  "scenario_title": "Flow Cytometry Apoptosis",
+  "download_folder": "data/papers/wet_lab_biology/flow-cytometry-apoptosis",
+  "requested_paper_title": "Flow Cytometry Apoptosis",
+  "downloaded_paper_title": "Protocol for Apoptosis Assay by Flow Cytometry Using Annexin V Staining Method",
+  "planned_reference_title": "Protocol for Apoptosis Assay by Flow Cytometry Using Annexin V Staining Method",
+  "match_type": "alternative",
+  "query": "Protocol for Apoptosis Assay by Flow Cytometry Using Annexin V Staining Method",
+  "status": "downloaded",
+  "source_url": "https://bio-protocol.org/pdf/Bio-protocol374.pdf",
+  "manual_url": "https://bio-protocol.org/pdf/Bio-protocol374.pdf",
+  "sha256": "b42510e115321fd5024976e5d86c3d18d83dd0a31234ccdba902db60afe7bdb5",
+  "bytes": 308808,
+  "candidates_tried": [
+    "https://bio-protocol.org/pdf/Bio-protocol374.pdf"
+  ]
+}

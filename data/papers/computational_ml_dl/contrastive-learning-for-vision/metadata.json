@@ -1,0 +1,19 @@
+{
+  "id": 15,
+  "field": "computational_ml_dl",
+  "scenario_title": "Contrastive Learning for Vision",
+  "download_folder": "data/papers/computational_ml_dl/contrastive-learning-for-vision",
+  "requested_paper_title": "Contrastive Learning for Vision",
+  "downloaded_paper_title": "A Simple Framework for Contrastive Learning of Visual Representations",
+  "planned_reference_title": "A Simple Framework for Contrastive Learning of Visual Representations",
+  "match_type": "alternative",
+  "query": "A Simple Framework for Contrastive Learning of Visual Representations",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/2002.05709",
+  "manual_url": "https://arxiv.org/pdf/2002.05709.pdf",
+  "sha256": "e1b10db76adeb0d21a014b9abcf42f6a6af928540c223f010fa1d8c293d9d105",
+  "bytes": 6564895,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/2002.05709.pdf"
+  ]
+}

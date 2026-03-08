@@ -1,0 +1,21 @@
+{
+  "id": 43,
+  "field": "quantitative_finance",
+  "scenario_title": "VaR Model Backtesting",
+  "download_folder": "data/papers/quantitative_finance/var-model-backtesting",
+  "requested_paper_title": "VaR Model Backtesting",
+  "downloaded_paper_title": "Assessing Efficiency of D-Vine Copula ARMA-GARCH Method in Value at Risk Forecasting: Evidence from PSE Listed Companies",
+  "planned_reference_title": "Backtesting Value-at-Risk Models: A Multivariate Approach",
+  "match_type": "alternative",
+  "query": "Backtesting Value-at-Risk Models: A Multivariate Approach",
+  "status": "downloaded",
+  "source_url": "http://acta.mendelu.cz/pdfs/acu/2015/04/24.pdf",
+  "manual_url": "https://doi.org/10.2139/ssrn.1591049",
+  "sha256": "dea3f22130a74cd9a00f27d43c10337bc9a2409645db93873116f630182ec03d",
+  "bytes": 458813,
+  "candidates_tried": [
+    "https://doi.org/10.2139/ssrn.1591049",
+    "http://hdl.handle.net/11250/259296",
+    "http://acta.mendelu.cz/doi/10.11118/actaun201563041287.pdf"
+  ]
+}

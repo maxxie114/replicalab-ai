@@ -1,0 +1,19 @@
+{
+  "id": 19,
+  "field": "computational_ml_dl",
+  "scenario_title": "Data Augmentation",
+  "download_folder": "data/papers/computational_ml_dl/data-augmentation",
+  "requested_paper_title": "Data Augmentation",
+  "downloaded_paper_title": "RandAugment: Practical automated data augmentation with a reduced search space",
+  "planned_reference_title": "RandAugment: Practical automated data augmentation with a reduced search space",
+  "match_type": "alternative",
+  "query": "RandAugment: Practical automated data augmentation with a reduced search space",
+  "status": "downloaded",
+  "source_url": "https://arxiv.org/pdf/1909.13719",
+  "manual_url": "https://arxiv.org/pdf/1909.13719.pdf",
+  "sha256": "b9745340e336d9dc81a7c7eb1f9560c64c741fa40cfee69bdd439d223c7ddd38",
+  "bytes": 1263406,
+  "candidates_tried": [
+    "https://arxiv.org/pdf/1909.13719.pdf"
+  ]
+}

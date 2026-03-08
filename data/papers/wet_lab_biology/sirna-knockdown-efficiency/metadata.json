@@ -1,0 +1,19 @@
+{
+  "id": 22,
+  "field": "wet_lab_biology",
+  "scenario_title": "siRNA Knockdown Efficiency",
+  "download_folder": "data/papers/wet_lab_biology/sirna-knockdown-efficiency",
+  "requested_paper_title": "siRNA Knockdown Efficiency",
+  "downloaded_paper_title": "Nanoparticle-mediated delivery of siRNA targeting Parp1 extends survival of mice bearing tumors derived from Brca1-deficient ovarian cancer cells",
+  "planned_reference_title": "Nanoparticle-mediated delivery of siRNA targeting Parp1 extends survival of mice bearing tumors derived from Brca1-deficient ovarian cancer cells",
+  "match_type": "alternative",
+  "query": "BRCA1 siRNA",
+  "status": "downloaded",
+  "source_url": "https://dspace.mit.edu/bitstream/handle/1721.1/65350/Goldberg-2011-Jan-Nanoparticle-mediated%20delivery%20of%20siRNA%20targeting%20Parp1%20extends%20survival%20bearing%20tumors%20derived%20from%20Brca1-deficient%20ovarian%20cancer%20cells.pdf?sequence=2&isAllowed=y",
+  "manual_url": "http://hdl.handle.net/1721.1/65350",
+  "sha256": "6c16a250788cb2375ce762d3ea3c2735dd7d50c64b5c5891c0825834099b797d",
+  "bytes": 706432,
+  "candidates_tried": [
+    "http://hdl.handle.net/1721.1/65350"
+  ]
+}
