@@ -10,16 +10,16 @@ No assumptions from other documents are used to reclassify blocked status.
 ## 1. Blocking Status
 
 Per the source of truth, Person B has finished the draft portion of `FND 08`.
-The immediate next action is Person A review and sign-off on `docs/fnd08_frozen_json_contract.md`.
+The immediate next action is Kian (Person A) review and sign-off on `docs/fnd08_frozen_json_contract.md`.
 While waiting on that sign-off, Person B completed `FND 02`, `FND 05`, `FND 06`,
 and `FND 07` on behalf of the assigned owners so Epic E01 could keep moving.
 
 ---
 
-## 2. Blocked by Person A-Led External Dependencies
+## 2. Blocked by Kian (Person A)-Led External Dependencies
 
-These tasks are first gated by upstream deliverables, primarily from Person A.
-`JDG 10` also requires Person C to ship `JDG 07`.
+These tasks are first gated by upstream deliverables, primarily from Kian (Person A).
+`JDG 10` also requires Max (Person C) to ship `JDG 07`.
 
 | ID | Task | Depends On | Person A Deliverable | Est |
 |----|------|-----------|---------------------|-----|
@@ -31,7 +31,7 @@ These tasks are first gated by upstream deliverables, primarily from Person A.
 
 **Total: 5 tasks, 4.0h**
 
-### What to ask Person A for first (priority order)
+### What to ask Kian for first (priority order)
 
 1. **MOD 01** (ScientistAction schema) -- unblocks MOD 09 and, after SCN 11, AGT 01
 2. **MOD 03** (Observation models) -- unblocks AGT 02
@@ -62,7 +62,7 @@ sequentially as both streams deliver.
 
 ---
 
-## 4. Blocked by Person C (Needs Server/API)
+## 4. Blocked by Max (Person C) (Needs Server/API)
 
 Cannot proceed until Person C delivers the server and deployment.
 
@@ -74,7 +74,7 @@ Cannot proceed until Person C delivers the server and deployment.
 
 **Total: 3 tasks, 2.5h**
 
-### What to ask Person C for first (priority order)
+### What to ask Max for first (priority order)
 
 1. **API 06** (WebSocket handler) -- unblocks TRN 03 and TRN 13
 2. **API 10** (deployed HF Space) -- unblocks TRN 01 notebook skeleton
@@ -104,7 +104,7 @@ are done.
 
 ---
 
-## 6. Blocked by Person D
+## 6. Blocked by Kush (Person D)
 
 | ID | Task | Depends On | Person D Deliverable | Est |
 |----|------|-----------|---------------------|-----|
@@ -122,21 +122,21 @@ All phases are gated by the listed external dependency being delivered first.
 
 1. **FND 08** -- Draft complete in `docs/fnd08_frozen_json_contract.md`; waiting on Person A sign-off
 
-### Phase 2: After Person A and B complete FND 08, and Person A delivers MOD 01 + SCN 09
+### Phase 2: After Kian and Ayush complete FND 08, and Kian delivers MOD 01 + SCN 09
 
 2. **SCN 11** -- Create golden scenarios for prompt testing
 3. **MOD 09** -- Build output parser for ScientistAction
 4. **AGT 01** -- Draft Scientist system prompt
 5. **AGT 11** -- Select and document base model
 
-### Phase 3: After Person A delivers MOD 03
+### Phase 3: After Kian delivers MOD 03
 
 6. **AGT 02** -- Build observation to prompt formatter
 7. **AGT 03** -- Add parse plus retry logic
 8. **AGT 04** -- Build baseline heuristic Scientist
 9. **AGT 08** -- Write tests for prompt formatting and parsing
 
-### Phase 4: After Person A delivers SCN 07 + MOD 05 + SCN 08 + JDG 05 + JDG 06, and Person C delivers JDG 07
+### Phase 4: After Kian delivers SCN 07 + MOD 05 + SCN 08 + JDG 05 + JDG 06, and Max delivers JDG 07
 
 10. **AGT 05** -- Feasibility checker (shared with Person A)
 11. **AGT 06** -- Alternative suggestion logic
@@ -144,7 +144,7 @@ All phases are gated by the listed external dependency being delivered first.
 13. **AGT 10** -- Write all prompt text files
 14. **JDG 10** -- Expose component metrics for training plots
 
-### Phase 5: After Person C delivers API 06 + API 10
+### Phase 5: After Max delivers API 06 + API 10
 
 15. **TRN 13** -- Build client.py reusable module
 16. **TRN 01** -- Create notebook skeleton
@@ -164,7 +164,7 @@ All phases are gated by the listed external dependency being delivered first.
 27. **TRN 15** -- Agreement and invalid action rate metrics
 28. **OBS 06** -- Training run metadata logging
 
-### Phase 7: After Person D delivers TRN 12
+### Phase 7: After Kush delivers TRN 12
 
 29. **TST 09** -- Notebook smoke test
 

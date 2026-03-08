@@ -1,4 +1,4 @@
-# Person C Task Breakdown
+# Max (Person C) Task Breakdown
 
 Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
@@ -8,7 +8,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 - `FND 01`, `FND 02`, `FND 05`, `FND 07`, and `FND 10` are already complete
 - Those tasks were executed by `Person B (Ayush)` and logged in `docs/changes.md`
-- Person C's next implementation priority is `FND 03`, followed by `FND 11`
+- Max's next implementation priority in the Person C lane is `FND 03`, followed by `FND 11`
 
 ---
 
@@ -22,7 +22,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 ## Still blocked
 
 - `FND 12` depends on `FND 03`
-- `FND 13` depends on `FND 03` even though it is owned by Person D
+- `FND 13` depends on `FND 03` even though it is owned by Kush (Person D)
 
 ---
 

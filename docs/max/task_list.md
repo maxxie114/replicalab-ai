@@ -1,4 +1,4 @@
-# Person C Task List
+# Max (Person C) Task List
 
 Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
@@ -8,7 +8,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 - `FND 01`, `FND 02`, `FND 05`, `FND 07`, and `FND 10` are complete
 - All five were executed by `Person B (Ayush)` and recorded as executor deviations
-- The next unblocked Person C task is `FND 03`
+- The next unblocked Max task in the Person C lane is `FND 03`
 - `FND 11` is now also unblocked because `FND 02` is complete
 
 ---

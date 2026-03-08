@@ -29,10 +29,10 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 | Person | Assigned | Completed (own) | Completed (by others) | Remaining | Rate |
 |--------|----------|----------------|----------------------|-----------|------|
-| Person A | 49 (47 solo + 2 shared with B) | 0 | 1 (FND 04 done by Person B) | 48 | 2.04% |
+| Kian (Person A) | 49 (47 solo + 2 shared with B) | 0 | 1 (FND 04 done by Person B) | 48 | 2.04% |
 | Person B (Ayush) | 29 (27 solo + 2 shared with A) | 0 own-assigned | 0 | 29 | 0% |
-| Person C | 41 | 0 | 5 (FND 01, FND 02, FND 05, FND 07, FND 10 done by Person B) | 36 | 12.20% |
-| Person D | 32 | 0 | 1 (FND 06 done by Person B) | 31 | 3.13% |
+| Max (Person C) | 41 | 0 | 5 (FND 01, FND 02, FND 05, FND 07, FND 10 done by Person B) | 36 | 12.20% |
+| Kush (Person D) | 32 | 0 | 1 (FND 06 done by Person B) | 31 | 3.13% |
 | All (shared) | 3 | 0 | 0 | 3 | 0% |
 
 Note: Person B (Ayush) completed 7 tasks total, but all were assigned to other
@@ -66,19 +66,19 @@ dependencies.
 | FND 07 | E01 | Person C | Define branch naming, PR template, and issue template | `.github/` and repo workflow docs | 2026-03-08 | Added `.github/pull_request_template.md` and `.github/ISSUE_TEMPLATE/task.yml`, and documented preferred branch naming patterns plus required tracking-doc updates in `docs/project_management_rules.md`. | All future PRs auto show the template and issue fields | Yes — verified by the presence of the GitHub template files and the documented branch workflow |
 | FND 10 | E01 | Person C | Create output directory structure | `replicalab/outputs/` | 2026-03-07 | Created `replicalab/outputs/` with three subdirectories: `logs/`, `replays/`, `plots/`. All tracked via `.gitkeep` files. | Output directories exist and generated files are not committed to git | Yes |
 
-### Person A — No tasks completed yet
+### Kian (Person A) — No tasks completed yet
 
 | ID | Epic | Task | Status |
 |----|------|------|--------|
 | — | — | No tasks completed | 0 of 49 assigned |
 
-### Person C — No tasks completed yet
+### Max (Person C) — No tasks completed yet
 
 | ID | Epic | Task | Status |
 |----|------|------|--------|
 | — | — | No tasks completed (2 assigned tasks done by Person B) | 0 of 41 self-completed |
 
-### Person D — No tasks completed yet
+### Kush (Person D) — No tasks completed yet
 
 | ID | Epic | Task | Status |
 |----|------|------|--------|
@@ -102,11 +102,11 @@ dependencies.
 
 | ID | Owner | Task | Unblocked By |
 |----|-------|------|-------------|
-| FND 03 | Person C | Initialize React plus Vite frontend shell | FND 01 |
+| FND 03 | Max (Person C) | Initialize React plus Vite frontend shell | FND 01 |
 | FND 08 | Person A and B | Freeze JSON contract for actions and observations (draft complete, sign-off pending) | FND 04 |
-| FND 09 | Person A | Create openenv.yaml configuration | FND 04 |
-| FND 11 | Person C | Create server requirements file pinning runtime dependencies | FND 02 |
-| DOC 01 | Person D | Write hook, problem statement, and one line product summary | FND 06 |
+| FND 09 | Kian (Person A) | Create openenv.yaml configuration | FND 04 |
+| FND 11 | Max (Person C) | Create server requirements file pinning runtime dependencies | FND 02 |
+| DOC 01 | Kush (Person D) | Write hook, problem statement, and one line product summary | FND 06 |
 
 ---
 

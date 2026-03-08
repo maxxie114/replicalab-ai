@@ -30,6 +30,11 @@ Use the following order of authority when project-management files disagree:
 - Each contributor keeps a folder under `docs/`.
 - Use the actual person name when known.
 - If the real name is not yet known, use a role placeholder such as `person_a`.
+- Current owner-folder mapping for this repo:
+  - `docs/ayush/` = Person B (Ayush)
+  - `docs/kian/` = Person A
+  - `docs/max/` = Person C
+  - `docs/kush/` = Person D
 - The minimum expected files per contributor folder are:
   - `README.md`
   - `task_list.md`

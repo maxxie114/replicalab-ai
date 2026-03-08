@@ -505,4 +505,4 @@ Canonical example:
 | Owner | Status | Notes |
 | --- | --- | --- |
 | Person B (Ayush) | signed off | Draft matches current stubs and downstream parser needs |
-| Person A | pending | Needs validator and environment owner review before `FND 08` can be marked complete |
+| Kian (Person A) | pending | Needs validator and environment owner review before `FND 08` can be marked complete |
