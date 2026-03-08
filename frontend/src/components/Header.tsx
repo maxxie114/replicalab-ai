@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FlaskConical, LayoutDashboard, Play, Sun, Moon, Volume2, VolumeX, HelpCircle, GitCompareArrows } from 'lucide-react';
+import { FlaskConical, LayoutDashboard, Play, Sun, Moon, Volume2, VolumeX, HelpCircle, GitCompareArrows, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/useTheme';
 import { toggleMute, isMuted } from '@/lib/audio';
@@ -8,6 +8,7 @@ import { toggleMute, isMuted } from '@/lib/audio';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/episode', label: 'Episode', icon: Play },
+  { to: '/training', label: 'Training', icon: GraduationCap },
   { to: '/compare', label: 'Compare', icon: GitCompareArrows },
 ];
 

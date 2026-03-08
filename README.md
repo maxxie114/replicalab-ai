@@ -16,7 +16,7 @@ pinned: false
 
 ReplicaLab tackles this by training an AI Scientist agent to negotiate feasible replication plans under realistic resource constraints. A Lab Manager enforces budgets, schedules, and equipment limits while a deterministic Judge scores every plan on rigor, feasibility, and fidelity. Through reinforcement learning, the Scientist learns to ask better questions, make smarter tradeoffs, and reach agreement faster -- all without sacrificing scientific quality.
 
-The initial domain focus is mathematics and machine learning, with offline finance and trading design as the third scenario family. Physics and biology remain future adapters after the core normalized scenario layer is stable.
+Three scenario families ship today -- mathematics reasoning, ML benchmark replication, and offline finance/trading backtest design -- each with easy, medium, and hard difficulty scaling. Physics and biology remain future adapters after the core normalized scenario layer is stable.
 
 ## Team Ownership
 
@@ -32,7 +32,7 @@ The initial domain focus is mathematics and machine learning, with offline finan
 ## Architecture
 
 <p align="center">
-  <img src="./ReplicaLab_Architecture_v2.svg" alt="ReplicaLab Hybrid Architecture" width="100%"/>
+  <img src="./ReplicaLab_Architecture_Final.svg" alt="ReplicaLab Final System Architecture" width="100%"/>
 </p>
 
 ReplicaLab uses a **hybrid Oracle architecture**:
@@ -174,7 +174,7 @@ RL training improves the Scientist agent’s ability to negotiate effective, fea
 - **Reduced-scale fallback:** `Qwen/Qwen3-4B`
 - **Decision record:** `docs/agt11_scientist_model_selection.md`
 
-### Planned Training Path
+### Training Path
 
 1. Use `notebooks/train_minimal_colab.ipynb` as the sponsor-facing minimal Colab script for the Unsloth / HF TRL requirement
 2. Use the judged notebook `notebooks/train_colab.ipynb` as the full readable driver
@@ -244,7 +244,7 @@ Difficulty scaling should mechanically tighten constraints, remove resources, or
 ```text
 replicalab-ai/
 ├── README.md
-├── ReplicaLab_Architecture_v2.svg
+├── ReplicaLab_Architecture_Final.svg
 ├── pyproject.toml
 ├── openenv.yaml
 ├── replicalab/
