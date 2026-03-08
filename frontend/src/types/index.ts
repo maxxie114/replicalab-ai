@@ -229,6 +229,15 @@ export interface BackendScenarioFamily {
   difficulties: string[];
 }
 
+export interface BackendRuntimeStatus {
+  scientist_runtime: string;
+  scientist_model: string;
+  scientist_ready: boolean;
+  agent_step_available: boolean;
+  available_runtimes: string[];
+  note: string;
+}
+
 // --- Training metrics ---
 
 export interface TrainingMetrics {

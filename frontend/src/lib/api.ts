@@ -16,6 +16,7 @@ import type {
   ScenarioTemplate,
   Difficulty,
   EpisodeStepTrace,
+  BackendRuntimeStatus,
 } from '@/types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
@@ -157,7 +158,7 @@ function buildRoundTrace(
 // REST API functions
 // ---------------------------------------------------------------------------
 
-export async function healthCheck(): Promise<{ status: string }> {
+export async function healthCheck(): Promise<{ status: string; env?: string; version?: string }> {
   try {
     const res = await fetch(`${BASE_URL}/health`);
     if (!res.ok) {
@@ -166,6 +167,18 @@ export async function healthCheck(): Promise<{ status: string }> {
     return res.json();
   } catch (error) {
     throw normalizeFetchError(error, 'Health check failed');
+  }
+}
+
+export async function getRuntimeStatus(): Promise<BackendRuntimeStatus> {
+  try {
+    const res = await fetch(`${BASE_URL}/runtime`);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch runtime status: ${res.status}`);
+    }
+    return res.json();
+  } catch (error) {
+    throw normalizeFetchError(error, 'Failed to fetch runtime status');
   }
 }
 
@@ -271,18 +284,60 @@ export async function stepEpisode(
   };
 }
 
-export async function suggestScientistAction(sessionId: string): Promise<ScientistAction> {
+export async function agentStepEpisode(
+  sessionId: string,
+  prevState: EpisodeState,
+): Promise<EpisodeState> {
+  let data: BackendStepResult;
   try {
-    const res = await fetch(`${BASE_URL}/scientist/suggest`, {
+    const res = await fetch(`${BASE_URL}/agent-step`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId }),
     });
-    if (!res.ok) throw new Error(`Suggest failed: ${res.status}`);
-    return res.json();
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Failed to run model-backed scientist step: ${text}`);
+    }
+    data = await res.json();
   } catch (error) {
-    throw normalizeFetchError(error, 'Failed to get scientist suggestion');
+    throw normalizeFetchError(error, 'Failed to run model-backed scientist step');
   }
+
+  let scores: ScoreBreakdown | null = null;
+  let judgeAudit: JudgeAudit | null = null;
+  if (data.done && data.info.reward_breakdown) {
+    scores = adaptRewardBreakdown(data.info.reward_breakdown, data.reward);
+    judgeAudit = {
+      verdict: data.info.verdict ?? 'unknown',
+      judge_notes: data.info.judge_notes ? [data.info.judge_notes] : [],
+      top_failure_reasons: data.info.top_failure_reasons,
+      score_breakdown: scores,
+    };
+  }
+
+  const obs = data.observation;
+  const conversation = obs?.scientist
+    ? adaptConversation(obs.scientist.conversation_history)
+    : prevState.conversation;
+  const protocol = obs?.scientist?.current_protocol ?? prevState.protocol;
+  const round = obs?.scientist?.round_number ?? prevState.round + 1;
+  const cumulativeReward = data.info.cumulative_reward ?? prevState.cumulative_reward + data.reward;
+  const labConstraints = obs ? adaptLabConstraints(obs) : prevState.lab_constraints;
+  const roundTrace = buildRoundTrace(prevState, data);
+
+  return {
+    ...prevState,
+    round,
+    done: data.done,
+    protocol,
+    conversation,
+    lab_constraints: labConstraints,
+    scores,
+    judge_audit: judgeAudit,
+    cumulative_reward: cumulativeReward,
+    step_history: [...prevState.step_history, roundTrace],
+  };
 }
 
 export async function getReplay(episodeId: string): Promise<unknown> {

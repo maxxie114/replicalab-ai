@@ -2,8 +2,8 @@ import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'rea
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, FlaskConical, Scale, TrendingUp, Play, Pencil } from 'lucide-react';
-import type { EpisodeState, ResetParams, ScientistAction } from '@/types';
-import { resetEpisode, stepEpisode, suggestScientistAction } from '@/lib/api';
+import type { BackendRuntimeStatus, EpisodeState, ResetParams, ScientistAction } from '@/types';
+import { agentStepEpisode, getRuntimeStatus, resetEpisode, stepEpisode } from '@/lib/api';
 import { sfx, startAmbient, stopAmbient } from '@/lib/audio';
 import { fireSuccessConfetti, fireGavelConfetti } from '@/lib/confetti';
 import { buildDemoScientistAction, DEMO_CASES, parseDemoCase } from '@/lib/demo';
@@ -40,6 +40,7 @@ export default function EpisodePage() {
   const [isJudging, setIsJudging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoStartTriggered, setAutoStartTriggered] = useState(false);
+  const [runtimeStatus, setRuntimeStatus] = useState<BackendRuntimeStatus | null>(null);
 
   // Feature 5: Auto-play
   const [autoPlaying, setAutoPlaying] = useState(false);
@@ -64,9 +65,13 @@ export default function EpisodePage() {
     const parsed = Number.parseInt(value, 10);
     return Number.isNaN(parsed) ? undefined : parsed;
   }, [searchParams]);
-  const demoRequested = useMemo(
-    () => searchParams.get('demo') === '1' || searchParams.get('autostart') === '1',
+  const scriptedDemoRequested = useMemo(
+    () => searchParams.get('demo') === '1',
     [searchParams],
+  );
+  const autoStartRequested = useMemo(
+    () => scriptedDemoRequested || searchParams.get('autostart') === '1',
+    [scriptedDemoRequested, searchParams],
   );
   const demoCase = useMemo(() => parseDemoCase(searchParams.get('demoCase')), [searchParams]);
   const demoMeta = useMemo(
@@ -74,8 +79,12 @@ export default function EpisodePage() {
     [demoCase],
   );
   const autoPlayRequested = useMemo(
-    () => demoRequested || searchParams.get('autoplay') === '1',
-    [demoRequested, searchParams],
+    () => autoStartRequested || searchParams.get('autoplay') === '1',
+    [autoStartRequested, searchParams],
+  );
+  const backendModelStepAvailable = useMemo(
+    () => !scriptedDemoRequested && Boolean(runtimeStatus?.agent_step_available),
+    [scriptedDemoRequested, runtimeStatus?.agent_step_available],
   );
 
   const phase = useMemo(() => {
@@ -98,6 +107,9 @@ export default function EpisodePage() {
   useEffect(() => {
     const prev = prevPhaseRef.current;
     prevPhaseRef.current = phase;
+    const hasAcceptCaveats =
+      episode?.judge_audit?.verdict === 'accept' &&
+      (episode.judge_audit?.top_failure_reasons.length ?? 0) > 0;
 
     if (prev === 'waiting' && phase === 'negotiating') {
       sfx.episodeStart();
@@ -112,18 +124,21 @@ export default function EpisodePage() {
       stopAmbient();
       sfx.scoreReveal();
       const verdict = episode?.judge_audit?.verdict;
-      if (verdict === 'accept' || verdict === 'success') {
+      if ((verdict === 'accept' || verdict === 'success') && !hasAcceptCaveats) {
         setTimeout(() => {
           sfx.success();
           fireSuccessConfetti();
         }, 400);
         toast('Episode complete - Agreement reached!', 'success');
+      } else if (verdict === 'accept' && hasAcceptCaveats) {
+        setTimeout(() => sfx.roundTick(), 400);
+        toast('Episode complete - Accepted with caveats', 'warning');
       } else if (verdict) {
         setTimeout(() => sfx.failure(), 400);
         toast(`Episode complete - Verdict: ${verdict}`, 'warning');
       }
     }
-  }, [phase, episode?.judge_audit?.verdict, toast]);
+  }, [phase, episode?.judge_audit, toast]);
 
   useEffect(() => {
     if (!episode?.conversation.length) return;
@@ -140,6 +155,28 @@ export default function EpisodePage() {
   // Cleanup ambient on unmount
   useEffect(() => {
     return () => stopAmbient();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRuntimeStatus() {
+      try {
+        const status = await getRuntimeStatus();
+        if (!cancelled) {
+          setRuntimeStatus(status);
+        }
+      } catch (runtimeError) {
+        if (!cancelled) {
+          console.warn('Failed to load runtime status', runtimeError);
+        }
+      }
+    }
+
+    void loadRuntimeStatus();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -165,8 +202,11 @@ export default function EpisodePage() {
       nextSearch.set('template', state.template);
       nextSearch.set('difficulty', state.difficulty);
       nextSearch.set('seed', String(state.seed));
-      if (demoRequested) {
+      if (scriptedDemoRequested) {
         nextSearch.set('demo', '1');
+      }
+      if (autoStartRequested && !scriptedDemoRequested) {
+        nextSearch.set('autostart', '1');
       }
       if (autoPlayRequested) {
         nextSearch.set('autoplay', '1');
@@ -183,7 +223,7 @@ export default function EpisodePage() {
     } finally {
       setLoading(false);
     }
-  }, [autoPlayRequested, demoCase, demoRequested, navigate, toast]);
+  }, [autoPlayRequested, autoStartRequested, demoCase, navigate, scriptedDemoRequested, toast]);
 
   const handleStepWithAction = useCallback(async (action?: ScientistAction) => {
     if (!episode || episode.done) return;
@@ -212,7 +252,9 @@ export default function EpisodePage() {
         await new Promise((r) => setTimeout(r, 2000));
       }
 
-      const state = await stepEpisode(episode.session_id, finalAction, episode);
+      const state = !action && backendModelStepAvailable
+        ? await agentStepEpisode(episode.session_id, episode)
+        : await stepEpisode(episode.session_id, finalAction, episode);
 
       if (state.done && !isLastRound) {
         setIsJudging(true);
@@ -232,10 +274,10 @@ export default function EpisodePage() {
     } finally {
       setLoading(false);
     }
-  }, [demoCase, episode, toast]);
+  }, [backendModelStepAvailable, demoCase, episode, toast]);
 
   useEffect(() => {
-    if (!demoRequested || autoStartTriggered || episode || loading) {
+    if (!autoStartRequested || autoStartTriggered || episode || loading) {
       return;
     }
     setAutoStartTriggered(true);
@@ -246,7 +288,7 @@ export default function EpisodePage() {
     });
   }, [
     autoStartTriggered,
-    demoRequested,
+    autoStartRequested,
     episode,
     handleStart,
     initialDifficulty,
@@ -327,11 +369,11 @@ export default function EpisodePage() {
 
           <motion.div className="mb-8 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
             <h1 className="mb-2 text-2xl font-bold">
-              {demoRequested ? 'Launching Live Replication Demo' : 'Start a Paper Replication Episode'}
+              {autoStartRequested ? 'Launching Live Replication Run' : 'Start a Paper Replication Episode'}
             </h1>
             <p className="text-muted-foreground">
-              {demoRequested
-                ? 'Loading the seeded benchmark, starting the agents, and running the negotiation automatically.'
+              {autoStartRequested
+                ? 'Loading the benchmark, starting the agents, and running the negotiation automatically.'
                 : 'Pick a seeded paper-derived benchmark, parse it into the environment, and watch the agents negotiate a reproducible plan.'}
             </p>
             <ShortcutHint className="mt-2" />
@@ -343,7 +385,7 @@ export default function EpisodePage() {
             </motion.div>
           )}
 
-          {!demoRequested && (
+          {!autoStartRequested && (
             <motion.div className="w-full max-w-sm" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
               <Controls
                 onStart={handleStart}
@@ -352,6 +394,7 @@ export default function EpisodePage() {
                 initialSeed={initialSeed}
                 initialTemplate={initialTemplate}
                 initialDifficulty={initialDifficulty}
+                runtimeStatus={runtimeStatus}
               />
             </motion.div>
           )}
@@ -422,7 +465,7 @@ export default function EpisodePage() {
         ))}
       </motion.div>
 
-      {demoMeta && (
+      {demoMeta && scriptedDemoRequested && (
         <motion.div
           className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4"
           initial={{ opacity: 0, y: 8 }}
@@ -439,6 +482,34 @@ export default function EpisodePage() {
             </div>
             <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
               Seed {episode.seed} · {episode.template.replace(/_/g, ' ')} · {episode.difficulty}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {!scriptedDemoRequested && runtimeStatus && (
+        <motion.div
+          className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.16 }}
+        >
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">
+                Scientist Runtime
+              </div>
+              <h2 className="mt-1 text-base font-semibold">
+                {(runtimeStatus.scientist_runtime === 'anthropic' || runtimeStatus.scientist_runtime === 'ollama') && runtimeStatus.scientist_ready
+                  ? 'Localhost is using a model-backed Scientist policy.'
+                  : runtimeStatus.scientist_runtime === 'anthropic' || runtimeStatus.scientist_runtime === 'ollama'
+                    ? 'A model runtime is configured, but it is not ready.'
+                    : 'Localhost is using the deterministic baseline Scientist policy.'}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">{runtimeStatus.note}</p>
+            </div>
+            <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+              {runtimeStatus.scientist_runtime} · {runtimeStatus.scientist_model}
             </div>
           </div>
         </motion.div>
@@ -528,6 +599,7 @@ export default function EpisodePage() {
             onStep={!episode.done ? handleStep : undefined}
             disabled={loading}
             episodeActive={true}
+            runtimeStatus={runtimeStatus}
           />
 
           {/* Feature 5: Auto-play controls */}

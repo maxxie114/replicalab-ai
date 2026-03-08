@@ -40,6 +40,21 @@ export interface PreviewArtifact {
   };
 }
 
+export interface PolicySnapshot {
+  id: 'baseline' | 'trained' | 'oracle';
+  label: string;
+  scientistMode: string;
+  labManagerMode: string;
+  judgeMode: string;
+  source: string;
+  status: 'live' | 'artifact' | 'planned';
+  averageReward: number | null;
+  agreementRate: number | null;
+  averageRounds: number | null;
+  invalidRate: number | null;
+  summary: string;
+}
+
 export const HOLDOUT_COMPARE: TrainingComparison = {
   baseline: [
     { episode: 1, reward: 4.925, rigor: 0.85, feasibility: 1.0, fidelity: 0.45, rounds_used: 2, agreement: true, invalid_actions: 0 },
@@ -207,4 +222,62 @@ export const TRAINING_ASSESSMENT = {
     'Add curriculum or parser-focused reward shaping for the medium ML benchmark cases.',
     'Finish the Lab Manager SFT run and evaluate Scientist-plus-Lab-Manager together instead of only Scientist RL.',
   ],
+};
+
+export const POLICY_COMPARE: PolicySnapshot[] = [
+  {
+    id: 'baseline',
+    label: 'Baseline runtime',
+    scientistMode: 'Deterministic frontend action builder, not a mounted LLM adapter',
+    labManagerMode: 'Deterministic feasibility pipeline in the backend',
+    judgeMode: 'Deterministic rubric and audit',
+    source: 'Live runtime and local baseline evaluation',
+    status: 'live',
+    averageReward: HOLDOUT_COMPARE.summary.baseline_avg_reward,
+    agreementRate: HOLDOUT_COMPARE.summary.baseline_agreement_rate,
+    averageRounds: HOLDOUT_COMPARE.summary.baseline_avg_rounds,
+    invalidRate: HOLDOUT_COMPARE.summary.baseline_invalid_rate,
+    summary:
+      'This is the policy path used by the current /compare page. It reaches agreement reliably and stays fully judge-grounded, but it is not yet using the trained Scientist adapter.',
+  },
+  {
+    id: 'trained',
+    label: 'Trained Scientist',
+    scientistMode: 'Artifact-backed Scientist RL adapter evaluation',
+    labManagerMode: 'Deterministic feasibility pipeline in the backend',
+    judgeMode: 'Deterministic rubric and audit',
+    source: 'Hold-out compare artifact from the training pipeline',
+    status: 'artifact',
+    averageReward: HOLDOUT_COMPARE.summary.trained_avg_reward,
+    agreementRate: HOLDOUT_COMPARE.summary.trained_agreement_rate,
+    averageRounds: HOLDOUT_COMPARE.summary.trained_avg_rounds,
+    invalidRate: HOLDOUT_COMPARE.summary.trained_invalid_rate,
+    summary:
+      'The training pipeline ran successfully, but this adapter still underperforms the baseline badly on held-out seeded evaluation because invalid actions remain too high.',
+  },
+  {
+    id: 'oracle',
+    label: 'Oracle-assisted V2',
+    scientistMode: 'Planned Anthropic-assisted path, not mounted in the public runtime',
+    labManagerMode: 'Optional oracle narration and post-mortem path exists in code, not live in demo runtime',
+    judgeMode: 'Still deterministic even when oracle features are enabled',
+    source: 'Architecture target only, no committed evaluation artifact yet',
+    status: 'planned',
+    averageReward: null,
+    agreementRate: null,
+    averageRounds: null,
+    invalidRate: null,
+    summary:
+      'The oracle path exists in the codebase as a V2 extension, but there is no live public run or artifact-backed benchmark result wired into the app yet, so we should not claim oracle gains here.',
+  },
+];
+
+export const CURRENT_RUNTIME_MODEL_STATUS = {
+  comparePageUsesLiveModel: false,
+  episodePageUsesLiveModel: false,
+  backendUsesOracle: false,
+  backendUsesDeterministicLabManager: true,
+  backendUsesDeterministicJudge: true,
+  note:
+    'Right now the public demo runtime is not loading a trained Scientist adapter or an Anthropic oracle. The Scientist moves come from the frontend default action builder or the protocol editor, while the backend Lab Manager and Judge stay deterministic.',
 };

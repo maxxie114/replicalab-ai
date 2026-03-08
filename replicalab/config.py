@@ -10,6 +10,26 @@ from __future__ import annotations
 
 import os
 
+
+def _get_env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
+def _get_env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
 DEFAULT_SCENARIO_TEMPLATE = "math_reasoning"
 DEFAULT_DIFFICULTY = "easy"
 
@@ -40,6 +60,44 @@ ORACLE_SCENARIO_CACHE_DIR = os.environ.get(
     "REPLICALAB_ORACLE_SCENARIO_CACHE_DIR",
     ".scenario_cache",
 )
+
+
+def get_scientist_runtime() -> str:
+    configured = os.environ.get("REPLICALAB_SCIENTIST_RUNTIME")
+    if configured:
+        return configured.strip().lower()
+    return "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "baseline"
+
+
+def get_scientist_model() -> str:
+    return os.environ.get("REPLICALAB_SCIENTIST_MODEL", "claude-3-5-haiku-latest")
+
+
+def get_scientist_ollama_model() -> str:
+    return os.environ.get("REPLICALAB_SCIENTIST_OLLAMA_MODEL", "glm-5:cloud")
+
+
+def get_scientist_ollama_base_url() -> str:
+    return os.environ.get(
+        "REPLICALAB_SCIENTIST_OLLAMA_BASE_URL",
+        "http://127.0.0.1:11434/api/chat",
+    )
+
+
+def get_scientist_max_retries() -> int:
+    return _get_env_int("REPLICALAB_SCIENTIST_MAX_RETRIES", 2)
+
+
+def get_scientist_max_completion_tokens() -> int:
+    return _get_env_int("REPLICALAB_SCIENTIST_MAX_COMPLETION_TOKENS", 450)
+
+
+def get_scientist_temperature() -> float:
+    return _get_env_float("REPLICALAB_SCIENTIST_TEMPERATURE", 0.0)
+
+
+def get_scientist_timeout_seconds() -> float:
+    return _get_env_float("REPLICALAB_SCIENTIST_TIMEOUT_SECONDS", 60.0)
 
 # Deterministic reward shaping constants.
 STEP_PROTOCOL_DELTA_SCALE = 0.25
