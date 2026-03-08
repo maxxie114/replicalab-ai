@@ -3,7 +3,9 @@
 MOD 09 introduced strict parsing from raw model output into
 ``ScientistAction``. AGT 01 adds the first domain-neutral system prompt
 builder so prompt assembly can be driven by the normalized scenario pack
-instead of hard-coded domain text.
+instead of hard-coded domain text. AGT 02 adds the per-turn observation
+formatter that converts a ``ScientistObservation`` into the user message
+sent to the LLM each round.
 """
 
 from __future__ import annotations
@@ -14,7 +16,13 @@ from typing import Any, Literal, Mapping
 
 from pydantic import ValidationError
 
-from replicalab.models import ScientistAction, ScientistActionType
+from replicalab.models import (
+    ConversationEntry,
+    Protocol,
+    ScientistAction,
+    ScientistActionType,
+    ScientistObservation,
+)
 from replicalab.scenarios import NormalizedScenarioPack
 
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.IGNORECASE | re.DOTALL)
@@ -99,6 +107,73 @@ def build_scientist_system_prompt(
     ]
 
     return "\n\n".join(section for section in sections if section)
+
+
+def format_scientist_observation(obs: ScientistObservation) -> str:
+    """Format a per-turn ``ScientistObservation`` into a user-message string.
+
+    The output is deterministic and side-effect free.  Sections appear in a
+    fixed order so downstream tests can assert on stable labels.
+    """
+
+    sections: list[str] = []
+
+    # Round status
+    sections.append(f"Round {obs.round_number} of {obs.max_rounds}.")
+
+    # Paper / task summary
+    sections.append(
+        f"Paper: {obs.paper_title}\n"
+        f"Hypothesis: {obs.paper_hypothesis}\n"
+        f"Method: {obs.paper_method}\n"
+        f"Key finding: {obs.paper_key_finding}\n"
+        f"Goal: {obs.experiment_goal}"
+    )
+
+    # Conversation history
+    if obs.conversation_history:
+        sections.append(
+            "Conversation so far:\n" + _render_history(obs.conversation_history)
+        )
+    else:
+        sections.append("No conversation history yet. You are making the first move.")
+
+    # Current protocol snapshot
+    if obs.current_protocol is not None:
+        sections.append(
+            "Current protocol:\n" + _render_protocol(obs.current_protocol)
+        )
+    else:
+        sections.append("No protocol has been proposed yet.")
+
+    # Closing instruction
+    sections.append(
+        "Respond with exactly one JSON object containing your next ScientistAction."
+    )
+
+    return "\n\n".join(sections)
+
+
+def _render_history(entries: list[ConversationEntry]) -> str:
+    lines: list[str] = []
+    for entry in entries:
+        tag = entry.role.upper()
+        action_suffix = f" [{entry.action_type}]" if entry.action_type else ""
+        lines.append(f"  [{tag} r{entry.round_number}{action_suffix}]: {entry.message}")
+    return "\n".join(lines)
+
+
+def _render_protocol(protocol: Protocol) -> str:
+    lines = [
+        f"  technique: {protocol.technique}",
+        f"  sample_size: {protocol.sample_size}",
+        f"  controls: {', '.join(protocol.controls) if protocol.controls else '(none)'}",
+        f"  duration_days: {protocol.duration_days}",
+        f"  required_equipment: {', '.join(protocol.required_equipment) if protocol.required_equipment else '(none)'}",
+        f"  required_reagents: {', '.join(protocol.required_reagents) if protocol.required_reagents else '(none)'}",
+        f"  rationale: {protocol.rationale}",
+    ]
+    return "\n".join(lines)
 
 
 def parse_scientist_output(raw_text: str) -> ScientistAction:
