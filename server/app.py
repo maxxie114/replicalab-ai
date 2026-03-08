@@ -192,23 +192,32 @@ def _generic_scientist_system_prompt() -> str:
     )
 
 # ---------------------------------------------------------------------------
-# Oracle LLM judge — optional; requires ANTHROPIC_API_KEY
+# Oracle LLM judge — optional; requires OPENAI_API_KEY or ANTHROPIC_API_KEY
 # ---------------------------------------------------------------------------
 
 _ORACLE_ENABLED = os.environ.get("REPLICALAB_ORACLE_ENABLED", "1") == "1"
-_ORACLE_MODEL = os.environ.get("REPLICALAB_ORACLE_MODEL", "claude-haiku-4-5-20251001")
+_ORACLE_MODEL = os.environ.get("REPLICALAB_ORACLE_MODEL", "gpt-5.4")
 
 
-def _build_anthropic_client() -> Optional[Any]:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        return None
-    try:
-        import anthropic  # type: ignore
-        return anthropic.Anthropic(api_key=api_key)
-    except ImportError:
-        log.warning("anthropic package not installed — Oracle judge unavailable")
-        return None
+def _build_llm_client() -> Optional[Any]:
+    """Return (client, backend) where backend is 'openai' or 'anthropic'."""
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key:
+        try:
+            import openai as _openai  # type: ignore
+            return (_openai.OpenAI(api_key=openai_key), "openai")
+        except ImportError:
+            log.warning("openai package not installed — Oracle judge unavailable")
+
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    if anthropic_key:
+        try:
+            import anthropic as _anthropic  # type: ignore
+            return (_anthropic.Anthropic(api_key=anthropic_key), "anthropic")
+        except ImportError:
+            log.warning("anthropic package not installed — Oracle judge unavailable")
+
+    return None
 
 
 def _generate_judge_verdict(
@@ -216,13 +225,14 @@ def _generate_judge_verdict(
     scenario_pack: Any,
     conversation_history: list,
 ) -> str:
-    """Call Anthropic to produce Judge Aldric's comprehensive verdict."""
+    """Call an LLM to produce Judge Aldric's comprehensive verdict."""
     if not _ORACLE_ENABLED:
-        return "Deterministic scoring only. Set REPLICALAB_ORACLE_ENABLED=1 and ANTHROPIC_API_KEY for LLM verdicts."
+        return "Deterministic scoring only. Set REPLICALAB_ORACLE_ENABLED=1 and OPENAI_API_KEY for LLM verdicts."
 
-    client = _build_anthropic_client()
-    if client is None:
-        return "No LLM API key configured (ANTHROPIC_API_KEY). Deterministic scoring applied."
+    result = _build_llm_client()
+    if result is None:
+        return "No LLM API key configured (OPENAI_API_KEY or ANTHROPIC_API_KEY). Deterministic scoring applied."
+    client, backend = result
 
     # Format final protocol
     if state.current_protocol:
@@ -296,14 +306,24 @@ def _generate_judge_verdict(
     )
 
     try:
-        import anthropic  # type: ignore
-        response = client.messages.create(
-            model=_ORACLE_MODEL,
-            max_tokens=1024,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-        return response.content[0].text
+        if backend == "openai":
+            response = client.chat.completions.create(
+                model=_ORACLE_MODEL,
+                max_tokens=1024,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            return response.choices[0].message.content
+        else:  # anthropic
+            response = client.messages.create(
+                model=_ORACLE_MODEL,
+                max_tokens=1024,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            return response.content[0].text
     except Exception:
         log.exception("Oracle verdict generation failed")
         return "Judge Aldric was unable to render a verdict due to an API error."
