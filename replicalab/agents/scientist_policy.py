@@ -19,6 +19,7 @@ import re
 from importlib import import_module
 from typing import Any, Callable, Literal, Mapping
 
+import httpx
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from replicalab.models import (
@@ -804,6 +805,127 @@ def build_remote_scientist_policy(
     return policy_fn
 
 
+def build_anthropic_scientist_policy(
+    *,
+    api_key: str,
+    model: str,
+    max_completion_tokens: int = 450,
+    temperature: float = 0.0,
+    max_retries: int = 2,
+    timeout_seconds: float = 60.0,
+    base_url: str = "https://api.anthropic.com/v1/messages",
+    client: httpx.Client | None = None,
+) -> Callable[[ScientistObservation], ScientistAction]:
+    """Create a sync Scientist policy callable backed by Anthropic Messages API."""
+
+    owned_client = client is None
+    transport = client or httpx.Client(timeout=timeout_seconds)
+
+    def generate_fn(messages: list[dict[str, str]]) -> str:
+        system_blocks = [msg["content"] for msg in messages if msg["role"] == "system"]
+        request_messages = [
+            {"role": msg["role"], "content": msg["content"]}
+            for msg in messages
+            if msg["role"] in {"user", "assistant"}
+        ]
+        response = transport.post(
+            base_url,
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": model,
+                "max_tokens": max_completion_tokens,
+                "temperature": temperature,
+                "system": "\n\n".join(system_blocks),
+                "messages": request_messages,
+            },
+        )
+        response.raise_for_status()
+        payload = response.json()
+        return _extract_anthropic_message_text(payload.get("content", []))
+
+    def policy_fn(
+        observation: ScientistObservation,
+        *,
+        seed: int | None = None,
+        scenario: str | None = None,
+        difficulty: str | None = None,
+    ) -> ScientistAction:
+        result = call_scientist_with_retry(
+            generate_fn,
+            _build_live_scientist_system_prompt(
+                observation,
+                difficulty=difficulty,
+                scenario=scenario,
+            ),
+            observation,
+            max_retries=max_retries,
+        )
+        return result.action
+
+    setattr(policy_fn, "_replicalab_client", transport)
+    setattr(policy_fn, "_replicalab_owned_client", owned_client)
+    return policy_fn
+
+
+def build_ollama_scientist_policy(
+    *,
+    model: str,
+    max_retries: int = 2,
+    temperature: float = 0.0,
+    timeout_seconds: float = 60.0,
+    base_url: str = "http://127.0.0.1:11434/api/chat",
+    client: httpx.Client | None = None,
+) -> Callable[[ScientistObservation], ScientistAction]:
+    """Create a sync Scientist policy callable backed by a local Ollama model."""
+
+    owned_client = client is None
+    transport = client or httpx.Client(timeout=timeout_seconds)
+
+    def generate_fn(messages: list[dict[str, str]]) -> str:
+        response = transport.post(
+            base_url,
+            json={
+                "model": model,
+                "messages": messages,
+                "stream": False,
+                "format": "json",
+                "options": {
+                    "temperature": temperature,
+                },
+            },
+        )
+        response.raise_for_status()
+        payload = response.json()
+        return _extract_message_content(payload.get("message", {}).get("content", ""))
+
+    def policy_fn(
+        observation: ScientistObservation,
+        *,
+        seed: int | None = None,
+        scenario: str | None = None,
+        difficulty: str | None = None,
+    ) -> ScientistAction:
+        result = call_scientist_with_retry(
+            generate_fn,
+            _build_live_scientist_system_prompt(
+                observation,
+                difficulty=difficulty,
+                scenario=scenario,
+            ),
+            observation,
+            max_retries=max_retries,
+        )
+        return result.action
+
+    setattr(policy_fn, "_replicalab_client", transport)
+    setattr(policy_fn, "_replicalab_owned_client", owned_client)
+    return policy_fn
+
+
 def _build_live_scientist_system_prompt(
     observation: ScientistObservation,
     *,
@@ -877,3 +999,16 @@ def _extract_message_content(content: Any) -> str:
                 parts.append(str(text))
         return "\n".join(parts)
     return ""
+
+
+def _extract_anthropic_message_text(content: list[dict[str, Any]]) -> str:
+    parts: list[str] = []
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") != "text":
+            continue
+        text = block.get("text")
+        if text:
+            parts.append(str(text))
+    return "\n".join(parts)

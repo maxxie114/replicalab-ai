@@ -32,6 +32,8 @@ export default function CharacterStage({
 }: CharacterStageProps) {
   const lastAction = getActionFromMessage(lastMessage);
   const speakingRole = lastMessage?.role;
+  const hasAcceptCaveats =
+    judgeAudit?.verdict === 'accept' && (judgeAudit.top_failure_reasons?.length ?? 0) > 0;
 
   const scientistAction =
     speakingRole === 'scientist' ? lastAction : undefined;
@@ -42,7 +44,11 @@ export default function CharacterStage({
     phase === 'judging'
       ? 'scoring'
       : phase === 'complete' && judgeAudit
-        ? `verdict_${judgeAudit.verdict}`
+        ? hasAcceptCaveats
+          ? 'verdict_partial'
+          : judgeAudit.verdict === 'accept' || judgeAudit.verdict === 'success'
+            ? 'verdict_success'
+            : 'verdict_failure'
         : undefined;
 
   return (

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { GitCompareArrows } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import EpisodeComparison from '@/components/EpisodeComparison';
 
 export default function ComparePage() {
@@ -40,6 +41,25 @@ export default function ComparePage() {
           <h2 className="text-sm font-semibold">Judge-comparable</h2>
           <p className="mt-1 text-xs text-muted-foreground">Rewards and verdicts stay grounded in the deterministic ReplicaLab rubric.</p>
         </div>
+      </motion.div>
+
+      <motion.div
+        className="mb-6 rounded-lg border border-judge/30 bg-judge/5 p-4"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
+        <h2 className="text-sm font-semibold text-judge">Important: what is running here</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This page currently benchmarks the live deterministic runtime. It does not mount the trained Scientist adapter
+          or the Anthropic oracle in the public app yet.
+        </p>
+        <Link
+          to="/policies"
+          className="mt-3 inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          Open baseline vs trained vs oracle
+        </Link>
       </motion.div>
 
       <motion.div
