@@ -66,11 +66,19 @@ def get_scientist_runtime() -> str:
     configured = os.environ.get("REPLICALAB_SCIENTIST_RUNTIME")
     if configured:
         return configured.strip().lower()
-    return "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "baseline"
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return "anthropic"
+    if os.environ.get("OPENAI_API_KEY"):
+        return "openai"
+    return "baseline"
 
 
 def get_scientist_model() -> str:
     return os.environ.get("REPLICALAB_SCIENTIST_MODEL", "claude-3-5-haiku-latest")
+
+
+def get_scientist_openai_model() -> str:
+    return os.environ.get("REPLICALAB_SCIENTIST_OPENAI_MODEL", "gpt-4o")
 
 
 def get_scientist_ollama_model() -> str:

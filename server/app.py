@@ -59,6 +59,7 @@ from replicalab.agents import (
     build_anthropic_scientist_policy,
     build_baseline_scientist_action,
     build_ollama_scientist_policy,
+    build_openai_scientist_policy,
     check_feasibility,
     compose_lab_manager_response,
     suggest_alternative,
@@ -78,6 +79,7 @@ from replicalab.config import (
     get_scientist_model,
     get_scientist_ollama_base_url,
     get_scientist_ollama_model,
+    get_scientist_openai_model,
     get_scientist_runtime,
     get_scientist_temperature,
     get_scientist_timeout_seconds,
@@ -636,18 +638,22 @@ def _scientist_runtime_status() -> dict[str, Any]:
     runtime = get_scientist_runtime()
     if runtime == "anthropic":
         model = get_scientist_model()
+    elif runtime == "openai":
+        model = get_scientist_openai_model()
     elif runtime == "ollama":
         model = get_scientist_ollama_model()
     else:
         model = "baseline-heuristic"
-    anthropic_ready = bool(os.environ.get("ANTHROPIC_API_KEY"))
     ready = (
         runtime == "baseline"
-        or (runtime == "anthropic" and anthropic_ready)
+        or (runtime == "anthropic" and bool(os.environ.get("ANTHROPIC_API_KEY")))
+        or (runtime == "openai" and bool(os.environ.get("OPENAI_API_KEY")))
         or runtime == "ollama"
     )
     if runtime == "anthropic" and ready:
         note = "Episodes can use backend model-driven Scientist inference through Anthropic."
+    elif runtime == "openai" and ready:
+        note = f"Episodes can use backend model-driven Scientist inference through OpenAI ({model})."
     elif runtime == "ollama":
         note = "Episodes can use backend model-driven Scientist inference through the local Ollama runtime."
     else:
@@ -657,7 +663,7 @@ def _scientist_runtime_status() -> dict[str, Any]:
         "scientist_model": model,
         "scientist_ready": ready,
         "agent_step_available": ready,
-        "available_runtimes": ["baseline", "anthropic", "ollama"],
+        "available_runtimes": ["baseline", "anthropic", "openai", "ollama"],
         "note": note,
     }
 
@@ -673,6 +679,18 @@ def _get_scientist_policy():
         cache_key = (
             runtime,
             get_scientist_model(),
+            get_scientist_max_completion_tokens(),
+            get_scientist_temperature(),
+            get_scientist_max_retries(),
+            get_scientist_timeout_seconds(),
+        )
+    elif runtime == "openai":
+        api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not configured for OpenAI Scientist mode.")
+        cache_key = (
+            runtime,
+            get_scientist_openai_model(),
             get_scientist_max_completion_tokens(),
             get_scientist_temperature(),
             get_scientist_max_retries(),
@@ -697,6 +715,15 @@ def _get_scientist_policy():
         policy = build_anthropic_scientist_policy(
             api_key=api_key,
             model=get_scientist_model(),
+            max_completion_tokens=get_scientist_max_completion_tokens(),
+            temperature=get_scientist_temperature(),
+            max_retries=get_scientist_max_retries(),
+            timeout_seconds=get_scientist_timeout_seconds(),
+        )
+    elif runtime == "openai":
+        policy = build_openai_scientist_policy(
+            api_key=api_key,
+            model=get_scientist_openai_model(),
             max_completion_tokens=get_scientist_max_completion_tokens(),
             temperature=get_scientist_temperature(),
             max_retries=get_scientist_max_retries(),
