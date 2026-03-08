@@ -9,6 +9,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - `FND 04` is complete in `replicalab/models.py`
 - `FND 08` draft is complete in `docs/fnd08_frozen_json_contract.md`
 - `FND 08` still needs Person A sign-off before it can be marked complete
+- While waiting on `FND 08` sign-off, Person B completed `FND 02`, `FND 05`, `FND 06`, and `FND 07` on behalf of Person C and Person D to keep Epic E01 moving
 
 ---
 

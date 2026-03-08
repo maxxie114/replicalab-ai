@@ -11,6 +11,8 @@ No assumptions from other documents are used to reclassify blocked status.
 
 Per the source of truth, Person B has finished the draft portion of `FND 08`.
 The immediate next action is Person A review and sign-off on `docs/fnd08_frozen_json_contract.md`.
+While waiting on that sign-off, Person B completed `FND 02`, `FND 05`, `FND 06`,
+and `FND 07` on behalf of the assigned owners so Epic E01 could keep moving.
 
 ---
 

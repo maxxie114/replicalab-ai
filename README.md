@@ -6,6 +6,22 @@
 
 ReplicaLab tackles the **replication crisis** in science. Published protocols describe ideal conditions, but real labs face missing equipment, tight budgets, booking conflicts, and reagent shortages. ReplicaLab trains an AI agent to negotiate realistic experiment adaptations while preserving scientific validity.
 
+## Current Build Status
+
+- The repository is still in the foundation stage.
+- The Python package foundation is verified through editable install plus shared-model import checks.
+- Shared contracts currently live in `replicalab/models.py`, with the draft freeze in `docs/fnd08_frozen_json_contract.md`.
+- Frontend shell, server wiring, and `openenv.yaml` are still in progress.
+
+## Team Ownership
+
+| Owner | Current focus |
+|------|----------------|
+| Person A | Shared schemas, validation, scenario engine, judge logic |
+| Person B (Ayush) | Contract freeze, Scientist-side prompting and parsing, notebook and client path |
+| Person C | Repo/runtime setup, frontend shell, server and deployment plumbing |
+| Person D | README and demo docs, UI shell planning, polish and presentation assets |
+
 ---
 
 ## Architecture
@@ -47,6 +63,8 @@ The **multiplicative core** prevents fake wins: a scientifically perfect but imp
 
 ## Getting Started
 
+This section mixes verified foundation commands with planned end-to-end commands. As of 2026-03-08, the verified local path is the editable Python install plus the shared-model import smoke test.
+
 ### Prerequisites
 
 - Python 3.10+
@@ -69,14 +87,20 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
+### Verified Foundation Smoke Test
+
+```bash
+python -c "from replicalab.models import ScientistAction, LabManagerAction; print('imports_ok')"
+```
+
 ### Running the Environment Server
 
 ```bash
-# Start the FastAPI + WebSocket server
+# Planned command once server wiring lands
 python -m server.app
 ```
 
-The server starts at `http://localhost:7860` by default.
+The server is intended to start at `http://localhost:7860` once the server task chain is complete.
 
 ### Running the Frontend
 
@@ -86,7 +110,7 @@ npm install
 npm run dev
 ```
 
-The React UI starts at `http://localhost:5173` and connects to the backend via WebSocket.
+The React UI is intended to start at `http://localhost:5173` once the frontend shell and Vite config are in place.
 
 ### Running Tests
 

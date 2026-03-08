@@ -1,0 +1,67 @@
+name: Task
+description: Track one backlog task or a tightly related task bundle.
+title: "[Task] "
+labels:
+  - task
+body:
+  - type: input
+    id: task_id
+    attributes:
+      label: Task ID
+      description: Use the backlog task id, for example FND 02 or AGT 01.
+      placeholder: FND 02
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Assigned owner
+      description: Match the owner listed in the comprehensive task division.
+      placeholder: Person C
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Task summary
+      description: Describe the work to be done.
+      placeholder: Add pyproject.toml with the initial package metadata and runtime dependencies.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: List upstream tasks, blockers, or sign-off requirements.
+      placeholder: Depends on FND 01. No other blockers.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Copy the acceptance criteria from the source of truth and add any concrete verification plan.
+      placeholder: Project installs locally without missing package errors for base modules.
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Planned files
+      description: List the files expected to change.
+      placeholder: pyproject.toml, README.md
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Tracking docs to update
+      description: Note which project-management files must be updated when the task lands.
+      placeholder: ReplicaLab_Comprehensive_Task_Division.md, docs/completion.md, docs/changes.md, docs/person_c/task_list.md
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional implementation notes, risks, or handoff details.

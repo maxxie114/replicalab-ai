@@ -49,8 +49,14 @@ Before starting a task:
 ## Branch and PR rules
 
 - One task or one tightly related task bundle per branch.
-- Use the task id in the branch name when practical, for example `feature/fnd08-contract-freeze`.
+- Use the task id in the branch name when practical.
+- Preferred branch name patterns:
+  - `feature/<task-id>-<short-slug>`
+  - `fix/<task-id>-<short-slug>`
+  - `docs/<task-id>-<short-slug>`
+  - `chore/<task-id>-<short-slug>`
 - Do not mix unrelated tasks in the same branch or PR.
+- Use `.github/pull_request_template.md` for every PR and `.github/ISSUE_TEMPLATE/task.yml` for task issues.
 - Every PR should include:
   - task id or task ids
   - summary of what changed
