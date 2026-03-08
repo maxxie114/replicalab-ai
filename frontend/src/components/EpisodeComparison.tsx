@@ -41,7 +41,7 @@ export default function EpisodeComparison({ className }: { className?: string })
       // Auto-play through all rounds
       while (!state.done) {
         const isLastRound = state.round >= state.max_rounds - 1;
-        const action = isLastRound ? buildAcceptAction() : buildDefaultScientistAction();
+        const action = isLastRound ? buildAcceptAction() : buildDefaultScientistAction(state);
         state = await stepEpisode(state.session_id, action, state);
       }
 

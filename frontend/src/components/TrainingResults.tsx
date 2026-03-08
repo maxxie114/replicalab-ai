@@ -20,6 +20,7 @@ import {
   Legend,
 } from 'recharts';
 import type { TrainingComparison } from '@/types';
+import { HOLDOUT_COMPARE, LIVE_CHECKPOINTS, TRAINING_ASSESSMENT } from '@/data/trainingArtifacts';
 import { cn, formatReward, formatScore } from '@/lib/utils';
 
 interface TrainingResultsProps {
@@ -27,49 +28,8 @@ interface TrainingResultsProps {
   className?: string;
 }
 
-const DEMO_COMPARISON: TrainingComparison = {
-  baseline: [
-    { episode: 1, reward: 3.8, rigor: 0.58, feasibility: 0.46, fidelity: 0.55, rounds_used: 5, agreement: false, invalid_actions: 2 },
-    { episode: 2, reward: 4.0, rigor: 0.6, feasibility: 0.48, fidelity: 0.56, rounds_used: 5, agreement: false, invalid_actions: 2 },
-    { episode: 3, reward: 4.1, rigor: 0.61, feasibility: 0.5, fidelity: 0.57, rounds_used: 5, agreement: true, invalid_actions: 1 },
-    { episode: 4, reward: 4.2, rigor: 0.62, feasibility: 0.5, fidelity: 0.58, rounds_used: 4, agreement: true, invalid_actions: 1 },
-    { episode: 5, reward: 4.0, rigor: 0.6, feasibility: 0.49, fidelity: 0.58, rounds_used: 5, agreement: false, invalid_actions: 2 },
-    { episode: 6, reward: 4.3, rigor: 0.63, feasibility: 0.52, fidelity: 0.59, rounds_used: 4, agreement: true, invalid_actions: 1 },
-    { episode: 7, reward: 4.1, rigor: 0.61, feasibility: 0.5, fidelity: 0.58, rounds_used: 5, agreement: false, invalid_actions: 2 },
-    { episode: 8, reward: 4.4, rigor: 0.64, feasibility: 0.53, fidelity: 0.6, rounds_used: 4, agreement: true, invalid_actions: 1 },
-    { episode: 9, reward: 4.2, rigor: 0.62, feasibility: 0.51, fidelity: 0.59, rounds_used: 4, agreement: true, invalid_actions: 1 },
-    { episode: 10, reward: 4.0, rigor: 0.6, feasibility: 0.48, fidelity: 0.57, rounds_used: 5, agreement: false, invalid_actions: 2 },
-    { episode: 11, reward: 4.3, rigor: 0.64, feasibility: 0.52, fidelity: 0.6, rounds_used: 4, agreement: true, invalid_actions: 1 },
-    { episode: 12, reward: 4.1, rigor: 0.61, feasibility: 0.49, fidelity: 0.58, rounds_used: 5, agreement: false, invalid_actions: 2 },
-  ],
-  trained: [
-    { episode: 1, reward: 4.5, rigor: 0.64, feasibility: 0.56, fidelity: 0.6, rounds_used: 4, agreement: true, invalid_actions: 1 },
-    { episode: 2, reward: 4.8, rigor: 0.67, feasibility: 0.58, fidelity: 0.62, rounds_used: 4, agreement: true, invalid_actions: 1 },
-    { episode: 3, reward: 5.0, rigor: 0.69, feasibility: 0.61, fidelity: 0.64, rounds_used: 4, agreement: true, invalid_actions: 1 },
-    { episode: 4, reward: 5.2, rigor: 0.71, feasibility: 0.63, fidelity: 0.66, rounds_used: 3, agreement: true, invalid_actions: 1 },
-    { episode: 5, reward: 5.5, rigor: 0.73, feasibility: 0.66, fidelity: 0.68, rounds_used: 3, agreement: true, invalid_actions: 0 },
-    { episode: 6, reward: 5.7, rigor: 0.75, feasibility: 0.68, fidelity: 0.69, rounds_used: 3, agreement: true, invalid_actions: 0 },
-    { episode: 7, reward: 5.9, rigor: 0.76, feasibility: 0.7, fidelity: 0.7, rounds_used: 3, agreement: true, invalid_actions: 0 },
-    { episode: 8, reward: 6.1, rigor: 0.78, feasibility: 0.72, fidelity: 0.72, rounds_used: 3, agreement: true, invalid_actions: 0 },
-    { episode: 9, reward: 6.3, rigor: 0.79, feasibility: 0.74, fidelity: 0.73, rounds_used: 3, agreement: true, invalid_actions: 0 },
-    { episode: 10, reward: 6.5, rigor: 0.8, feasibility: 0.76, fidelity: 0.75, rounds_used: 3, agreement: true, invalid_actions: 0 },
-    { episode: 11, reward: 6.6, rigor: 0.81, feasibility: 0.77, fidelity: 0.76, rounds_used: 2, agreement: true, invalid_actions: 0 },
-    { episode: 12, reward: 6.8, rigor: 0.83, feasibility: 0.79, fidelity: 0.78, rounds_used: 2, agreement: true, invalid_actions: 0 },
-  ],
-  summary: {
-    baseline_avg_reward: 4.13,
-    trained_avg_reward: 5.74,
-    baseline_agreement_rate: 0.5,
-    trained_agreement_rate: 0.92,
-    baseline_avg_rounds: 4.58,
-    trained_avg_rounds: 3.0,
-    baseline_invalid_rate: 0.15,
-    trained_invalid_rate: 0.03,
-  },
-};
-
 export default function TrainingResults({ data, className }: TrainingResultsProps) {
-  const comparison = data ?? DEMO_COMPARISON;
+  const comparison = data ?? HOLDOUT_COMPARE;
   const [showTrained, setShowTrained] = useState(true);
   const chartData = comparison.baseline.map((baselinePoint, index) => ({
     episode: baselinePoint.episode,
@@ -96,18 +56,21 @@ export default function TrainingResults({ data, className }: TrainingResultsProp
         <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">Minimal Colab notebook</span>
         <span className="rounded-full bg-scientist/10 px-2 py-1 text-[11px] font-medium text-scientist">Unsloth + HF TRL</span>
         <span className="rounded-full bg-judge/10 px-2 py-1 text-[11px] font-medium text-judge">Deterministic judge reward</span>
+        <span className="rounded-full bg-destructive/10 px-2 py-1 text-[11px] font-medium text-destructive">
+          More training required
+        </span>
       </div>
 
       <p className="mb-4 text-sm text-muted-foreground">
-        The same seeded replication tasks are used for baseline and trained runs. The Scientist only improves if it
-        can negotiate stronger protocols under the exact same judge rubric.
+        This panel now uses the real hold-out compare artifact. The training stack ran successfully, but the current
+        trained Scientist still underperforms the deterministic baseline on fixed seeded evaluation.
       </p>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <StoryCard icon={<FileText className="h-3.5 w-3.5" />} title="Notebook" detail="`train_minimal_colab.ipynb` is the sponsor-facing minimal GRPO path." />
         <StoryCard icon={<Cpu className="h-3.5 w-3.5" />} title="Trainer" detail="Unsloth + TRL update the Scientist LoRA adapter on seeded tasks." />
         <StoryCard icon={<FlaskConical className="h-3.5 w-3.5" />} title="Environment" detail="Episodes come from the same paper-derived ReplicaLab benchmark families." />
-        <StoryCard icon={<Scale className="h-3.5 w-3.5" />} title="Reward" detail="Rigor, feasibility, and fidelity stay deterministic for clean comparisons." />
+        <StoryCard icon={<Scale className="h-3.5 w-3.5" />} title="Reward" detail={`Latest live checkpoint reached ${formatReward(LIVE_CHECKPOINTS[LIVE_CHECKPOINTS.length - 1].averageReward)} average reward at ${(LIVE_CHECKPOINTS[LIVE_CHECKPOINTS.length - 1].agreementRate * 100).toFixed(0)}% agreement.`} />
       </div>
 
       <div className="mb-4 h-48">
@@ -155,8 +118,8 @@ export default function TrainingResults({ data, className }: TrainingResultsProp
       </div>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        This packaged panel is the demo view for fixed-seed training metrics. When live run artifacts are wired in,
-        the same layout can render real summary JSON from the training outputs.
+        Current status: {TRAINING_ASSESSMENT.achieved[2]} The next gate is reducing invalid actions and rerunning
+        the hold-out compare until trained performance overtakes baseline.
       </p>
     </div>
   );

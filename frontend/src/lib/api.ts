@@ -15,6 +15,7 @@ import type {
   BackendScenarioFamily,
   ScenarioTemplate,
   Difficulty,
+  EpisodeStepTrace,
 } from '@/types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
@@ -121,6 +122,34 @@ function observationToEpisodeState(
     conversation: adaptConversation(sci.conversation_history),
     scores: null,
     judge_audit: null,
+    cumulative_reward: 0,
+    step_history: [],
+  };
+}
+
+function buildRoundTrace(
+  prevState: EpisodeState,
+  data: BackendStepResult,
+): EpisodeStepTrace {
+  const round = data.info.round;
+  const rawHistory = data.observation?.scientist?.conversation_history ?? [];
+  const roundEntries = rawHistory.filter((entry) => entry.round_number === round);
+  const scientistEntry = roundEntries.find((entry) => entry.role === 'scientist');
+  const labManagerEntry = roundEntries.find((entry) => entry.role === 'lab_manager');
+
+  return {
+    round,
+    reward: data.reward,
+    cumulative_reward: data.info.cumulative_reward ?? prevState.cumulative_reward + data.reward,
+    action_type: scientistEntry?.action_type ?? 'unknown',
+    scientist_message: scientistEntry?.message ?? '',
+    lab_manager_action_type: labManagerEntry?.action_type ?? undefined,
+    lab_manager_message: labManagerEntry?.message ?? undefined,
+    step_reward_components: data.info.step_reward_components ?? {},
+    protocol: data.observation?.scientist?.current_protocol ?? prevState.protocol,
+    oracle_round_score: data.info.oracle_round_score ?? null,
+    oracle_post_mortem: data.info.oracle_post_mortem ?? null,
+    oracle_event: data.info.oracle_event ?? null,
   };
 }
 
@@ -222,9 +251,11 @@ export async function stepEpisode(
     : prevState.conversation;
   const protocol = obs?.scientist?.current_protocol ?? prevState.protocol;
   const round = obs?.scientist?.round_number ?? prevState.round + 1;
+  const cumulativeReward = data.info.cumulative_reward ?? prevState.cumulative_reward + data.reward;
 
   // Update lab constraints if available
   const labConstraints = obs ? adaptLabConstraints(obs) : prevState.lab_constraints;
+  const roundTrace = buildRoundTrace(prevState, data);
 
   return {
     ...prevState,
@@ -235,6 +266,8 @@ export async function stepEpisode(
     lab_constraints: labConstraints,
     scores,
     judge_audit: judgeAudit,
+    cumulative_reward: cumulativeReward,
+    step_history: [...prevState.step_history, roundTrace],
   };
 }
 
@@ -297,41 +330,61 @@ export function sendWsMessage(ws: WebSocket, msg: WebSocketMessage) {
 // ---------------------------------------------------------------------------
 
 export function buildDefaultScientistAction(state?: EpisodeState): ScientistAction {
-  if (state?.protocol) {
-    return buildAcceptAction();
-  }
-
   const durationLimit = Math.max(1, state?.lab_constraints.time_limit_days ?? 3);
-  const originalDuration = state?.paper.original_duration_days ?? 0;
-  const durationDays = Math.max(1, Math.min(durationLimit, originalDuration || durationLimit));
   const template = state?.template;
+  const currentProtocol = state?.protocol;
+
+  const originalDuration = state?.paper.original_duration_days ?? 0;
+  const preferredDuration = currentProtocol?.duration_days ?? (originalDuration || durationLimit);
+  const durationDays = Math.max(
+    1,
+    Math.min(durationLimit, preferredDuration),
+  );
 
   const technique =
-    state?.paper.original_technique && state.paper.original_technique !== 'N/A'
-      ? state.paper.original_technique
+    currentProtocol?.technique
+      ?? (state?.paper.original_technique && state.paper.original_technique !== 'N/A'
+        ? state.paper.original_technique
+        : template === 'math_reasoning'
+          ? 'structured_proof_check'
+          : template === 'finance_trading'
+            ? 'offline_backtest'
+            : 'published_training_recipe');
+
+  const controls =
+    currentProtocol?.controls.length
+      ? currentProtocol.controls
+      : state?.paper.original_controls.length
+        ? state.paper.original_controls
+        : ['baseline'];
+
+  const baseSampleSize = currentProtocol?.sample_size ?? 3;
+  const sampleSize =
+    state?.round && state.round > 0
+      ? Math.max(3, Math.min(baseSampleSize + (state.round % 2 === 0 ? 1 : -1), 12))
       : template === 'math_reasoning'
-        ? 'structured_proof_check'
-        : template === 'finance_trading'
-          ? 'offline_backtest'
-          : 'published_training_recipe';
+        ? 4
+        : 3;
 
-  const controls = state?.paper.original_controls.length
-    ? state.paper.original_controls
-    : ['baseline'];
-
-  const requiredEquipment = state?.lab_constraints.equipment_available.slice(0, 1) ?? [];
-  const requiredReagents = state?.lab_constraints.reagents_available.slice(0, 1) ?? [];
+  const requiredEquipment = currentProtocol?.required_equipment.length
+    ? currentProtocol.required_equipment
+    : state?.lab_constraints.equipment_available.slice(0, 1) ?? [];
+  const requiredReagents = currentProtocol?.required_reagents.length
+    ? currentProtocol.required_reagents
+    : state?.lab_constraints.reagents_available.slice(0, 1) ?? [];
 
   return {
-    action_type: 'propose_protocol',
-    sample_size: 3,
+    action_type: currentProtocol ? 'revise_protocol' : 'propose_protocol',
+    sample_size: sampleSize,
     controls,
     technique,
     duration_days: durationDays,
     required_equipment: requiredEquipment,
     required_reagents: requiredReagents,
     questions: [],
-    rationale: `Replicate the source result within the available lab window of ${durationLimit} days using currently available resources.`,
+    rationale: currentProtocol
+      ? `Refine the existing protocol for round ${state?.round ?? 0} while staying inside the ${durationLimit}-day lab window.`
+      : `Replicate the source result within the available lab window of ${durationLimit} days using currently available resources.`,
   };
 }
 

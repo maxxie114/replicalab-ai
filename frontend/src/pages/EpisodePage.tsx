@@ -3,9 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, FlaskConical, Scale, TrendingUp, Play, Pencil } from 'lucide-react';
 import type { EpisodeState, ResetParams, ScientistAction } from '@/types';
-import { resetEpisode, stepEpisode, buildDefaultScientistAction, buildAcceptAction } from '@/lib/api';
+import { resetEpisode, stepEpisode } from '@/lib/api';
 import { sfx, startAmbient, stopAmbient } from '@/lib/audio';
 import { fireSuccessConfetti, fireGavelConfetti } from '@/lib/confetti';
+import { buildDemoScientistAction, DEMO_CASES, parseDemoCase } from '@/lib/demo';
 import { useToast } from '@/components/Toast';
 import { useKeyboardShortcuts, ShortcutsOverlay, ShortcutHint } from '@/components/KeyboardShortcuts';
 import AutoPlayControls, { useAutoPlay } from '@/components/AutoPlayControls';
@@ -24,6 +25,7 @@ import ProtocolTimeline from '@/components/ProtocolTimeline';
 import AgentThoughts from '@/components/AgentThoughts';
 import ProtocolEditor from '@/components/ProtocolEditor';
 import LabScene3D from '@/components/LabScene3D';
+import EpisodeResultsReport from '@/components/EpisodeResultsReport';
 
 const TEMPLATE_OPTIONS = ['math_reasoning', 'ml_benchmark', 'finance_trading'] as const;
 const DIFFICULTY_OPTIONS = ['easy', 'medium', 'hard'] as const;
@@ -66,6 +68,11 @@ export default function EpisodePage() {
     () => searchParams.get('demo') === '1' || searchParams.get('autostart') === '1',
     [searchParams],
   );
+  const demoCase = useMemo(() => parseDemoCase(searchParams.get('demoCase')), [searchParams]);
+  const demoMeta = useMemo(
+    () => DEMO_CASES.find((item) => item.id === demoCase),
+    [demoCase],
+  );
   const autoPlayRequested = useMemo(
     () => demoRequested || searchParams.get('autoplay') === '1',
     [demoRequested, searchParams],
@@ -86,6 +93,7 @@ export default function EpisodePage() {
   // Sound effects for phase transitions
   const prevPhaseRef = useRef(phase);
   const prevMsgCountRef = useRef(0);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const prev = prevPhaseRef.current;
@@ -109,10 +117,10 @@ export default function EpisodePage() {
           sfx.success();
           fireSuccessConfetti();
         }, 400);
-        toast('Episode complete — Agreement reached!', 'success');
+        toast('Episode complete - Agreement reached!', 'success');
       } else if (verdict) {
         setTimeout(() => sfx.failure(), 400);
-        toast(`Episode complete — Verdict: ${verdict}`, 'warning');
+        toast(`Episode complete - Verdict: ${verdict}`, 'warning');
       }
     }
   }, [phase, episode?.judge_audit?.verdict, toast]);
@@ -134,6 +142,12 @@ export default function EpisodePage() {
     return () => stopAmbient();
   }, []);
 
+  useEffect(() => {
+    if (episode?.done) {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [episode?.done]);
+
   const handleStart = useCallback(async (params: ResetParams) => {
     setLoading(true);
     setIsJudging(false);
@@ -142,7 +156,8 @@ export default function EpisodePage() {
     sfx.click();
     try {
       const state = await resetEpisode(params);
-      setEpisode(state);
+      const nextState = demoCase ? { ...state, demo_case: demoCase } : state;
+      setEpisode(nextState);
       prevMsgCountRef.current = 0;
       toast('Episode started!', 'info');
       // Feature 9: Update URL for shareable link
@@ -156,6 +171,9 @@ export default function EpisodePage() {
       if (autoPlayRequested) {
         nextSearch.set('autoplay', '1');
       }
+      if (demoCase) {
+        nextSearch.set('demoCase', demoCase);
+      }
       navigate(`/episode/${state.episode_id}?${nextSearch.toString()}`, { replace: true });
     } catch (err) {
       console.error('Failed to start episode:', err);
@@ -165,7 +183,7 @@ export default function EpisodePage() {
     } finally {
       setLoading(false);
     }
-  }, [autoPlayRequested, demoRequested, navigate, toast]);
+  }, [autoPlayRequested, demoCase, demoRequested, navigate, toast]);
 
   const handleStepWithAction = useCallback(async (action?: ScientistAction) => {
     if (!episode || episode.done) return;
@@ -178,7 +196,7 @@ export default function EpisodePage() {
 
     try {
       const isLastRound = episode.round >= episode.max_rounds - 1;
-      const finalAction = action ?? (isLastRound ? buildAcceptAction() : buildDefaultScientistAction(episode));
+      const finalAction = action ?? buildDemoScientistAction(episode, demoCase);
 
       if (isLastRound && !action) {
         setIsJudging(true);
@@ -205,7 +223,7 @@ export default function EpisodePage() {
     } finally {
       setLoading(false);
     }
-  }, [episode, toast]);
+  }, [demoCase, episode, toast]);
 
   useEffect(() => {
     if (!demoRequested || autoStartTriggered || episode || loading) {
@@ -395,6 +413,28 @@ export default function EpisodePage() {
         ))}
       </motion.div>
 
+      {demoMeta && (
+        <motion.div
+          className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14 }}
+        >
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                {demoMeta.title}
+              </div>
+              <h2 className="mt-1 text-base font-semibold">{demoMeta.subtitle}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{demoMeta.summary}</p>
+            </div>
+            <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+              Seed {episode.seed} · {episode.template.replace(/_/g, ' ')} · {episode.difficulty}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {!episode.done && episode.conversation.length === 0 && (
         <motion.div
           className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-4"
@@ -578,6 +618,18 @@ export default function EpisodePage() {
           {episode.done && <ReplayViewer messages={episode.conversation} />}
         </motion.div>
       </div>
+
+      {episode.done && (
+        <motion.div
+          ref={resultsRef}
+          className="mt-6"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <EpisodeResultsReport episode={episode} />
+        </motion.div>
+      )}
     </div>
   );
 }
