@@ -629,7 +629,7 @@ As the team, we want one click reproducible deployment to HF Spaces.
 | API 16 | E07.2 | Person C | `server/Dockerfile` | Configure Docker to build frontend and serve static assets from FastAPI in a single container | API 08, UI 10 | 0.75h | single Docker container serves both API and frontend on port 7860 | ⬜ Not started | — |
 | API 17 | E07.2 | Person C | deployment docs | Document secrets and API key management for hosted Scientist model access in deployment and notebook | API 09 | 0.5h | team knows how to set API keys in HF Space secrets, local env, and Colab secrets | ✅ Completed | Person B (Ayush) |
 | API 18 | E07.1 | Person C | `server/app.py` | Include judge audit payload plus bounded tool-trace summaries in REST, replay, and WebSocket responses for terminal episodes | API 03, API 05, API 06, ENV 11 | 0.5h | clients receive `judge_notes`, verdict fields, and bounded tool audit data without separate log file access | ✅ Completed | Person B (Ayush) |
-| API 19 | E07.2 | Person C | `openenv.yaml` and deployment docs | Expose and verify OpenEnv built in `/web` fallback route locally and on HF Space | FND 09, API 08, API 10 | 0.5h | `/web` is documented, reachable, and able to run a seeded episode when the custom UI is unavailable | ⬜ Not started | — |
+| API 19 | E07.2 | Person C | `openenv.yaml` and deployment docs | Expose and verify OpenEnv built in `/web` fallback route locally and on HF Space | FND 09, API 08, API 10 | 0.5h | `/web` is documented, reachable, and able to run a seeded episode when the custom UI is unavailable | ✅ Completed | Person B (Ayush) |
 
 ---
 
@@ -696,7 +696,7 @@ As a team, we want a replayable UI for debugging and recording the demo.
 | UI 04 | E09.1 | Person D | `frontend/src/components/NegotiationLog.tsx` | Build chat style negotiation log | API 03 or API 06 | 1h | scientist and lab manager messages show in correct order with role styling | ⬜ Not started | — |
 | UI 05 | E09.1 | Person D | `frontend/src/components/ScorePanel.tsx` | Build rigor, feasibility, fidelity, and total score cards | JDG 09 | 0.75h | score cards render component values and penalties clearly | ⬜ Not started | — |
 | UI 06 | E09.2 | Person D | `frontend/src/components/Controls.tsx` | Build new episode, seed input, scenario selector, and start controls | API 02, API 04 | 0.75h | user can start a chosen scenario with chosen seed from UI | ⬜ Not started | — |
-| UI 07 | E09.2 | Person D | `frontend/src/lib/api.ts` | Add REST plus WebSocket client helpers | API 02 to API 06 | 0.75h | UI can connect locally and to the hosted Space | ⬜ Not started | — |
+| UI 07 | E09.2 | Person D | `frontend/src/lib/api.ts` | Add REST plus WebSocket client helpers | API 02 to API 06 | 0.75h | UI can connect locally and to the hosted Space | ✅ Completed | Person D (Kush) |
 | UI 08 | E09.2 | Person D | `frontend/src/components/ReplayViewer.tsx` | Build replay viewer from completed episode logs | API 05 | 1h | user can load a past episode and step through rounds | ⬜ Not started | — |
 | UI 09 | E09.1 | Person D | `frontend/src/components/TrainingResults.tsx` | Add before versus after panel or static result card | TRN 10 | 0.75h | UI can show reward curve image and summary metrics | ⬜ Not started | — |
 | UI 10 | E09.1 | Person D | frontend styling | Add clean visual styling with Tailwind plus shadcn compatible primitives and responsive spacing | UI 01 to UI 09, FND 13 | 0.75h | UI is presentable on demo screen without layout breaks and styling stack matches the declared toolchain | ⬜ Not started | — |

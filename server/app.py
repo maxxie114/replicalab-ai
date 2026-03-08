@@ -473,8 +473,259 @@ async def root() -> str:
       <li><code>WS /ws</code></li>
     </ul>
     <p>If you expected the frontend, the backend is healthy but the hosted web UI is not mounted at <code>/</code> yet.</p>
+    <p><a href="/web">Open fallback Web UI &rarr;</a></p>
   </body>
 </html>"""
+
+
+@app.get("/web", response_class=HTMLResponse)
+async def web_fallback() -> str:
+    """OpenEnv ``/web`` fallback route (API 19).
+
+    Serves a self-contained single-page UI that can reset, step, and
+    display a full episode using only the REST API.  No build step or
+    frontend assets required.
+    """
+    return _WEB_FALLBACK_HTML
+
+
+_WEB_FALLBACK_HTML = """\
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ReplicaLab — Fallback UI</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f8f9fa;color:#1a1a1a;padding:1.5rem;max-width:900px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:.5rem}
+h2{font-size:1.1rem;margin:1rem 0 .5rem}
+.row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem}
+label{font-size:.85rem;font-weight:600;display:block;margin-bottom:.2rem}
+input,select{padding:.4rem .6rem;border:1px solid #ccc;border-radius:4px;font-size:.9rem}
+input[type=number]{width:5rem}
+button{padding:.5rem 1rem;border:none;border-radius:4px;font-size:.9rem;cursor:pointer;font-weight:600}
+.btn-reset{background:#2563eb;color:#fff}
+.btn-propose{background:#16a34a;color:#fff}
+.btn-accept{background:#9333ea;color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;margin-bottom:1rem}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:12px;font-size:.75rem;font-weight:700;color:#fff}
+.badge-accept{background:#16a34a}.badge-timeout{background:#dc2626}.badge-revise{background:#ea580c}
+.log{max-height:300px;overflow-y:auto;font-size:.85rem;line-height:1.6}
+.log .scientist{color:#2563eb}.log .lab_manager{color:#c2410c}.log .system{color:#6b7280}
+pre{background:#f1f5f9;padding:.75rem;border-radius:6px;font-size:.8rem;overflow-x:auto;white-space:pre-wrap}
+.scores td{padding:.2rem .6rem;font-size:.85rem}
+.scores td:first-child{font-weight:600}
+.status{padding:.5rem;border-radius:4px;font-size:.85rem;margin-bottom:.5rem}
+.status-ok{background:#dcfce7;color:#166534}.status-err{background:#fee2e2;color:#991b1b}
+</style>
+</head>
+<body>
+<h1>ReplicaLab <span style="font-weight:400;font-size:.9rem;color:#6b7280">fallback UI</span></h1>
+<p style="font-size:.85rem;color:#6b7280;margin-bottom:1rem">
+  Minimal interface for running seeded episodes.
+  <a href="/">Back to API landing</a>
+</p>
+
+<div id="status" class="status status-ok">Checking server&hellip;</div>
+
+<div class="card">
+  <h2>1. Configure &amp; Reset</h2>
+  <div class="row">
+    <div><label>Seed</label><input id="seed" type="number" value="42"></div>
+    <div><label>Scenario</label><select id="scenario"><option>math_reasoning</option></select></div>
+    <div><label>Difficulty</label><select id="difficulty"><option>easy</option><option>medium</option><option>hard</option></select></div>
+    <div><button class="btn-reset" id="btnReset">Reset Episode</button></div>
+  </div>
+</div>
+
+<div class="card" id="episodePanel" style="display:none">
+  <h2>2. Episode <code id="epId"></code></h2>
+  <p style="font-size:.85rem;margin-bottom:.5rem">
+    Round <strong id="roundNum">0</strong> / <span id="maxRounds">6</span>
+    &nbsp;|&nbsp; Reward: <strong id="cumReward">0.0</strong>
+    <span id="verdictBadge"></span>
+  </p>
+  <div class="row">
+    <button class="btn-propose" id="btnPropose">Propose Protocol</button>
+    <button class="btn-accept" id="btnAccept">Accept &amp; Finish</button>
+  </div>
+</div>
+
+<div class="card" id="logPanel" style="display:none">
+  <h2>Negotiation Log</h2>
+  <div class="log" id="logDiv"></div>
+</div>
+
+<div class="card" id="scoresPanel" style="display:none">
+  <h2>Scores</h2>
+  <table class="scores" id="scoresTable"></table>
+</div>
+
+<div class="card" id="rawPanel" style="display:none">
+  <h2>Raw Response</h2>
+  <pre id="rawPre"></pre>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let sid = '', epid = '', obs = null, done = false;
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function init() {
+  try {
+    const h = await api('/health');
+    $('status').textContent = 'Server OK — env: ' + h.env + ', v' + h.version;
+    $('status').className = 'status status-ok';
+    const s = await api('/scenarios');
+    const sel = $('scenario');
+    sel.innerHTML = '';
+    s.scenarios.forEach(f => {
+      const o = document.createElement('option');
+      o.value = f.family; o.textContent = f.family;
+      sel.appendChild(o);
+    });
+  } catch (e) {
+    $('status').textContent = 'Server error: ' + e.message;
+    $('status').className = 'status status-err';
+  }
+}
+
+$('btnReset').onclick = async () => {
+  try {
+    const d = await api('/reset', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        seed: +$('seed').value,
+        scenario: $('scenario').value,
+        difficulty: $('difficulty').value,
+      })
+    });
+    sid = d.session_id; epid = d.episode_id; obs = d.observation; done = false;
+    $('epId').textContent = epid.slice(0,8);
+    $('roundNum').textContent = obs.scientist.round_number;
+    $('maxRounds').textContent = obs.scientist.max_rounds;
+    $('cumReward').textContent = '0.0';
+    $('verdictBadge').innerHTML = '';
+    $('logDiv').innerHTML = '';
+    $('scoresPanel').style.display = 'none';
+    $('rawPre').textContent = JSON.stringify(d, null, 2);
+    $('episodePanel').style.display = '';
+    $('logPanel').style.display = '';
+    $('rawPanel').style.display = '';
+    $('btnPropose').disabled = false;
+    $('btnAccept').disabled = false;
+    $('status').textContent = 'Episode reset — ready to step';
+    $('status').className = 'status status-ok';
+  } catch (e) {
+    $('status').textContent = 'Reset failed: ' + e.message;
+    $('status').className = 'status status-err';
+  }
+};
+
+function actionPayload(type) {
+  if (type === 'accept') return {
+    action_type:'accept',sample_size:0,controls:[],technique:'',
+    duration_days:0,required_equipment:[],required_reagents:[],questions:[],rationale:''
+  };
+  const lab = obs.lab_manager;
+  return {
+    action_type: 'propose_protocol', sample_size: 10,
+    controls: ['baseline','ablation'],
+    technique: 'replication_plan',
+    duration_days: Math.min(2, lab.time_limit_days || 5),
+    required_equipment: lab.equipment_available.slice(0,1),
+    required_reagents: lab.reagents_in_stock.slice(0,1),
+    questions: [], rationale: 'Baseline protocol proposal for negotiation.'
+  };
+}
+
+async function step(type) {
+  if (done) return;
+  try {
+    const d = await api('/step', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({session_id: sid, action: actionPayload(type)})
+    });
+    done = d.done;
+    if (d.observation && d.observation.scientist) {
+      obs = d.observation;
+      $('roundNum').textContent = obs.scientist.round_number;
+      obs.scientist.conversation_history.forEach(e => appendLog(e));
+    }
+    $('cumReward').textContent = (d.info.cumulative_reward ?? d.reward).toFixed(4);
+    $('rawPre').textContent = JSON.stringify(d, null, 2);
+    if (done) {
+      $('btnPropose').disabled = true;
+      $('btnAccept').disabled = true;
+      const v = d.info.verdict || 'done';
+      const cls = v === 'accept' ? 'badge-accept' : v === 'timeout' ? 'badge-timeout' : 'badge-revise';
+      $('verdictBadge').innerHTML = ' <span class="badge '+cls+'">'+v+'</span>';
+      if (d.info.reward_breakdown) showScores(d.info);
+      $('status').textContent = 'Episode finished — verdict: ' + v;
+    } else {
+      $('status').textContent = 'Step OK — round ' + (obs ? obs.scientist.round_number : '?');
+    }
+    $('status').className = 'status status-ok';
+  } catch (e) {
+    $('status').textContent = 'Step error: ' + e.message;
+    $('status').className = 'status status-err';
+  }
+}
+
+let loggedCount = 0;
+function appendLog(entry) {
+  // avoid duplicates from full history
+  const div = $('logDiv');
+  const existing = div.children.length;
+  if (existing >= loggedCount + 1) return; // already shown
+  loggedCount++;
+  const p = document.createElement('p');
+  p.className = entry.role;
+  p.innerHTML = '<strong>' + entry.role + '</strong> (R' + entry.round_number + '): ' + entry.message;
+  div.appendChild(p);
+  div.scrollTop = div.scrollHeight;
+}
+
+function showScores(info) {
+  const rb = info.reward_breakdown;
+  let html = '';
+  ['rigor','feasibility','fidelity','parsimony'].forEach(k => {
+    html += '<tr><td>'+k+'</td><td>'+(rb[k]??0).toFixed(3)+'</td></tr>';
+  });
+  html += '<tr><td>efficiency_bonus</td><td>'+(rb.efficiency_bonus??0).toFixed(3)+'</td></tr>';
+  if (rb.penalties && Object.keys(rb.penalties).length) {
+    Object.entries(rb.penalties).forEach(([k,v]) => {
+      html += '<tr><td style="color:#dc2626">penalty: '+k+'</td><td>-'+v.toFixed(3)+'</td></tr>';
+    });
+  }
+  if (info.judge_notes) {
+    html += '<tr><td colspan="2" style="padding-top:.5rem;font-size:.8rem;color:#6b7280">'+info.judge_notes+'</td></tr>';
+  }
+  $('scoresTable').innerHTML = html;
+  $('scoresPanel').style.display = '';
+}
+
+$('btnPropose').onclick = () => step('propose');
+$('btnAccept').onclick = () => step('accept');
+
+// reset log counter on new episodes
+const origReset = $('btnReset').onclick;
+const _origOnClick = $('btnReset').onclick;
+$('btnReset').addEventListener('click', () => { loggedCount = 0; });
+
+init();
+</script>
+</body>
+</html>
+"""
 
 
 @app.get("/health")
