@@ -9,8 +9,8 @@ No assumptions from other documents are used to reclassify blocked status.
 
 ## 1. Blocking Status
 
-Per the source of truth, every Person B task has at least one explicit dependency.
-There are zero unblocked Person B tasks at project start.
+Per the source of truth, Person B now has one unblocked task.
+The immediate next task is `FND 08` because `FND 04` is complete in `replicalab/models.py`.
 
 ---
 
@@ -21,24 +21,22 @@ These tasks are first gated by upstream deliverables, primarily from Person A.
 
 | ID | Task | Depends On | Person A Deliverable | Est |
 |----|------|-----------|---------------------|-----|
-| FND 08 | Freeze JSON contract (shared A+B) | FND 04 | Empty Pydantic models | 0.75h |
 | MOD 09 | Build output parser for ScientistAction | MOD 01 | ScientistAction schema | 0.75h |
 | AGT 01 | Draft Scientist system prompt | MOD 01, SCN 11 | ScientistAction schema + generate_scenario | 0.75h |
 | AGT 05 | Implement feasibility checker (shared A+B) | SCN 07, MOD 05 | Constraint generator + validation | 1.25h |
 | SCN 11 | Create golden scenarios for prompt testing | SCN 09 | generate_scenario() | 0.75h |
 | JDG 10 | Expose component metrics for training plots | JDG 05, JDG 07 | Reward breakdown (A) + logging (C) | 0.5h |
 
-**Total: 6 tasks, 4.75h**
+**Total: 5 tasks, 4.0h**
 
 ### What to ask Person A for first (priority order)
 
-1. **FND 04** (empty Pydantic models) -- unblocks FND 08 contract freeze
-2. **MOD 01** (ScientistAction schema) -- unblocks MOD 09 and, after SCN 11, AGT 01
-3. **MOD 03** (Observation models) -- unblocks AGT 02
-4. **SCN 09** (generate_scenario) -- unblocks SCN 11 golden scenarios
-5. **SCN 07 + MOD 05** (constraints + validation) -- unblocks AGT 05, AGT 06, AGT 07
-6. **JDG 05 + JDG 06** (reward breakdown + explanation) -- unblocks AGT 10 and is only part of the path for JDG 10
-7. **SCN 08** (minimum viable replication spec) -- unblocks AGT 06 after AGT 05
+1. **MOD 01** (ScientistAction schema) -- unblocks MOD 09 and, after SCN 11, AGT 01
+2. **MOD 03** (Observation models) -- unblocks AGT 02
+3. **SCN 09** (generate_scenario) -- unblocks SCN 11 golden scenarios
+4. **SCN 07 + MOD 05** (constraints + validation) -- unblocks AGT 05, AGT 06, AGT 07
+5. **JDG 05 + JDG 06** (reward breakdown + explanation) -- unblocks AGT 10 and is only part of the path for JDG 10
+6. **SCN 08** (minimum viable replication spec) -- unblocks AGT 06 after AGT 05
 
 ---
 
@@ -118,9 +116,9 @@ are done.
 
 All phases are gated by the listed external dependency being delivered first.
 
-### Phase 1: After Person A delivers FND 04
+### Phase 1: Available now
 
-1. **FND 08** -- Freeze JSON contract (shared with Person A, needs FND 04)
+1. **FND 08** -- Freeze JSON contract (shared with Person A; unblocked because `FND 04` is complete)
 
 ### Phase 2: After Person A and B complete FND 08, and Person A delivers MOD 01 + SCN 09
 
@@ -174,7 +172,8 @@ All phases are gated by the listed external dependency being delivered first.
 
 | Category | Count | Hours |
 |----------|-------|-------|
-| Blocked by Person A (first-order) | 6 | 4.75h |
+| Currently unblocked | 1 | 0.75h |
+| Blocked by Person A (first-order) | 5 | 4.0h |
 | Blocked by Person A then Person B chain | 8 | 6.25h |
 | Blocked by Person C | 3 | 2.5h |
 | Deep training chain (internal) | 11 | 7.5h |
@@ -183,19 +182,59 @@ All phases are gated by the listed external dependency being delivered first.
 
 ---
 
-## 9. Key Risks for Person B
+## 9. Base Model Assumptions
+
+### Trainable Scientist policy
+
+Primary model: **Qwen3-4B**
+
+| Constraint | Qwen3-4B | Qwen3-8B (stretch) |
+|-----------|----------|-------------------|
+| H100 training (BF16, ~3-4x inference mem) | ~14GB weights, ~42-56GB total. Fits 80GB easily | ~19GB weights, ~57-76GB total. Tight |
+| Colab T4 (16GB, 4-bit QLoRA) | 5.5GB. Fits comfortably | 6.5GB. Fits but less headroom |
+| Structured JSON output | Good | Better |
+| RL iteration speed | Fast | Slower |
+
+Qwen3-8B is H100-only stretch. Use only if Qwen3-4B quality is insufficient and
+Colab demo uses a reduced-scale fallback.
+
+### Reward
+
+The training reward is always the **deterministic rubric engine** (E05 in the
+source of truth). A hosted frontier evaluator may optionally be used for
+post-episode explanation and demo audit. The frontier evaluator is never part
+of the training reward loop.
+
+### Future model-backed Lab Manager
+
+If the Lab Manager later becomes model-backed:
+- The reward formula does not change. The deterministic rubric scores the final
+  protocol against ground truth constraints regardless of how the Lab Manager
+  generates its responses.
+- Episode variance increases because the same seed may produce different
+  negotiation paths, but the scoring dimensions (rigor, feasibility, fidelity)
+  remain deterministic.
+- The pragmatic default is same base model (Qwen3-4B) with a separate
+  role-specific adapter. One base model in memory, swap adapters per turn.
+- Reward does not split into separate Scientist vs Lab Manager objectives.
+  Both roles share the same cooperative reward signal.
+
+---
+
+## 10. Key Risks for Person B
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Person A MOD 01-03 delayed | Blocks AGT 01, MOD 09, AGT 02-04 and all downstream | Communicate priority order to Person A early |
 | Person C API delayed | Blocks entire training pipeline (TRN 01-15) | Coordinate with Person C on API 06 timeline |
-| Base model too large for Colab | Training fails or is too slow | Pick 7B or smaller, verify Colab GPU memory first |
+| Qwen3-4B underperforms on structured output | Scientist produces low quality protocols | Fall back to Qwen3-8B on H100, use reduced-scale Colab fallback |
 | RL training produces flat rewards | No improvement to demo | Have baseline heuristic ready, tune reward weights with Person A |
 | Scientist produces invalid JSON | Rollout loop crashes | AGT 03 parse plus retry is critical, build it robust |
+| Future model-backed Lab Manager increases variance | Slower RL convergence | Keep rule-based for MVP training, introduce model-backed only after Scientist policy is stable |
 
 ---
 
-## 10. Files Person B Owns
+## 11. Files Person B Owns
 
 | File | Purpose |
 |------|---------|
