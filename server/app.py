@@ -404,8 +404,12 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",   # Vite dev server
         "http://localhost:7860",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://web--jupyter-pytorch--9y6g97v7czb9.code.run",
+        "https://api--jupyter-pytorch--9y6g97v7czb9.code.run",
     ],
-    allow_origin_regex=r"https://.*\.hf\.space",
+    allow_origin_regex=r"https://.*\.hf\.space|https://.*\.code\.run",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
