@@ -7,7 +7,8 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 ## Current status
 
 - `FND 04` is complete in `replicalab/models.py`
-- `FND 08` is now the next unblocked Ayush task
+- `FND 08` draft is complete in `docs/fnd08_frozen_json_contract.md`
+- `FND 08` still needs Person A sign-off before it can be marked complete
 
 ---
 
@@ -76,7 +77,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ## Shared Tasks
 
-- [ ] **FND 08** | Freeze JSON contract for actions and observations (with Person A) | 0.75h | Depends: FND 04 (done) | Status: ready now
+- [ ] **FND 08** | Freeze JSON contract for actions and observations (with Person A) | 0.75h | Depends: FND 04 (done) | Status: draft complete, sign-off pending
 
 ---
 
