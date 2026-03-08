@@ -1,6 +1,6 @@
 import { Suspense, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Text, RoundedBox, MeshDistortMaterial, Sphere } from '@react-three/drei';
+import { Float, RoundedBox, MeshDistortMaterial, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 import type { LabConstraints, Protocol } from '@/types';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,7 @@ function Equipment({ name, position }: { name: string; position: [number, number
   );
 }
 
-function Reagent({ name, position }: { name: string; position: [number, number, number] }) {
+function Reagent({ name: _name, position }: { name: string; position: [number, number, number] }) {
   return (
     <Float speed={3} rotationIntensity={0.5} floatIntensity={0.3}>
       <group position={position}>
@@ -98,7 +98,7 @@ function BudgetIndicator({ budget, budgetRemaining, position }: { budget: number
   );
 }
 
-function SceneContent({ constraints, protocol }: { constraints: LabConstraints; protocol: Protocol | null }) {
+function SceneContent({ constraints, protocol: _protocol }: { constraints: LabConstraints; protocol: Protocol | null }) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame(({ clock }) => {

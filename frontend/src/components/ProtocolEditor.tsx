@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Pencil, Send, X, Plus, Trash2 } from 'lucide-react';
-import type { ScientistAction, Protocol, EpisodeState } from '@/types';
+import { Pencil, Send, Plus, Trash2 } from 'lucide-react';
+import type { ScientistAction, EpisodeState } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface ProtocolEditorProps {

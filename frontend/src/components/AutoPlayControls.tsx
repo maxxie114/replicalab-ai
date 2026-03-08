@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Play, Pause, FastForward, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -118,7 +118,7 @@ export function useAutoPlay(
   done: boolean,
   loading: boolean,
 ) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isPlaying || done || loading || !onStep) {

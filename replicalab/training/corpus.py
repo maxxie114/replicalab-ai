@@ -176,6 +176,9 @@ def load_paper_manifest(
 ) -> list[PaperManifestEntry]:
     """Load the downloaded-paper manifest from disk."""
 
+    if not path.exists():
+        return _build_plan_only_manifest(parse_training_plan())
+
     rows = json.loads(path.read_text(encoding="utf-8"))
     return [PaperManifestEntry.model_validate(row) for row in rows]
 
@@ -267,6 +270,41 @@ def evidence_pack_version(packs: Iterable[FrozenEvidencePack]) -> str:
 def _slugify(value: str) -> str:
     normalized = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return normalized or "scenario"
+
+
+def _build_plan_only_manifest(
+    specs: Iterable[ScenarioPaperSpec],
+) -> list[PaperManifestEntry]:
+    entries: list[PaperManifestEntry] = []
+    for spec in specs:
+        slug = spec.slug
+        digest = hashlib.sha256(
+            json.dumps(
+                {
+                    "scenario_number": spec.scenario_number,
+                    "scenario_title": spec.scenario_title,
+                    "claim": spec.claim,
+                    "key_technique": spec.key_technique,
+                },
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()
+        entries.append(
+            PaperManifestEntry(
+                id=spec.scenario_number,
+                field=spec.field,
+                scenario_title=spec.scenario_title,
+                download_folder=f"data/papers/{spec.field}/{slug}",
+                requested_paper_title=spec.scenario_title,
+                downloaded_paper_title=spec.scenario_title,
+                planned_reference_title=spec.scenario_title,
+                match_type="plan_only",
+                status="synthetic",
+                source_url=f"training-plan://{slug}",
+                sha256=digest,
+            )
+        )
+    return entries
 
 
 __all__ = [

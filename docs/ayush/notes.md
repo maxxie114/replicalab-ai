@@ -15,10 +15,26 @@ Current local training-data note:
 Current V2 training architecture note:
 
 - The reusable training stack now lives under `replicalab/training/`.
+- `notebooks/train_minimal_colab.ipynb` is now the explicit sponsor-facing minimal Colab script using Unsloth + HF TRL.
 - `notebooks/train_colab.ipynb` is the judged notebook driver, but heavy runs
   are expected to use the `replicalab-train` entrypoint on Northflank H100.
 - The primary shared base is `Qwen/Qwen3-8B` with separate Scientist GRPO and
   Lab Manager SFT adapters.
 - The deterministic rubric remains the only training reward source even when
   Anthropic-backed oracle features are enabled for V2 overlays.
+
+Current ART/OpenEnv runtime note:
+
+- The active live Scientist RL path is now `art-scientist-train` in
+  `replicalab/training/cli.py`.
+- Fresh-runtime smoke validation completed on 2026-03-08 for:
+  - `scientist-preview-smoke-20260308b`
+  - `lab-manager-preview-smoke-20260308b`
+  - `art-scientist-smoke-20260308b`
+  - `art-scientist-compare-smoke-20260308b`
+- The live ART Scientist checkpoint reached `step7`, but the current trained
+  checkpoint still underperforms the deterministic baseline on held-out
+  comparison.
+- The main remaining work is experiment quality iteration, not missing training
+  infrastructure.
 

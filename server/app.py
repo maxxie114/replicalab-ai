@@ -29,7 +29,7 @@ from typing import Any, Optional
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -758,7 +758,16 @@ init();
 """
 
 
-@app.get("/health")
+# ---------------------------------------------------------------------------
+# API Router — mounted at both "/" and "/api" so the React frontend
+# (which calls /api/health, /api/reset, etc.) and direct API consumers
+# (which call /health, /reset, etc.) both work without path rewriting.
+# ---------------------------------------------------------------------------
+
+_api = APIRouter()
+
+
+@_api.get("/health")
 async def health():
     return {
         "status": "ok",
@@ -767,12 +776,12 @@ async def health():
     }
 
 
-@app.get("/scenarios", response_model=ScenariosResponse)
+@_api.get("/scenarios", response_model=ScenariosResponse)
 async def list_scenarios():
     return ScenariosResponse(scenarios=SCENARIOS)
 
 
-@app.post("/reset", response_model=ResetResponse)
+@_api.post("/reset", response_model=ResetResponse)
 async def reset_episode(req: ResetRequest):
     session_id = req.session_id or str(uuid.uuid4())
 
@@ -799,7 +808,7 @@ async def reset_episode(req: ResetRequest):
     return ResetResponse(session_id=session_id, episode_id=episode_id, observation=obs)
 
 
-@app.post("/step", response_model=StepResult)
+@_api.post("/step", response_model=StepResult)
 async def step_episode(req: StepRequest):
     if req.session_id not in _sessions:
         raise HTTPException(status_code=404, detail="Session not found. Call /reset first.")
@@ -853,11 +862,16 @@ async def step_episode(req: StepRequest):
     return result
 
 
-@app.get("/replay/{episode_id}", response_model=EpisodeLog)
+@_api.get("/replay/{episode_id}", response_model=EpisodeLog)
 async def get_replay(episode_id: str):
     if episode_id not in _replay_store:
         raise HTTPException(status_code=404, detail="Replay not found for this episode_id.")
     return _replay_store[episode_id]
+
+
+# Include at root (backward compat, tests, direct API) and at /api (frontend)
+app.include_router(_api)
+app.include_router(_api, prefix="/api")
 
 
 # ---------------------------------------------------------------------------
@@ -920,9 +934,15 @@ async def websocket_endpoint(ws: WebSocket):
                 await _ws_send(ws, {"type": "pong"})
 
             elif msg_type == "reset":
-                seed = int(msg.get("seed", 0))
-                scenario = str(msg.get("scenario", DEFAULT_SCENARIO_TEMPLATE))
-                difficulty = str(msg.get("difficulty", DEFAULT_DIFFICULTY))
+                # Accept both flat keys and nested "params" (frontend sends nested)
+                params = msg.get("params") or {}
+                seed = int(params.get("seed", msg.get("seed", 0)))
+                scenario = str(
+                    params.get("scenario",
+                               params.get("template",
+                                          msg.get("scenario", DEFAULT_SCENARIO_TEMPLATE)))
+                )
+                difficulty = str(params.get("difficulty", msg.get("difficulty", DEFAULT_DIFFICULTY)))
 
                 try:
                     obs = env.reset(seed=seed, scenario=scenario, difficulty=difficulty)

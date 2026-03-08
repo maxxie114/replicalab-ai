@@ -6,15 +6,30 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ## Current status
 
-- `FND 06` is complete and was executed by `Person B (Ayush)`
-- `DOC 01` is now unblocked because `FND 06` is complete
-- The frontend shell from Kush's branch is now on `ayush` and builds successfully
-- `FND 13` is now unblocked because `FND 03` is complete
+- All Person D implementation and storytelling tasks are recorded complete in the source-of-truth backlog.
+- The frontend now presents the demo in the intended order:
+  - source paper
+  - parsed replication brief
+  - live negotiation
+  - deterministic judge
+  - training story
+- The dashboard, episode page, training panel, and evaluation bench all build successfully after the latest refinement pass.
 
 ---
 
-## Immediate next tasks
+## Active focus
 
-- [ ] **DOC 01** | Write hook, problem statement, and one-line product summary | Depends: `FND 06` | Status: unblocked
-- [ ] **FND 13** | Configure Tailwind and base styling pipeline | Depends: `FND 03` | Status: unblocked
+- No open Person D implementation blockers remain in the backlog.
+- Remaining polish is demo execution quality:
+  - keep the live script aligned with the new paper-to-training UI flow
+  - swap packaged training demo data for live artifacts if a final run is ready
+  - capture final screenshots or footage from the updated frontend
 
+---
+
+## Notes for demo prep
+
+- Start the live walkthrough from `/episode?template=ml_benchmark&difficulty=medium`.
+- Use the left panel to anchor the narrative in the source paper and parsed brief.
+- Use the right-side training callout at episode end to connect the judged reward to the minimal Colab notebook.
+- Use `/compare` as the seeded evaluation bench, not as the primary baseline-vs-trained story.
