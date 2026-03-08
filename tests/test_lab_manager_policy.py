@@ -3,9 +3,10 @@ from __future__ import annotations
 from replicalab.agents.lab_manager_policy import (
     AlternativeSuggestion,
     check_feasibility,
+    compose_lab_manager_response,
     suggest_alternative,
 )
-from replicalab.models import Protocol
+from replicalab.models import LabManagerActionType, Protocol
 from replicalab.scenarios import generate_scenario
 
 
@@ -316,3 +317,94 @@ def test_suggest_alternative_reports_remaining_failures() -> None:
     result = suggest_alternative(protocol, check, scenario)
     assert result is not None
     assert "policy" in result.remaining_failures
+
+
+# ---------------------------------------------------------------------------
+# AGT 07 - compose_lab_manager_response
+# ---------------------------------------------------------------------------
+
+
+def test_compose_lab_manager_response_accepts_feasible_protocol() -> None:
+    scenario = _scenario("ml_benchmark", "easy")
+    protocol = _protocol_for_scenario(scenario)
+    check = check_feasibility(protocol, scenario)
+
+    action = compose_lab_manager_response(check)
+
+    assert action.action_type is LabManagerActionType.ACCEPT
+    assert action.feasible is True
+    assert action.suggested_technique == ""
+    assert "Accepted." in action.explanation
+
+
+def test_compose_lab_manager_response_suggests_alternative_when_revision_exists() -> None:
+    scenario = _scenario("ml_benchmark", "easy")
+    protocol = _protocol_for_scenario(
+        scenario,
+        sample_size=200,
+        duration_days=scenario.lab_manager_observation.time_limit_days,
+        controls=["baseline", "ablation", "sanity_check"],
+        required_equipment=list(scenario.lab_manager_observation.equipment_available),
+        required_reagents=list(scenario.lab_manager_observation.reagents_in_stock),
+    )
+    check = check_feasibility(protocol, scenario)
+    suggestion = suggest_alternative(protocol, check, scenario)
+
+    assert suggestion is not None
+    action = compose_lab_manager_response(check, suggestion)
+
+    assert action.action_type is LabManagerActionType.SUGGEST_ALTERNATIVE
+    assert action.feasible is False
+    assert action.suggested_sample_size == suggestion.revised_protocol.sample_size
+    assert action.suggested_controls == suggestion.revised_protocol.controls
+    assert "Suggested revision:" in action.explanation
+
+
+def test_compose_lab_manager_response_rejects_when_no_revision_exists() -> None:
+    scenario = _scenario("ml_benchmark", "easy")
+    protocol = _protocol_for_scenario(
+        scenario,
+        required_equipment=["Imaginary GPU Rack"],
+    )
+    check = check_feasibility(protocol, scenario)
+    suggestion = suggest_alternative(protocol, check, scenario)
+
+    action = compose_lab_manager_response(check, suggestion)
+
+    assert action.action_type is LabManagerActionType.REJECT
+    assert action.feasible is False
+    assert "No deterministic revision could satisfy" in action.explanation
+
+
+def test_compose_lab_manager_response_reports_non_lab_issues() -> None:
+    scenario = _scenario("finance_trading", "easy")
+    protocol = _protocol_for_scenario(
+        scenario,
+        technique="live trading execution plan",
+        rationale="Use live trading once the backtest looks strong.",
+    )
+    check = check_feasibility(protocol, scenario)
+    suggestion = suggest_alternative(protocol, check, scenario)
+
+    action = compose_lab_manager_response(check, suggestion)
+
+    assert action.action_type is LabManagerActionType.REPORT_FEASIBILITY
+    assert action.feasible is True
+    assert "policy" in action.explanation.lower()
+
+
+def test_compose_lab_manager_response_uses_custom_renderer_without_changing_verdict() -> None:
+    scenario = _scenario("ml_benchmark", "easy")
+    protocol = _protocol_for_scenario(scenario)
+    check = check_feasibility(protocol, scenario)
+
+    action = compose_lab_manager_response(
+        check,
+        explanation_renderer=lambda action_type, result, suggestion: (
+            f"Renderer saw {action_type.value} with feasible={result.feasible}."
+        ),
+    )
+
+    assert action.action_type is LabManagerActionType.ACCEPT
+    assert action.feasible is True
+    assert action.explanation == "Renderer saw accept with feasible=True."

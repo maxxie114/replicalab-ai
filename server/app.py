@@ -31,6 +31,11 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from replicalab.agents import (
+    check_feasibility,
+    compose_lab_manager_response,
+    suggest_alternative,
+)
 from replicalab.config import (
     API_HOST,
     API_PORT,
@@ -40,11 +45,16 @@ from replicalab.config import (
     STUB_ACCEPT_REWARD,
     WS_IDLE_TIMEOUT_SECONDS,
 )
-from replicalab.scenarios import available_scenario_families, generate_scenario
+from replicalab.scenarios import (
+    NormalizedScenarioPack,
+    available_scenario_families,
+    generate_scenario,
+)
 from replicalab.models import (
     ConversationEntry,
     EpisodeLog,
     EpisodeState,
+    LabManagerAction,
     LabManagerObservation,
     Observation,
     Protocol,
@@ -121,6 +131,7 @@ class _StubEnv:
         self._state = EpisodeState()
         self._logs: list[ConversationEntry] = []
         self._episode_id: str = ""
+        self._scenario_pack: Optional[NormalizedScenarioPack] = None
 
     # ── public interface (matches ReplicaLabEnv) ──────────────────────────
 
@@ -133,6 +144,7 @@ class _StubEnv:
         self._episode_id = str(uuid.uuid4())
         self._logs = []
         pack = generate_scenario(seed=seed, template=scenario, difficulty=difficulty)
+        self._scenario_pack = pack
         self._state = EpisodeState(
             seed=seed,
             scenario_template=scenario,
@@ -160,10 +172,12 @@ class _StubEnv:
 
     def step(self, action: ScientistAction) -> StepResult:
         self._state.round_number += 1
+        proposed_protocol = self._protocol_from_action(action)
         self._logs.append(self._scientist_log_entry(action))
-        self._logs.append(self._lab_manager_log_entry(action))
+        lab_manager_action = self._lab_manager_action(proposed_protocol)
+        self._logs.append(self._lab_manager_log_entry(lab_manager_action))
         self._state.conversation_history = list(self._logs)
-        self._state.current_protocol = self._protocol_from_action(action)
+        self._state.current_protocol = proposed_protocol
         done = (
             action.action_type == "accept"
             or self._state.round_number >= self._state.max_rounds
@@ -218,19 +232,38 @@ class _StubEnv:
             action_type=action_type,
         )
 
-    def _lab_manager_log_entry(self, action: ScientistAction) -> ConversationEntry:
-        if action.action_type == "accept":
-            message = "Stub review: agreement recorded and episode will close."
-            action_type = "accept"
-        else:
-            message = "Stub review: proposal received and remains feasible under the stub lab."
-            action_type = "report_feasibility"
+    def _lab_manager_log_entry(self, action: LabManagerAction) -> ConversationEntry:
+        action_type = (
+            action.action_type.value
+            if hasattr(action.action_type, "value")
+            else str(action.action_type)
+        )
         return ConversationEntry(
             role="lab_manager",
-            message=message,
+            message=action.explanation,
             round_number=self._state.round_number,
             action_type=action_type,
         )
+
+    def _lab_manager_action(self, protocol: Optional[Protocol]) -> LabManagerAction:
+        if protocol is None or self._scenario_pack is None:
+            return LabManagerAction(
+                action_type="report_feasibility",
+                feasible=True,
+                budget_ok=True,
+                equipment_ok=True,
+                reagents_ok=True,
+                schedule_ok=True,
+                staff_ok=True,
+                suggested_technique="",
+                suggested_sample_size=0,
+                suggested_controls=[],
+                explanation="No concrete protocol is available to review yet.",
+            )
+
+        check_result = check_feasibility(protocol, self._scenario_pack)
+        suggestion = suggest_alternative(protocol, check_result, self._scenario_pack)
+        return compose_lab_manager_response(check_result, suggestion)
 
     def _protocol_from_action(self, action: ScientistAction) -> Optional[Protocol]:
         if action.action_type not in {"propose_protocol", "revise_protocol"}:

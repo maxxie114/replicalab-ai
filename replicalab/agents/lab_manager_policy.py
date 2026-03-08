@@ -5,15 +5,19 @@ normalized scenario pack and returns stable pass/fail status per dimension.
 AGT 06 adds ``suggest_alternative`` which mechanically applies substitution
 rules, clamps duration, and reduces sample size to produce a concrete
 revised protocol with a post-fix feasibility recheck.
+AGT 07 adds ``compose_lab_manager_response`` which converts those grounded
+results into a typed ``LabManagerAction`` with stable flags plus a readable
+explanation.  An optional explanation renderer can add richer language later
+without taking over the verdict or constraint fields.
 """
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Callable, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from replicalab.models import Protocol
+from replicalab.models import LabManagerAction, LabManagerActionType, Protocol
 from replicalab.scenarios import NormalizedScenarioPack
 from replicalab.utils.validation import ValidationResult, validate_protocol
 
@@ -182,6 +186,12 @@ class AlternativeSuggestion(BaseModel):
     post_check: FeasibilityCheckResult
 
 
+ExplanationRenderer = Callable[
+    [LabManagerActionType, FeasibilityCheckResult, Optional[AlternativeSuggestion]],
+    str,
+]
+
+
 def suggest_alternative(
     protocol: Protocol,
     check_result: FeasibilityCheckResult,
@@ -300,6 +310,55 @@ def suggest_alternative(
     )
 
 
+def compose_lab_manager_response(
+    check_result: FeasibilityCheckResult,
+    suggestion: Optional[AlternativeSuggestion] = None,
+    *,
+    explanation_renderer: Optional[ExplanationRenderer] = None,
+) -> LabManagerAction:
+    """Compose a grounded ``LabManagerAction`` from deterministic inputs.
+
+    The verdict and all feasibility flags remain deterministic.  Callers may
+    optionally inject an ``explanation_renderer`` for richer wording, but it
+    never controls the action type or the pass/fail flags.
+    """
+
+    action_type = _select_lab_manager_action_type(check_result, suggestion)
+    explanation = (
+        explanation_renderer(action_type, check_result, suggestion)
+        if explanation_renderer is not None
+        else _build_default_explanation(action_type, check_result, suggestion)
+    ).strip()
+    if not explanation:
+        raise ValueError("Lab Manager explanation must be non-empty")
+
+    suggested_protocol = (
+        suggestion.revised_protocol
+        if action_type is LabManagerActionType.SUGGEST_ALTERNATIVE and suggestion is not None
+        else None
+    )
+
+    return LabManagerAction(
+        action_type=action_type,
+        feasible=_lab_constraints_feasible(check_result),
+        budget_ok=check_result.budget_ok,
+        equipment_ok=check_result.equipment_ok,
+        reagents_ok=check_result.reagents_ok,
+        schedule_ok=check_result.schedule_ok,
+        staff_ok=check_result.staff_ok,
+        suggested_technique=(
+            suggested_protocol.technique if suggested_protocol is not None else ""
+        ),
+        suggested_sample_size=(
+            suggested_protocol.sample_size if suggested_protocol is not None else 0
+        ),
+        suggested_controls=(
+            list(suggested_protocol.controls) if suggested_protocol is not None else []
+        ),
+        explanation=explanation,
+    )
+
+
 def _apply_substitutions(
     items: list[str],
     substitution_options: dict[str, list[str]],
@@ -383,6 +442,125 @@ def _build_tradeoff_index(scenario: NormalizedScenarioPack) -> dict[str, str]:
     for sub in scenario.allowed_substitutions:
         index[_normalize(sub.original)] = sub.tradeoff
     return index
+
+
+def _select_lab_manager_action_type(
+    check_result: FeasibilityCheckResult,
+    suggestion: Optional[AlternativeSuggestion],
+) -> LabManagerActionType:
+    """Choose the outward action mode from grounded feasibility results."""
+
+    lab_constraints_ok = _lab_constraints_feasible(check_result)
+
+    if lab_constraints_ok and check_result.protocol.ok and check_result.policy.ok:
+        return LabManagerActionType.ACCEPT
+
+    if suggestion is not None and suggestion.applied_changes:
+        return LabManagerActionType.SUGGEST_ALTERNATIVE
+
+    if lab_constraints_ok:
+        return LabManagerActionType.REPORT_FEASIBILITY
+
+    return LabManagerActionType.REJECT
+
+
+def _build_default_explanation(
+    action_type: LabManagerActionType,
+    check_result: FeasibilityCheckResult,
+    suggestion: Optional[AlternativeSuggestion],
+) -> str:
+    """Render a deterministic human-readable explanation."""
+
+    if action_type is LabManagerActionType.ACCEPT:
+        return f"Accepted. {check_result.summary}"
+
+    if action_type is LabManagerActionType.SUGGEST_ALTERNATIVE and suggestion is not None:
+        parts = [
+            "Current proposal is not feasible under the present lab constraints.",
+            _format_reason_block(check_result, include_protocol=False, include_policy=False),
+            "Suggested revision: "
+            + " ".join(_format_change_sentence(change) for change in suggestion.applied_changes),
+        ]
+        if suggestion.remaining_failures:
+            parts.append(
+                "Remaining issues after the suggested revision: "
+                + ", ".join(suggestion.remaining_failures)
+                + "."
+            )
+        return " ".join(part for part in parts if part)
+
+    if action_type is LabManagerActionType.REPORT_FEASIBILITY:
+        parts = [
+            "Feasibility report: lab resources and schedule are workable, but the current proposal still needs revision.",
+            _format_reason_block(check_result, include_protocol=True, include_policy=True),
+        ]
+        return " ".join(part for part in parts if part)
+
+    parts = [
+        "Rejected. No deterministic revision could satisfy the current lab constraints.",
+        _format_reason_block(check_result, include_protocol=False, include_policy=False),
+    ]
+    return " ".join(part for part in parts if part)
+
+
+def _lab_constraints_feasible(check_result: FeasibilityCheckResult) -> bool:
+    return all(
+        (
+            check_result.budget_ok,
+            check_result.equipment_ok,
+            check_result.reagents_ok,
+            check_result.schedule_ok,
+            check_result.staff_ok,
+        )
+    )
+
+
+def _format_reason_block(
+    check_result: FeasibilityCheckResult,
+    *,
+    include_protocol: bool,
+    include_policy: bool,
+) -> str:
+    blocks: list[str] = []
+    for name, check in _iter_dimension_checks(
+        check_result,
+        include_protocol=include_protocol,
+        include_policy=include_policy,
+    ):
+        if check.ok or not check.reasons:
+            continue
+        blocks.append(f"{name}: {' '.join(check.reasons)}")
+    return " ".join(blocks)
+
+
+def _format_change_sentence(change: SuggestionChange) -> str:
+    return (
+        f"{change.field} changed from {change.original} to {change.revised}. "
+        f"{change.reason} Tradeoff: {change.tradeoff}"
+    )
+
+
+def _iter_dimension_checks(
+    check_result: FeasibilityCheckResult,
+    *,
+    include_protocol: bool,
+    include_policy: bool,
+) -> list[tuple[str, DimensionCheck]]:
+    checks: list[tuple[str, DimensionCheck]] = []
+    if include_protocol:
+        checks.append(("protocol", check_result.protocol))
+    checks.extend(
+        [
+            ("budget", check_result.budget),
+            ("equipment", check_result.equipment),
+            ("reagents", check_result.reagents),
+            ("schedule", check_result.schedule),
+            ("staff", check_result.staff),
+        ]
+    )
+    if include_policy:
+        checks.append(("policy", check_result.policy))
+    return checks
 
 
 def _build_protocol_check(validation_result: ValidationResult) -> DimensionCheck:
