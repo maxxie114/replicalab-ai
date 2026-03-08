@@ -1,0 +1,22 @@
+# Training dependencies (GPU required)
+# Installed on top of server/requirements.txt
+
+# RL training framework
+trl>=0.15,<1.0
+
+# Dataset handling
+datasets>=3.0,<4.0
+
+# Unsloth for fast LoRA fine-tuning
+unsloth>=2025.3
+
+# vLLM for fast inference during GRPO rollouts
+vllm>=0.7
+
+# Plotting
+matplotlib>=3.9,<4.0
+
+# Already in server/requirements.txt but listed for completeness
+pydantic>=2.7,<3.0
+httpx>=0.27,<1.0
+websocket-client>=1.7,<2.0

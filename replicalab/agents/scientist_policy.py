@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from importlib import import_module
 from typing import Any, Callable, Literal, Mapping
 
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -138,6 +139,7 @@ def call_scientist_with_retry(
     observation: ScientistObservation,
     *,
     max_retries: int = 2,
+    user_message_override: str | None = None,
 ) -> ScientistCallResult:
     """Call a model backend to produce a ``ScientistAction`` with parser-driven retries.
 
@@ -161,7 +163,7 @@ def call_scientist_with_retry(
         Default is 2 (so up to 3 total attempts).
     """
 
-    user_message = format_scientist_observation(observation)
+    user_message = user_message_override or format_scientist_observation(observation)
     messages: list[dict[str, str]] = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_message},
@@ -709,3 +711,169 @@ def _baseline_defaults_for_domain(domain: str) -> dict[str, Any]:
         "technique": "structured_proof_outline",
         "duration_days": 1,
     }
+
+
+def build_remote_scientist_policy(
+    *,
+    project: str,
+    model_name: str,
+    base_model: str,
+    checkpoint_step: int | None = None,
+    max_completion_tokens: int = 450,
+    temperature: float = 0.0,
+    max_retries: int = 2,
+) -> Callable[[ScientistObservation], ScientistAction]:
+    """Create a sync policy callable backed by an ART serverless checkpoint."""
+
+    try:
+        art_module = import_module("art")
+        serverless_module = import_module("art.serverless")
+        openai_module = import_module("openai")
+    except ImportError as exc:
+        raise RuntimeError(
+            "Missing optional inference dependency for remote Scientist evaluation. "
+            "Install 'openpipe-art' and 'openai' before loading a trained checkpoint."
+        ) from exc
+
+    trainable_model = art_module.TrainableModel(
+        name=model_name,
+        project=project,
+        base_model=base_model,
+    )
+    backend = serverless_module.ServerlessBackend()
+
+    import asyncio
+
+    asyncio.run(trainable_model.register(backend))
+    if trainable_model.inference_api_key is None or trainable_model.inference_base_url is None:
+        raise RuntimeError("ART serverless model registration did not expose inference credentials.")
+
+    client = openai_module.OpenAI(
+        base_url=trainable_model.inference_base_url,
+        api_key=trainable_model.inference_api_key,
+    )
+    inference_name = trainable_model.get_inference_name(step=checkpoint_step)
+    training_corpus = import_module("replicalab.training.corpus")
+    evidence_packs = [
+        pack for pack in training_corpus.load_frozen_evidence_packs() if pack.trainable_in_env
+    ]
+
+    def generate_fn(messages: list[dict[str, str]]) -> str:
+        response = client.chat.completions.create(
+            model=inference_name,
+            messages=messages,
+            max_completion_tokens=max_completion_tokens,
+            temperature=temperature,
+        )
+        return _extract_message_content(response.choices[0].message.content)
+
+    def policy_fn(
+        observation: ScientistObservation,
+        *,
+        seed: int | None = None,
+        scenario: str | None = None,
+        difficulty: str | None = None,
+    ) -> ScientistAction:
+        evidence_pack = None
+        if seed is not None and scenario is not None:
+            try:
+                evidence_pack = training_corpus.select_evidence_pack(
+                    evidence_packs,
+                    template=scenario,
+                    seed=seed,
+                )
+            except Exception:
+                evidence_pack = None
+        user_message = format_scientist_observation(observation)
+        if evidence_pack is not None:
+            user_message += "\n\nFrozen evidence pack:\n" + evidence_pack.prompt_block()
+        result = call_scientist_with_retry(
+            generate_fn,
+            _build_live_scientist_system_prompt(
+                observation,
+                evidence_pack=evidence_pack,
+                difficulty=difficulty,
+                scenario=scenario,
+            ),
+            observation,
+            max_retries=max_retries,
+            user_message_override=user_message,
+        )
+        return result.action
+
+    return policy_fn
+
+
+def _build_live_scientist_system_prompt(
+    observation: ScientistObservation,
+    *,
+    evidence_pack: Any | None = None,
+    difficulty: str | None = None,
+    scenario: str | None = None,
+) -> str:
+    allowed_actions = ", ".join(action.value for action in ScientistActionType)
+    sections = [
+        "You are the Scientist agent in ReplicaLab.",
+        (
+            "Your job is to negotiate toward the strongest feasible plan under the "
+            "provided constraints. You do not invent resources, loosen constraints, "
+            "or assume hidden ground truth."
+        ),
+        (
+            "Return exactly one JSON object with all ScientistAction fields and no "
+            "extra keys or prose."
+        ),
+        f"Allowed action_type values: {allowed_actions}.",
+        (
+            "For propose_protocol and revise_protocol, include a full protocol payload "
+            "with sample_size >= 1, controls, technique, duration_days >= 0, "
+            "required_equipment, required_reagents, questions = [], and rationale."
+        ),
+        (
+            "For request_info, keep protocol fields empty or zero and include at least "
+            "one concrete blocking question."
+        ),
+        (
+            "For accept, keep all protocol-edit fields empty or zero and use an empty "
+            "questions list."
+        ),
+        (
+            "Bounded tool policy: search_evidence, run_code_check, and inspect_image "
+            "support the current scenario only. They do not override constraints."
+        ),
+        f"Paper title: {observation.paper_title}",
+        f"Goal: {observation.experiment_goal}",
+    ]
+    if scenario:
+        sections.append(f"Scenario family: {scenario}")
+    if difficulty:
+        sections.append(f"Difficulty: {difficulty}")
+    if evidence_pack is not None:
+        sections.extend(
+            [
+                f"Frozen evidence id: {evidence_pack.evidence_id}",
+                f"Grounding paper: {evidence_pack.downloaded_paper_title}",
+                f"Claim: {evidence_pack.claim}",
+                f"Technique: {evidence_pack.key_technique}",
+                f"Constraint tension: {evidence_pack.primary_constraint_tension}",
+            ]
+        )
+    return "\n\n".join(sections)
+
+
+def _extract_message_content(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, dict):
+                text = item.get("text")
+                if text:
+                    parts.append(str(text))
+                continue
+            text = getattr(item, "text", None)
+            if text:
+                parts.append(str(text))
+        return "\n".join(parts)
+    return ""

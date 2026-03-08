@@ -8,21 +8,34 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from replicalab.agents import build_baseline_scientist_action
+from replicalab.agents import build_baseline_scientist_action, build_remote_scientist_policy
 from replicalab.training.artifacts import (
     ArtifactLayout,
     append_jsonl,
     build_run_name,
     write_json,
 )
-from replicalab.training.evaluation import build_default_evaluation_cases, evaluate_policy
+from replicalab.training.art_openenv import (
+    ArtOpenEnvConfig,
+    ArtScenarioSpec,
+    run_art_openenv_training,
+)
+from replicalab.training.evaluation import (
+    build_default_evaluation_cases,
+    compare_policies,
+    evaluate_policy,
+)
 from replicalab.training.lab_manager_sft import (
     LabManagerSFTConfig,
     preview_lab_manager_training,
     train_lab_manager_sft,
 )
 from replicalab.training.metrics import episode_to_metrics
-from replicalab.training.plots import plot_evaluation_bars, plot_training_history
+from replicalab.training.plots import (
+    plot_evaluation_bars,
+    plot_metrics_by_step,
+    plot_training_history,
+)
 from replicalab.training.scientist_grpo import (
     ScientistGRPOConfig,
     preview_scientist_training,
@@ -46,6 +59,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_lab_manager_train(args)
     if args.command == "baseline-eval":
         return _run_baseline_eval(args)
+    if args.command == "scientist-compare-eval":
+        return _run_scientist_compare_eval(args)
+    if args.command == "art-scientist-train":
+        return _run_art_scientist_train(args)
 
     parser.error(f"Unsupported command: {args.command}")
     return 2
@@ -169,6 +186,159 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Difficulty levels to evaluate.",
     )
 
+    compare_eval = subparsers.add_parser(
+        "scientist-compare-eval",
+        help="Compare baseline Scientist versus a trained ART Scientist checkpoint.",
+    )
+    _add_common_artifact_args(compare_eval, prefix="eval-compare")
+    compare_eval.add_argument(
+        "--base-url",
+        default="https://ayushozha-replicalab.hf.space",
+        help="ReplicaLab environment base URL.",
+    )
+    compare_eval.add_argument(
+        "--transport",
+        default="rest",
+        choices=("rest", "ws"),
+        help="Transport used by ReplicaLabClient.",
+    )
+    compare_eval.add_argument(
+        "--eval-seeds",
+        nargs="+",
+        type=int,
+        default=[101, 102],
+        help="Evaluation seeds.",
+    )
+    compare_eval.add_argument(
+        "--scenarios",
+        nargs="+",
+        default=list(scientist_defaults.templates),
+        help="Scenario families to evaluate.",
+    )
+    compare_eval.add_argument(
+        "--difficulties",
+        nargs="+",
+        default=list(scientist_defaults.difficulties),
+        help="Difficulty levels to evaluate.",
+    )
+    compare_eval.add_argument(
+        "--project",
+        default="replicalab-ai",
+        help="ART project name for the trained Scientist checkpoint.",
+    )
+    compare_eval.add_argument(
+        "--model-name",
+        default="replicalab-scientist-art-live",
+        help="ART trainable model name for the trained Scientist checkpoint.",
+    )
+    compare_eval.add_argument(
+        "--base-model",
+        default="OpenPipe/Qwen3-14B-Instruct",
+        help="Base model used for the ART trained Scientist.",
+    )
+    compare_eval.add_argument(
+        "--checkpoint-step",
+        type=int,
+        default=None,
+        help="Optional explicit ART checkpoint step to evaluate.",
+    )
+    compare_eval.add_argument(
+        "--max-completion-tokens",
+        type=int,
+        default=450,
+        help="Max completion tokens for the trained remote Scientist.",
+    )
+    compare_eval.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="Sampling temperature for the trained remote Scientist.",
+    )
+
+    art_train = subparsers.add_parser(
+        "art-scientist-train",
+        help="Run ART serverless RL training against the ReplicaLab OpenEnv deployment.",
+    )
+    _add_common_artifact_args(art_train, prefix="art-scientist")
+    art_train.add_argument(
+        "--project",
+        default="replicalab-art-openenv",
+        help="Weights & Biases / ART project name.",
+    )
+    art_train.add_argument(
+        "--model-name",
+        default="replicalab-scientist-art",
+        help="ART trainable model name.",
+    )
+    art_train.add_argument(
+        "--base-model",
+        default="OpenPipe/Qwen3-14B-Instruct",
+        help="ART serverless base model.",
+    )
+    art_train.add_argument(
+        "--base-url",
+        default="https://ayushozha-replicalab.hf.space",
+        help="ReplicaLab environment base URL.",
+    )
+    art_train.add_argument(
+        "--transport",
+        default="rest",
+        choices=("rest",),
+        help="Transport used for live environment interaction.",
+    )
+    art_train.add_argument(
+        "--train-steps",
+        type=int,
+        default=1,
+        help="Number of ART training updates to run.",
+    )
+    art_train.add_argument(
+        "--rollouts-per-group",
+        type=int,
+        default=2,
+        help="Number of sampled rollouts for each scenario group.",
+    )
+    art_train.add_argument(
+        "--max-turns",
+        type=int,
+        default=6,
+        help="Max environment turns per rollout.",
+    )
+    art_train.add_argument(
+        "--max-completion-tokens",
+        type=int,
+        default=700,
+        help="Assistant max completion tokens per turn.",
+    )
+    art_train.add_argument(
+        "--max-parse-retries",
+        type=int,
+        default=2,
+        help="Number of parser-driven correction retries per turn.",
+    )
+    art_train.add_argument(
+        "--learning-rate",
+        type=float,
+        default=5e-6,
+        help="ART learning rate.",
+    )
+    art_train.add_argument(
+        "--beta",
+        type=float,
+        default=0.0,
+        help="ART KL penalty coefficient.",
+    )
+    art_train.add_argument(
+        "--scenario-spec",
+        nargs="+",
+        default=[
+            "0:ml_benchmark:easy",
+            "1:ml_benchmark:medium",
+            "0:finance_trading:easy",
+        ],
+        help="Scenario specs in the form seed:scenario:difficulty.",
+    )
+
     return parser
 
 
@@ -279,6 +449,22 @@ def _run_scientist_train(args: argparse.Namespace) -> int:
         max_steps=args.max_steps,
     )
     result = train_scientist_grpo(config, layout=layout, dry_run=args.dry_run)
+    _write_run_metadata(
+        layout,
+        {
+            "kind": "scientist_train",
+            "model_name": args.model_name,
+            "templates": args.templates,
+            "difficulties": args.difficulties,
+            "seed_count": args.seed_count,
+            "max_steps": args.max_steps,
+            "bounded_tool_policy": [
+                "search_evidence",
+                "run_code_check",
+                "inspect_image",
+            ],
+        },
+    )
     _maybe_plot_training_history(
         layout=layout,
         state_name="scientist_trainer_state.json",
@@ -327,6 +513,21 @@ def _run_lab_manager_train(args: argparse.Namespace) -> int:
         load_in_4bit=args.load_in_4bit,
     )
     result = train_lab_manager_sft(config, layout=layout, dry_run=args.dry_run)
+    _write_run_metadata(
+        layout,
+        {
+            "kind": "lab_manager_train",
+            "model_name": args.model_name,
+            "templates": args.templates,
+            "difficulties": args.difficulties,
+            "seed_count": args.seed_count,
+            "bounded_tool_policy": [
+                "search_evidence",
+                "run_code_check",
+                "inspect_image",
+            ],
+        },
+    )
     _maybe_plot_training_history(
         layout=layout,
         state_name="lab_manager_trainer_state.json",
@@ -364,6 +565,22 @@ def _run_baseline_eval(args: argparse.Namespace) -> int:
             "cases": [case.__dict__ for case in cases],
         },
     )
+    _write_run_metadata(
+        layout,
+        {
+            "kind": "baseline_eval",
+            "base_url": args.base_url,
+            "transport": args.transport,
+            "eval_seeds": args.eval_seeds,
+            "scenarios": args.scenarios,
+            "difficulties": args.difficulties,
+            "bounded_tool_policy": [
+                "search_evidence",
+                "run_code_check",
+                "inspect_image",
+            ],
+        },
+    )
     for record in records:
         append_jsonl(
             layout.metrics_jsonl,
@@ -373,6 +590,127 @@ def _run_baseline_eval(args: argparse.Namespace) -> int:
     write_json(layout.summary_json, summary_payload)
     _plot_eval_summary(summary_payload, layout=layout)
     print(json.dumps(summary_payload, indent=2, sort_keys=True))
+    return 0
+
+
+def _run_scientist_compare_eval(args: argparse.Namespace) -> int:
+    layout = _build_layout(
+        prefix="eval-compare",
+        persist_root=args.persist_root,
+        run_name=args.run_name,
+    )
+    cases = build_default_evaluation_cases(
+        seeds=args.eval_seeds,
+        scenarios=args.scenarios,
+        difficulties=args.difficulties,
+    )
+    trained_policy = build_remote_scientist_policy(
+        project=args.project,
+        model_name=args.model_name,
+        base_model=args.base_model,
+        checkpoint_step=args.checkpoint_step,
+        max_completion_tokens=args.max_completion_tokens,
+        temperature=args.temperature,
+    )
+    records_by_label, rows = compare_policies(
+        base_url=args.base_url,
+        policies=[
+            ("baseline", build_baseline_scientist_action),
+            ("trained", trained_policy),
+        ],
+        cases=cases,
+        transport=args.transport,
+    )
+    write_json(
+        layout.config_json,
+        {
+            "kind": "scientist_compare_eval",
+            "base_url": args.base_url,
+            "transport": args.transport,
+            "cases": [case.__dict__ for case in cases],
+            "project": args.project,
+            "model_name": args.model_name,
+            "base_model": args.base_model,
+            "checkpoint_step": args.checkpoint_step,
+        },
+    )
+    _write_run_metadata(
+        layout,
+        {
+            "kind": "scientist_compare_eval",
+            "base_url": args.base_url,
+            "transport": args.transport,
+            "eval_seeds": args.eval_seeds,
+            "scenarios": args.scenarios,
+            "difficulties": args.difficulties,
+            "project": args.project,
+            "model_name": args.model_name,
+            "base_model": args.base_model,
+            "checkpoint_step": args.checkpoint_step,
+            "bounded_tool_policy": [
+                "search_evidence",
+                "run_code_check",
+                "inspect_image",
+            ],
+        },
+    )
+    for label, records in records_by_label.items():
+        for record in records:
+            append_jsonl(
+                layout.metrics_jsonl,
+                {"label": label, **episode_to_metrics(record).model_dump(mode="json")},
+            )
+    rows_payload = [row.model_dump(mode="json") for row in rows]
+    write_json(layout.summary_json, {"rows": rows_payload})
+    _plot_comparison_summary(rows_payload, layout=layout)
+    print(json.dumps({"rows": rows_payload}, indent=2, sort_keys=True))
+    return 0
+
+
+def _run_art_scientist_train(args: argparse.Namespace) -> int:
+    layout = _build_layout(
+        prefix="art-scientist",
+        persist_root=args.persist_root,
+        run_name=args.run_name,
+    )
+    config = ArtOpenEnvConfig(
+        project=args.project,
+        model_name=args.model_name,
+        base_model=args.base_model,
+        base_url=args.base_url,
+        transport=args.transport,
+        train_steps=args.train_steps,
+        rollouts_per_group=args.rollouts_per_group,
+        max_turns=args.max_turns,
+        max_completion_tokens=args.max_completion_tokens,
+        max_parse_retries=args.max_parse_retries,
+        learning_rate=args.learning_rate,
+        beta=args.beta,
+        scenarios=[_parse_art_scenario_spec(item) for item in args.scenario_spec],
+    )
+    result = run_art_openenv_training(config, layout=layout)
+    _write_run_metadata(
+        layout,
+        {
+            "kind": "art_scientist_train",
+            "project": args.project,
+            "model_name": args.model_name,
+            "base_model": args.base_model,
+            "base_url": args.base_url,
+            "train_steps": args.train_steps,
+            "rollouts_per_group": args.rollouts_per_group,
+            "max_turns": args.max_turns,
+            "max_parse_retries": args.max_parse_retries,
+            "scenario_spec": args.scenario_spec,
+            "bounded_tool_policy": [
+                "search_evidence",
+                "run_code_check",
+                "inspect_image",
+            ],
+        },
+    )
+    _plot_art_metrics(layout)
+    print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
 
@@ -414,6 +752,80 @@ def _plot_eval_summary(
         output_path=layout.plots_dir / "baseline_agreement_rate.png",
         metric_key="agreement_rate",
         title="Baseline agreement rate",
+    )
+    if "average_invalid_bounded_tool_rate" in summary:
+        plot_evaluation_bars(
+            rows,
+            output_path=layout.plots_dir / "baseline_invalid_bounded_tool_rate.png",
+            metric_key="average_invalid_bounded_tool_rate",
+            title="Baseline invalid bounded-tool rate",
+        )
+
+
+def _plot_comparison_summary(
+    rows: list[dict[str, float | str]],
+    *,
+    layout: ArtifactLayout,
+) -> None:
+    for metric_key, title, output_name in (
+        ("average_reward", "Before vs after average reward", "compare_average_reward.png"),
+        ("agreement_rate", "Before vs after agreement rate", "compare_agreement_rate.png"),
+        ("invalid_action_rate", "Before vs after invalid action rate", "compare_invalid_action_rate.png"),
+        (
+            "average_invalid_bounded_tool_rate",
+            "Before vs after invalid bounded-tool rate",
+            "compare_invalid_bounded_tool_rate.png",
+        ),
+    ):
+        plot_evaluation_bars(
+            rows,
+            output_path=layout.plots_dir / output_name,
+            metric_key=metric_key,
+            title=title,
+        )
+
+
+def _plot_art_metrics(layout: ArtifactLayout) -> None:
+    if not layout.metrics_jsonl.exists():
+        return
+    rows = [
+        json.loads(line)
+        for line in layout.metrics_jsonl.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    if not rows:
+        return
+    plot_metrics_by_step(
+        rows,
+        output_path=layout.plots_dir / "art_reward_components.png",
+        title="ART Scientist reward components by training step",
+        metric_keys=[
+            "reward",
+            "rigor",
+            "feasibility",
+            "fidelity",
+            "agreement_reached",
+            "invalid_action_count",
+            "parse_error_count",
+        ],
+    )
+
+
+def _write_run_metadata(layout: ArtifactLayout, payload: dict[str, object]) -> None:
+    write_json(layout.reports_dir / "run_metadata.json", payload)
+
+
+def _parse_art_scenario_spec(value: str) -> ArtScenarioSpec:
+    parts = value.split(":")
+    if len(parts) != 3:
+        raise ValueError(
+            f"Invalid scenario spec {value!r}. Expected seed:scenario:difficulty."
+        )
+    seed_text, scenario, difficulty = parts
+    return ArtScenarioSpec(
+        seed=int(seed_text),
+        scenario=scenario,
+        difficulty=difficulty,
     )
 
 

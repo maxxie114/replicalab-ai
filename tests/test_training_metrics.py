@@ -7,7 +7,11 @@ from replicalab.training.metrics import episode_to_metrics, summarize_episodes
 from replicalab.training.rollout import EpisodeRecord, StepRecord
 
 
-def _build_step_record(error: str | None = None) -> StepRecord:
+def _build_step_record(
+    error: str | None = None,
+    *,
+    tool_traces: list[dict[str, object]] | None = None,
+) -> StepRecord:
     return StepRecord(
         round_number=0,
         observation=ScientistObservation(
@@ -36,6 +40,7 @@ def _build_step_record(error: str | None = None) -> StepRecord:
         done=False,
         error=error,
         info=StepInfo(error=error),
+        tool_traces=tool_traces or [],
     )
 
 
@@ -55,12 +60,18 @@ def test_episode_to_metrics_counts_invalid_actions() -> None:
         ),
         verdict="accept",
         agreement_reached=True,
+        tool_traces=[
+            {"tool": "search_evidence", "status": "ok"},
+            {"tool": "run_code_check", "status": "error", "error": "timeout"},
+        ],
     )
 
     metrics = episode_to_metrics(record)
 
     assert metrics.invalid_action_count == 1
     assert metrics.invalid_action_rate == 0.5
+    assert metrics.invalid_bounded_tool_count == 1
+    assert metrics.invalid_bounded_tool_rate == 0.5
     assert metrics.agreement_reached is True
 
 
@@ -75,6 +86,7 @@ def test_summarize_episodes_aggregates_rewards() -> None:
         reward_breakdown=RewardBreakdown(rigor=0.6, feasibility=0.7, fidelity=0.8),
         verdict="accept",
         agreement_reached=True,
+        tool_traces=[{"tool": "search_evidence", "status": "ok"}],
     )
     second = EpisodeRecord(
         seed=2,
@@ -86,6 +98,7 @@ def test_summarize_episodes_aggregates_rewards() -> None:
         reward_breakdown=RewardBreakdown(rigor=0.2, feasibility=0.4, fidelity=0.5),
         verdict="timeout",
         agreement_reached=False,
+        tool_traces=[{"tool": "run_code_check", "status": "error"}],
     )
 
     summary = summarize_episodes([first, second])
@@ -93,3 +106,4 @@ def test_summarize_episodes_aggregates_rewards() -> None:
     assert summary.episode_count == 2
     assert summary.average_reward == 1.25
     assert 0.0 < summary.invalid_action_rate < 1.0
+    assert summary.average_invalid_bounded_tool_rate == 0.5
