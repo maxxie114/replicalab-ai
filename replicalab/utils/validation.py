@@ -16,6 +16,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from replicalab.models import Protocol
 from replicalab.scenarios.templates import NormalizedScenarioPack
+from replicalab.utils.text import element_tokens as _element_tokens
+from replicalab.utils.text import normalize_label as _normalize
 
 
 # ---------------------------------------------------------------------------
@@ -262,25 +264,6 @@ def _check_required_element_coverage(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _normalize(label: str) -> str:
-    """Lowercase, strip, collapse whitespace for fuzzy matching."""
-    return " ".join(label.lower().split())
-
-
-def _element_tokens(element: str) -> list[str]:
-    """Split a required-element description into searchable tokens.
-
-    Returns individual significant words (>= 3 chars) so that
-    "transaction cost assumption" matches a rationale containing
-    "transaction" or "cost".
-    """
-    return [
-        word
-        for word in element.lower().split()
-        if len(word) >= 3
-    ]
 
 
 def _substitution_alternatives(scenario: NormalizedScenarioPack) -> set[str]:
