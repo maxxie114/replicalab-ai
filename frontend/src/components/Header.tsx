@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FlaskConical, LayoutDashboard, Play } from 'lucide-react';
+import { FlaskConical, LayoutDashboard, Play, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/lib/useTheme';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -9,6 +10,7 @@ const navItems = [
 
 export default function Header() {
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
@@ -41,6 +43,13 @@ export default function Header() {
 
         <div className="ml-auto flex items-center gap-3">
           <span className="text-xs text-muted-foreground">OpenEnv Hackathon</span>
+          <button
+            onClick={toggleTheme}
+            className="rounded-md border border-border p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
         </div>
       </div>
     </header>

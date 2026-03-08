@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { EpisodeState, ResetParams } from '@/types';
-import { createMockEpisodeState } from '@/lib/api';
+import { resetEpisode, stepEpisode, buildDefaultScientistAction, buildAcceptAction } from '@/lib/api';
 import { sfx } from '@/lib/audio';
 import PaperPanel from '@/components/PaperPanel';
 import NegotiationLog from '@/components/NegotiationLog';
@@ -18,6 +18,7 @@ export default function EpisodePage() {
   const [episode, setEpisode] = useState<EpisodeState | null>(null);
   const [loading, setLoading] = useState(false);
   const [isJudging, setIsJudging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const phase = useMemo(() => {
     if (!episode) return 'waiting' as const;
@@ -45,7 +46,7 @@ export default function EpisodePage() {
       setTimeout(() => sfx.gavel(), 1500);
     } else if (phase === 'complete' && prev !== 'complete') {
       sfx.scoreReveal();
-      if (episode?.judge_audit?.verdict === 'success') {
+      if (episode?.judge_audit?.verdict === 'accept' || episode?.judge_audit?.verdict === 'success') {
         setTimeout(() => sfx.success(), 400);
       } else if (episode?.judge_audit?.verdict) {
         setTimeout(() => sfx.failure(), 400);
@@ -66,15 +67,18 @@ export default function EpisodePage() {
     prevMsgCountRef.current = count;
   }, [episode?.conversation]);
 
-  const handleStart = useCallback(async (_params: ResetParams) => {
+  const handleStart = useCallback(async (params: ResetParams) => {
     setLoading(true);
     setIsJudging(false);
+    setError(null);
     sfx.click();
     try {
-      const state = createMockEpisodeState(false);
+      const state = await resetEpisode(params);
       setEpisode(state);
+      prevMsgCountRef.current = 0;
     } catch (err) {
       console.error('Failed to start episode:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start episode');
     } finally {
       setLoading(false);
     }
@@ -83,17 +87,33 @@ export default function EpisodePage() {
   const handleStep = useCallback(async () => {
     if (!episode || episode.done) return;
     setLoading(true);
+    setError(null);
     sfx.negotiate();
 
-    setIsJudging(true);
-    await new Promise((r) => setTimeout(r, 4000));
-    setIsJudging(false);
-
     try {
-      const state = createMockEpisodeState(true);
+      // Determine action: if near max rounds, accept; otherwise propose
+      const isLastRound = episode.round >= episode.max_rounds - 1;
+      const action = isLastRound ? buildAcceptAction() : buildDefaultScientistAction();
+
+      // Show judging phase if this will be the final step
+      if (isLastRound) {
+        setIsJudging(true);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+
+      const state = await stepEpisode(episode.session_id, action, episode);
+
+      if (state.done && !isLastRound) {
+        setIsJudging(true);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+
+      setIsJudging(false);
       setEpisode(state);
     } catch (err) {
       console.error('Failed to step episode:', err);
+      setError(err instanceof Error ? err.message : 'Failed to step episode');
+      setIsJudging(false);
     } finally {
       setLoading(false);
     }
@@ -176,6 +196,16 @@ export default function EpisodePage() {
             <p className="text-muted-foreground">Choose a scenario, set difficulty, and watch them negotiate</p>
           </motion.div>
 
+          {error && (
+            <motion.div
+              className="mb-4 w-full max-w-sm rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              {error}
+            </motion.div>
+          )}
+
           <motion.div
             className="w-full max-w-sm"
             initial={{ opacity: 0, y: 10 }}
@@ -208,6 +238,16 @@ export default function EpisodePage() {
           />
         </motion.div>
       </AnimatePresence>
+
+      {error && (
+        <motion.div
+          className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {error}
+        </motion.div>
+      )}
 
       {/* Three-panel layout */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">

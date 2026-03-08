@@ -12,9 +12,9 @@ export default function JudgeAuditPanel({ audit, className }: JudgeAuditPanelPro
   if (!audit) return null;
 
   const VerdictIcon =
-    audit.verdict === 'success'
+    audit.verdict === 'success' || audit.verdict === 'accept'
       ? CheckCircle
-      : audit.verdict === 'failure'
+      : audit.verdict === 'failure' || audit.verdict === 'reject'
         ? XCircle
         : AlertCircle;
 

@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils';
 import { sfx } from '@/lib/audio';
 
 const TEMPLATES: { value: ScenarioTemplate; label: string }[] = [
-  { value: 'cell_biology', label: 'Cell Biology' },
+  { value: 'math_reasoning', label: 'Math Reasoning' },
   { value: 'ml_benchmark', label: 'ML Benchmark' },
-  { value: 'behavioral_psych', label: 'Behavioral Psych' },
+  { value: 'finance_trading', label: 'Finance Trading' },
 ];
 
 const DIFFICULTIES: { value: Difficulty; label: string }[] = [
