@@ -8,6 +8,8 @@ new magic numbers.
 
 from __future__ import annotations
 
+import os
+
 DEFAULT_SCENARIO_TEMPLATE = "math_reasoning"
 DEFAULT_DIFFICULTY = "easy"
 
@@ -24,3 +26,6 @@ STUB_ACCEPT_REWARD = 5.0
 
 API_HOST = "0.0.0.0"
 API_PORT = 7860
+
+LOG_LEVEL = os.environ.get("REPLICALAB_LOG_LEVEL", "INFO").upper()
+LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"

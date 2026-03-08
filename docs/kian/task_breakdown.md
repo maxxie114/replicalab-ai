@@ -10,9 +10,9 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - Shared `AGT 05` is now complete, so the deterministic feasibility layer exists for both the Lab Manager path and the judge feasibility score
 - `SCN 01` to `SCN 10` are complete, so the deterministic scenario layer exists in code
 - `ENV 01` to `ENV 08` are all complete — the full environment lifecycle (reset, step, validate, Lab Manager response, termination, judge scoring, state snapshot, close) works end-to-end
-- `JDG 01` to `JDG 05` are complete — the full deterministic reward pipeline (rigor, feasibility, fidelity, total reward formula with floor clamp, breakdown builder with named penalty extension point) is wired and tested
-- `TST 01` to `TST 05` are complete with 36 env tests and 26 reward tests passing
-- The remaining high-leverage work is semantic edge-case validation, booking conflicts, judge explanation output, and environment test suite expansion
+- `JDG 01` to `JDG 06` plus `JDG 08` are complete — the deterministic reward pipeline is wired, the plain-English explanation layer exists, and the reward stack now has stronger regression coverage for ordering, substitution behavior, partial feasibility credit, and breakdown determinism
+- `TST 01` to `TST 05` are complete with 36 env tests and 40 reward tests passing
+- `MOD 06`, `SCN 13`, `AGT 09`, `JDG 11`, `ENV 11`, `ENV 10`, and `OBS 04` are now complete, so the remaining Kian work is the blocked schema follow-on
 
 Bounded-tool scope note:
 
@@ -27,18 +27,14 @@ Bounded-tool scope note:
 
 ## Recommended execution order
 
-1. `MOD 06` -- extend the semantic validation layer to catch impossible edge cases early
-2. `SCN 13` -- deepen the normalized scenario layer with booking, scheduling, and evidence-pack support
-3. `JDG 06` -- add plain English explanation function from reward breakdown (unblocks AGT 10 for Ayush)
-4. `JDG 08` -- add score determinism tests and edge case tests
-5. `ENV 10` -- add comprehensive env tests (reset, step, invalid action, timeout, deterministic replay)
+1. `MOD 08` -- add schema and validator unit-test expansion
 
 ---
 
 ## Why this order
 
-- `MOD 06` is the smallest remaining contract-hardening task and builds directly on the completed `MOD 05` validator.
-- `SCN 13` is the remaining scenario-layer depth task; it now also needs to carry booking-conflict and evidence-pack data in a deterministic way.
-- `JDG 06` is the highest-leverage remaining judge task because it directly unblocks `AGT 10` (Ayush's prompt text files) and `JDG 11` (structured audit payload).
-- `JDG 08` builds on the now-complete JDG 01-05 pipeline to add regression coverage for score ordering and edge cases.
-- `ENV 10` builds on the complete ENV 01-08 lifecycle to add comprehensive environment test coverage.
+- `SCN 13` is complete, so the normalized scenario layer now carries booking and scheduling conflicts as structured deterministic data.
+- `AGT 09` is complete, so the grounded Lab Manager checker, suggestion, and response stack now has deterministic regression coverage.
+- `JDG 11` is complete and `ENV 11` is now integrated, so terminal env outputs and replay-facing state carry the canonical audit payload end to end.
+- `ENV 10` and `OBS 04` are now complete, so the environment stack has deterministic replay and broader regression coverage on top of the completed ENV 01-08 and ENV 11 lifecycle.
+- `MOD 08` is the only remaining Kian-owned implementation task, and it is now fully unblocked.

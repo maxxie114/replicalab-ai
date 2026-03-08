@@ -24,8 +24,12 @@ from replicalab.scoring.rubric import build_reward_breakdown, compute_total_rewa
 # ---------------------------------------------------------------------------
 
 
-def _scenario(template: str = "math_reasoning", difficulty: str = "easy"):
-    return generate_scenario(seed=42, template=template, difficulty=difficulty)
+def _scenario(
+    template: str = "math_reasoning",
+    difficulty: str = "easy",
+    seed: int = 42,
+):
+    return generate_scenario(seed=seed, template=template, difficulty=difficulty)
 
 
 def _good_action(scenario) -> ScientistAction:
@@ -105,6 +109,41 @@ def _good_protocol(scenario) -> Protocol:
             "Stay within budget and schedule."
         ),
     )
+
+
+def _bad_duration_action() -> ScientistAction:
+    return ScientistAction(
+        action_type="propose_protocol",
+        sample_size=5,
+        controls=["baseline"],
+        technique="some technique",
+        duration_days=999,
+        required_equipment=[],
+        required_reagents=[],
+        questions=[],
+        rationale="Duration is impossibly long for this scenario.",
+    )
+
+
+def _canonical_step(result) -> dict:
+    data = result.model_dump()
+    data["info"].pop("episode_id", None)
+    return data
+
+
+def _run_seeded_sequence(
+    *,
+    seed: int,
+    template: str,
+    difficulty: str,
+    action_builder,
+):
+    env = ReplicaLabEnv()
+    obs = env.reset(seed=seed, scenario=template, difficulty=difficulty)
+    scenario = _scenario(template, difficulty, seed=seed)
+    actions = action_builder(scenario)
+    results = [env.step(action) for action in actions]
+    return obs.model_dump(), [_canonical_step(r) for r in results], env.state().model_dump()
 
 
 # ---------------------------------------------------------------------------
@@ -633,3 +672,266 @@ class TestEnvReward:
         assert s.feasibility_score > 0.0
         assert s.fidelity_score > 0.0
         assert s.reward > 0.0
+
+
+# ---------------------------------------------------------------------------
+# ENV 11 — canonical judge audit payload in terminal outputs
+# ---------------------------------------------------------------------------
+
+
+class TestJudgeAudit:
+    """ENV 11: structured audit from JDG 11 threaded into terminal outputs."""
+
+    def test_accept_terminal_has_full_audit(self) -> None:
+        """Agreement terminal step exposes all audit fields."""
+        env = ReplicaLabEnv()
+        scenario = _scenario()
+        env.reset(seed=42)
+
+        env.step(_good_action(scenario))
+        result = env.step(_accept_action())
+
+        assert result.done
+        assert result.info.verdict == "accept"
+        assert result.info.judge_notes is not None
+        assert len(result.info.judge_notes) > 0
+        # judge_notes from explain_reward includes rubric component labels
+        assert "Rigor:" in result.info.judge_notes
+        assert "Feasibility:" in result.info.judge_notes
+        assert "Fidelity:" in result.info.judge_notes
+        assert "Total reward:" in result.info.judge_notes
+        assert isinstance(result.info.top_failure_reasons, list)
+
+    def test_timeout_terminal_has_audit_with_timeout_reason(self) -> None:
+        """Timeout terminal step has verdict=timeout and failure reason."""
+        env = ReplicaLabEnv()
+        scenario = _scenario()
+        env.reset(seed=42)
+
+        max_r = env.state().max_rounds
+        result = None
+        for _ in range(max_r):
+            result = env.step(_good_action(scenario))
+
+        assert result.done
+        assert result.info.verdict == "timeout"
+        assert isinstance(result.info.top_failure_reasons, list)
+        assert any(
+            "round limit" in reason.lower()
+            for reason in result.info.top_failure_reasons
+        )
+
+    def test_non_terminal_step_has_empty_audit(self) -> None:
+        """Non-terminal steps do not carry audit payload."""
+        env = ReplicaLabEnv()
+        scenario = _scenario()
+        env.reset(seed=42)
+
+        result = env.step(_good_action(scenario))
+
+        assert not result.done
+        assert result.info.judge_notes is None
+        assert result.info.verdict is None
+        assert result.info.top_failure_reasons == []
+
+    def test_state_after_accept_carries_audit_fields(self) -> None:
+        """EpisodeState contains judge_notes, verdict, top_failure_reasons."""
+        env = ReplicaLabEnv()
+        scenario = _scenario()
+        env.reset(seed=42)
+
+        env.step(_good_action(scenario))
+        env.step(_accept_action())
+
+        s = env.state()
+        assert s.verdict == "accept"
+        assert len(s.judge_notes) > 0
+        assert "Rigor:" in s.judge_notes
+        assert isinstance(s.top_failure_reasons, list)
+
+    def test_state_after_timeout_carries_audit_fields(self) -> None:
+        """EpisodeState after timeout has correct verdict and reasons."""
+        env = ReplicaLabEnv()
+        scenario = _scenario()
+        env.reset(seed=42)
+
+        max_r = env.state().max_rounds
+        for _ in range(max_r):
+            env.step(_good_action(scenario))
+
+        s = env.state()
+        assert s.verdict == "timeout"
+        assert len(s.judge_notes) > 0
+        assert any(
+            "round limit" in reason.lower()
+            for reason in s.top_failure_reasons
+        )
+
+    def test_audit_deterministic(self) -> None:
+        """Same episode produces identical audit output."""
+        def run_episode():
+            env = ReplicaLabEnv()
+            scenario = _scenario()
+            env.reset(seed=42)
+            env.step(_good_action(scenario))
+            return env.step(_accept_action())
+
+        r1 = run_episode()
+        r2 = run_episode()
+
+        assert r1.info.judge_notes == r2.info.judge_notes
+        assert r1.info.verdict == r2.info.verdict
+        assert r1.info.top_failure_reasons == r2.info.top_failure_reasons
+
+    def test_state_audit_fields_empty_before_terminal(self) -> None:
+        """EpisodeState audit fields are empty before a terminal step."""
+        env = ReplicaLabEnv()
+        scenario = _scenario()
+        env.reset(seed=42)
+
+        env.step(_good_action(scenario))
+
+        s = env.state()
+        assert s.judge_notes == ""
+        assert s.verdict == ""
+        assert s.top_failure_reasons == []
+
+
+# ---------------------------------------------------------------------------
+# ENV 10 — deterministic replay and broader environment regression
+# ---------------------------------------------------------------------------
+
+
+class TestReplayDeterminism:
+    """ENV 10: same seed + same actions => same trajectory and final state."""
+
+    @pytest.mark.parametrize(
+        ("template", "difficulty"),
+        [
+            ("math_reasoning", "easy"),
+            ("ml_benchmark", "medium"),
+            ("finance_trading", "hard"),
+        ],
+    )
+    def test_same_seed_same_initial_observation(
+        self,
+        template: str,
+        difficulty: str,
+    ) -> None:
+        env1 = ReplicaLabEnv()
+        env2 = ReplicaLabEnv()
+
+        obs1 = env1.reset(seed=17, scenario=template, difficulty=difficulty)
+        obs2 = env2.reset(seed=17, scenario=template, difficulty=difficulty)
+
+        assert obs1.model_dump() == obs2.model_dump()
+
+    @pytest.mark.parametrize(
+        ("template", "difficulty"),
+        [
+            ("math_reasoning", "easy"),
+            ("ml_benchmark", "medium"),
+            ("finance_trading", "hard"),
+        ],
+    )
+    def test_same_seed_same_action_sequence_same_trajectory(
+        self,
+        template: str,
+        difficulty: str,
+    ) -> None:
+        def build_actions(scenario):
+            return [_good_action(scenario), _accept_action()]
+
+        first = _run_seeded_sequence(
+            seed=23,
+            template=template,
+            difficulty=difficulty,
+            action_builder=build_actions,
+        )
+        second = _run_seeded_sequence(
+            seed=23,
+            template=template,
+            difficulty=difficulty,
+            action_builder=build_actions,
+        )
+
+        assert first == second
+
+    @pytest.mark.parametrize("template", ["math_reasoning", "ml_benchmark", "finance_trading"])
+    def test_timeout_replay_is_deterministic(self, template: str) -> None:
+        def build_actions(scenario):
+            return [
+                _good_action(scenario)
+                for _ in range(scenario.scientist_observation.max_rounds)
+            ]
+
+        first = _run_seeded_sequence(
+            seed=31,
+            template=template,
+            difficulty="medium",
+            action_builder=build_actions,
+        )
+        second = _run_seeded_sequence(
+            seed=31,
+            template=template,
+            difficulty="medium",
+            action_builder=build_actions,
+        )
+
+        _obs1, steps1, state1 = first
+        _obs2, steps2, state2 = second
+        assert steps1 == steps2
+        assert state1 == state2
+        assert steps1[-1]["done"] is True
+        assert steps1[-1]["info"]["verdict"] == "timeout"
+
+    def test_invalid_action_replay_is_deterministic(self) -> None:
+        def build_actions(_scenario):
+            return [_bad_duration_action(), _bad_duration_action()]
+
+        first = _run_seeded_sequence(
+            seed=41,
+            template="math_reasoning",
+            difficulty="easy",
+            action_builder=build_actions,
+        )
+        second = _run_seeded_sequence(
+            seed=41,
+            template="math_reasoning",
+            difficulty="easy",
+            action_builder=build_actions,
+        )
+
+        assert first == second
+        _obs, steps, state = first
+        assert steps[0]["info"]["error"] is not None
+        assert steps[0]["done"] is False
+        assert state["round_number"] == 0
+
+    @pytest.mark.parametrize("template", ["math_reasoning", "ml_benchmark", "finance_trading"])
+    def test_terminal_audit_payload_is_replay_stable(self, template: str) -> None:
+        def build_actions(scenario):
+            return [_good_action(scenario), _accept_action()]
+
+        _obs1, steps1, state1 = _run_seeded_sequence(
+            seed=59,
+            template=template,
+            difficulty="easy",
+            action_builder=build_actions,
+        )
+        _obs2, steps2, state2 = _run_seeded_sequence(
+            seed=59,
+            template=template,
+            difficulty="easy",
+            action_builder=build_actions,
+        )
+
+        assert steps1[-1]["info"]["judge_notes"] == steps2[-1]["info"]["judge_notes"]
+        assert steps1[-1]["info"]["verdict"] == steps2[-1]["info"]["verdict"]
+        assert (
+            steps1[-1]["info"]["top_failure_reasons"]
+            == steps2[-1]["info"]["top_failure_reasons"]
+        )
+        assert state1["judge_notes"] == state2["judge_notes"]
+        assert state1["verdict"] == state2["verdict"]
+        assert state1["top_failure_reasons"] == state2["top_failure_reasons"]

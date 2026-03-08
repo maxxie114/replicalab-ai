@@ -197,6 +197,116 @@ def test_required_element_warning_when_not_addressed() -> None:
     assert len(element_warnings) >= 1
 
 
+# ---------------------------------------------------------------------------
+# MOD 06 — Semantic impossibility checks
+# ---------------------------------------------------------------------------
+
+
+def test_zero_sample_with_controls_is_error() -> None:
+    """Zero sample_size + non-empty controls is self-contradictory."""
+    scenario = _easy_math_scenario()
+    protocol = _protocol_for_scenario(
+        scenario,
+        sample_size=0,
+        controls=["baseline", "positive"],
+    )
+    result = validate_protocol(protocol, scenario)
+
+    assert result.valid is False
+    sc_errors = [i for i in result.errors if i.category == "sample_controls"]
+    assert len(sc_errors) >= 1
+    assert "controls require samples" in sc_errors[0].message
+
+
+def test_controls_count_gte_sample_size_is_error() -> None:
+    """More controls than samples means no experimental samples remain."""
+    scenario = _easy_math_scenario()
+    protocol = _protocol_for_scenario(
+        scenario,
+        sample_size=2,
+        controls=["baseline", "positive", "negative"],
+    )
+    result = validate_protocol(protocol, scenario)
+
+    assert result.valid is False
+    sc_errors = [i for i in result.errors if i.category == "sample_controls"]
+    assert len(sc_errors) >= 1
+    assert "no experimental samples remain" in sc_errors[0].message
+
+
+def test_controls_equal_sample_size_is_error() -> None:
+    """Exactly as many controls as samples — still no experimental arm."""
+    scenario = _easy_math_scenario()
+    protocol = _protocol_for_scenario(
+        scenario,
+        sample_size=2,
+        controls=["baseline", "positive"],
+    )
+    result = validate_protocol(protocol, scenario)
+
+    assert result.valid is False
+    sc_errors = [i for i in result.errors if i.category == "sample_controls"]
+    assert len(sc_errors) >= 1
+
+
+def test_duplicate_controls_is_warning() -> None:
+    scenario = _easy_math_scenario()
+    protocol = _protocol_for_scenario(
+        scenario,
+        sample_size=20,
+        controls=["baseline", "baseline", "positive"],
+    )
+    result = validate_protocol(protocol, scenario)
+
+    dup_warnings = [i for i in result.warnings if i.category == "duplicate_controls"]
+    assert len(dup_warnings) == 1
+    assert "baseline" in dup_warnings[0].message
+
+
+def test_duplicate_equipment_is_warning() -> None:
+    scenario = _easy_math_scenario()
+    lab = scenario.lab_manager_observation
+    equip = lab.equipment_available[0] if lab.equipment_available else "compute"
+    protocol = _protocol_for_scenario(
+        scenario,
+        required_equipment=[equip, equip],
+    )
+    result = validate_protocol(protocol, scenario)
+
+    dup_warnings = [i for i in result.warnings if i.category == "duplicate_equipment"]
+    assert len(dup_warnings) == 1
+
+
+def test_duplicate_reagents_is_warning() -> None:
+    scenario = _easy_math_scenario()
+    lab = scenario.lab_manager_observation
+    reagent = lab.reagents_in_stock[0] if lab.reagents_in_stock else "data"
+    protocol = _protocol_for_scenario(
+        scenario,
+        required_reagents=[reagent, reagent],
+    )
+    result = validate_protocol(protocol, scenario)
+
+    dup_warnings = [i for i in result.warnings if i.category == "duplicate_reagents"]
+    assert len(dup_warnings) == 1
+
+
+def test_valid_protocol_still_passes_after_mod06() -> None:
+    """Ensure MOD 06 checks don't break valid protocols."""
+    scenario = _easy_math_scenario()
+    protocol = _protocol_for_scenario(scenario, sample_size=10, controls=["baseline"])
+    result = validate_protocol(protocol, scenario)
+
+    assert result.valid is True
+    assert len(result.errors) == 0
+    # No MOD 06 categories should appear as errors
+    mod06_errors = [
+        i for i in result.errors
+        if i.category in ("sample_controls", "duplicate_controls", "duplicate_equipment", "duplicate_reagents")
+    ]
+    assert len(mod06_errors) == 0
+
+
 def test_no_controls_is_warning() -> None:
     scenario = _easy_math_scenario()
     protocol = _protocol_for_scenario(scenario, controls=[])

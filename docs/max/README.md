@@ -7,4 +7,6 @@ Expected files:
 - `task_list.md`
 - `task_breakdown.md`
 - `notes.md`
+- `deployment.md`
+- `training_connection.md`
 

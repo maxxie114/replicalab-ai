@@ -24,7 +24,7 @@ ReplicaLab trains an agent to negotiate high-quality plans under real constraint
 - `server/app.py` now serves the real `ReplicaLabEnv` by default, with the legacy stub retained only as a fallback safety path.
 - `openenv.yaml` exists and passes local OpenEnv validation.
 - Local Docker validation has been completed for the server image on port `7860`.
-- Hugging Face Spaces Docker metadata is present in this README and the root `Dockerfile`; live hosted verification is still pending.
+- Hugging Face Spaces deployment is live at `https://ayushozha-replicalab.hf.space` with all endpoints verified.
 - The frozen outer contract remains stable while the internal scenario engine moves toward a normalized scenario pack.
 - The planned Lab Manager path is hybrid: model-backed negotiation language plus deterministic feasibility grounding.
 
@@ -268,7 +268,15 @@ docker run -p 7860:7860 replicalab
 
 ### Hugging Face Spaces
 
-The app is configured for HF Spaces with `sdk: docker` on port `7860`. Push the repo to your HF Space to deploy.
+**Live deployment:** https://ayushozha-replicalab.hf.space
+
+The app is deployed on HF Spaces with `sdk: docker` on port `7860`.
+
+```bash
+# Verify the live Space
+curl https://ayushozha-replicalab.hf.space/health
+# → {"status":"ok","env":"real"}
+```
 
 ---
 

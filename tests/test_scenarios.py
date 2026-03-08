@@ -4,6 +4,7 @@ import json
 
 from replicalab.scenarios import (
     GOLDEN_SCENARIO_SPECS_PATH,
+    NormalizedScenarioPack,
     available_scenario_families,
     generate_scenario,
 )
@@ -82,3 +83,60 @@ def test_golden_scenarios_match_expected_title_and_domain() -> None:
         )
         assert pack.domain_id == spec["expected_domain_id"]
         assert spec["expected_title_contains"] in pack.scientist_observation.paper_title
+
+
+# ---------------------------------------------------------------------------
+# SCN 13 — Booking and scheduling data model
+# ---------------------------------------------------------------------------
+
+
+def test_booking_data_is_deterministic_for_same_seed() -> None:
+    """Same seed produces identical bookings and scheduling windows."""
+    a = generate_scenario(seed=42, template="ml_benchmark", difficulty="medium")
+    b = generate_scenario(seed=42, template="ml_benchmark", difficulty="medium")
+
+    a_dump = a.model_dump(mode="json")
+    b_dump = b.model_dump(mode="json")
+    assert a_dump["resource_bookings"] == b_dump["resource_bookings"]
+    assert a_dump["scheduling_windows"] == b_dump["scheduling_windows"]
+
+
+def test_easy_bookings_have_no_conflicts() -> None:
+    """All booking slots are 'available' at easy difficulty."""
+    for template in ("math_reasoning", "ml_benchmark", "finance_trading"):
+        pack = generate_scenario(seed=42, template=template, difficulty="easy")
+        for b in pack.resource_bookings:
+            assert b.status == "available", (
+                f"{template}: {b.slot_label} is {b.status}"
+            )
+
+
+def test_bookings_serialize_round_trip() -> None:
+    """Bookings and windows survive JSON serialization."""
+    pack = generate_scenario(seed=42, template="finance_trading", difficulty="hard")
+    dumped = pack.model_dump(mode="json")
+    restored = NormalizedScenarioPack.model_validate(dumped)
+
+    assert len(restored.resource_bookings) == len(pack.resource_bookings)
+    assert len(restored.scheduling_windows) == len(pack.scheduling_windows)
+    assert dumped["resource_bookings"] == restored.model_dump(mode="json")["resource_bookings"]
+
+
+def test_scheduling_windows_are_valid() -> None:
+    """All scheduling windows have end > start and non-negative offsets."""
+    for template in ("math_reasoning", "ml_benchmark", "finance_trading"):
+        for diff in ("easy", "medium", "hard"):
+            pack = generate_scenario(seed=42, template=template, difficulty=diff)
+            for w in pack.scheduling_windows:
+                assert w.end_offset_hours > w.start_offset_hours, (
+                    f"{template}/{diff}: window {w.key} has end <= start"
+                )
+                assert w.start_offset_hours >= 0.0
+
+
+def test_all_domains_produce_bookings_and_windows() -> None:
+    """Each domain template generates at least one booking and one window."""
+    for template in ("math_reasoning", "ml_benchmark", "finance_trading"):
+        pack = generate_scenario(seed=42, template=template, difficulty="medium")
+        assert len(pack.resource_bookings) > 0, f"{template} has no bookings"
+        assert len(pack.scheduling_windows) > 0, f"{template} has no windows"
