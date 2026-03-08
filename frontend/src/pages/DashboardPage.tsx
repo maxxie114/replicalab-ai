@@ -109,6 +109,7 @@ export default function DashboardPage() {
                 size="xl"
                 showAura
                 showEmoji={false}
+                showName={false}
               />
               <span className="mt-2 text-xs font-semibold text-scientist">Proposes</span>
             </div>
@@ -124,6 +125,7 @@ export default function DashboardPage() {
                 size="xl"
                 showAura
                 showEmoji={false}
+                showName={false}
               />
               <span className="mt-2 text-xs font-semibold text-lab-manager">Constrains</span>
             </div>
@@ -139,6 +141,7 @@ export default function DashboardPage() {
                 size="xl"
                 showAura
                 showEmoji={false}
+                showName={false}
               />
               <span className="mt-2 text-xs font-semibold text-judge">Judges</span>
             </div>

@@ -1,9 +1,21 @@
 # Root-level Dockerfile for Hugging Face Spaces deployment.
 #
-# HF Spaces with sdk:docker expects the Dockerfile at the repo root.
-# This is identical to server/Dockerfile. Keep them in sync or remove
-# server/Dockerfile once the team standardizes on this root copy.
+# Multi-stage build:
+#   Stage 1: Build the React frontend with Node.js
+#   Stage 2: Python runtime serving both API and static frontend
 
+# ── Stage 1: Frontend build ──────────────────────────────────────────
+FROM node:20-slim AS frontend-build
+
+WORKDIR /build
+
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm ci --ignore-scripts
+
+COPY frontend/ ./
+RUN npm run build
+
+# ── Stage 2: Python runtime ──────────────────────────────────────────
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -24,6 +36,9 @@ COPY pyproject.toml ./
 
 # Install the replicalab package (non-editable, deps already present)
 RUN pip install --no-cache-dir . --no-deps
+
+# Copy built frontend from stage 1
+COPY --from=frontend-build /build/dist ./frontend/dist
 
 # Run as a non-root user inside the container (HF Spaces requirement)
 RUN useradd -m -u 1000 appuser && chown -R appuser /app
