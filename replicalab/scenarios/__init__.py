@@ -12,6 +12,7 @@ from .templates import (
     apply_difficulty,
     generate_scenario,
     load_template,
+    oracle_scenario_to_normalized_pack,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "apply_difficulty",
     "generate_scenario",
     "load_template",
+    "oracle_scenario_to_normalized_pack",
 ]

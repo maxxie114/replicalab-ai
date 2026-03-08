@@ -342,7 +342,9 @@ class TestStep:
 
         assert env.state().round_number == 1
         assert result.done is False
-        assert result.reward == 0.0
+        assert result.reward > 0.0
+        assert result.info.step_reward_components["protocol_delta_bonus"] > 0.0
+        assert result.info.cumulative_reward == result.reward
 
     def test_step_returns_observations(self) -> None:
         env = ReplicaLabEnv()
@@ -416,7 +418,9 @@ class TestStep:
 
         assert result.done is True
         assert result.info.agreement_reached is False
-        assert result.reward == 0.0
+        assert result.reward < 0.0
+        assert result.info.reward_breakdown is not None
+        assert result.info.reward_breakdown.penalties["timeout"] > 0.0
 
     def test_step_info_has_round_and_episode_id(self) -> None:
         env = ReplicaLabEnv()
@@ -655,7 +659,8 @@ class TestEnvReward:
         assert result.done
         assert result.info.verdict == "timeout"
         assert result.info.reward_breakdown is not None
-        assert result.reward == 0.0
+        assert result.reward < 0.0
+        assert result.info.reward_breakdown.penalties["timeout"] > 0.0
 
     def test_episode_state_stores_final_scores(self) -> None:
         env = ReplicaLabEnv()

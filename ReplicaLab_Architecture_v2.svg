@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 980" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#08111f"/>
+      <stop offset="100%" stop-color="#0f1b2e"/>
+    </linearGradient>
+    <linearGradient id="oracle" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="det" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="train" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="serve" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.08"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrowSlate" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrowGold" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a78bfa"/>
+    </marker>
+    <style>
+      .title { fill: #f8fafc; font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+      .subtitle { fill: #cbd5e1; font-size: 13px; }
+      .section { fill: #e2e8f0; font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+      .label { fill: #f8fafc; font-size: 14px; font-weight: 600; }
+      .body { fill: #dbeafe; font-size: 12px; }
+      .small { fill: #cbd5e1; font-size: 11px; }
+      .tiny { fill: #94a3b8; font-size: 10px; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="980" fill="url(#bg)"/>
+
+  <text x="700" y="48" text-anchor="middle" class="title">ReplicaLab Hybrid Oracle Architecture</text>
+  <text x="700" y="72" text-anchor="middle" class="subtitle">
+    Oracle powers world and narrative layers; deterministic validation and reward remain canonical for RL training
+  </text>
+
+  <g filter="url(#shadow)">
+    <rect x="50" y="105" width="1300" height="330" rx="20" fill="url(#oracle)" stroke="#fbbf24" stroke-width="1.4"/>
+    <text x="80" y="138" class="section">Oracle Layer (Optional / Feature-Flagged)</text>
+
+    <rect x="90" y="170" width="270" height="92" rx="12" fill="#24160a" stroke="#fbbf24" stroke-width="1"/>
+    <text x="225" y="198" text-anchor="middle" class="label">World Architect</text>
+    <text x="225" y="220" text-anchor="middle" class="body">Frontier model generates rich scenario</text>
+    <text x="225" y="238" text-anchor="middle" class="small">paper, constraints, hidden spec, substitutions</text>
+    <text x="225" y="254" text-anchor="middle" class="tiny">cached by seed for training stability</text>
+
+    <rect x="410" y="170" width="270" height="92" rx="12" fill="#24160a" stroke="#fbbf24" stroke-width="1"/>
+    <text x="545" y="198" text-anchor="middle" class="label">LLM Lab Manager</text>
+    <text x="545" y="220" text-anchor="middle" class="body">Optional live language layer</text>
+    <text x="545" y="238" text-anchor="middle" class="small">narrates grounded feasibility output</text>
+    <text x="545" y="254" text-anchor="middle" class="tiny">never overrides deterministic constraint truth</text>
+
+    <rect x="730" y="170" width="270" height="92" rx="12" fill="#24160a" stroke="#fbbf24" stroke-width="1"/>
+    <text x="865" y="198" text-anchor="middle" class="label">Event Injector</text>
+    <text x="865" y="220" text-anchor="middle" class="body">Optional mid-episode perturbations</text>
+    <text x="865" y="238" text-anchor="middle" class="small">booking failure, backorder, budget cut</text>
+    <text x="865" y="254" text-anchor="middle" class="tiny">off by default in training mode</text>
+
+    <rect x="1050" y="170" width="250" height="92" rx="12" fill="#24160a" stroke="#fbbf24" stroke-width="1"/>
+    <text x="1175" y="198" text-anchor="middle" class="label">Post-Mortem Analyst</text>
+    <text x="1175" y="220" text-anchor="middle" class="body">Optional natural-language summary</text>
+    <text x="1175" y="238" text-anchor="middle" class="small">used for demo, logs, and narrative feedback</text>
+    <text x="1175" y="254" text-anchor="middle" class="tiny">not a reward source</text>
+
+    <rect x="210" y="315" width="980" height="78" rx="12" fill="#111827" stroke="#334155" stroke-width="1"/>
+    <text x="700" y="343" text-anchor="middle" class="label">Scenario Adapter and Feature Flags</text>
+    <text x="700" y="364" text-anchor="middle" class="body">
+      Oracle scenario -> oracle_scenario_to_normalized_pack(...) -> current NormalizedScenarioPack
+    </text>
+    <text x="700" y="382" text-anchor="middle" class="tiny">
+      Keeps current ScientistAction, LabManagerAction, Observation, StepResult, and client/server contracts stable
+    </text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="50" y="465" width="1300" height="285" rx="20" fill="url(#det)" stroke="#34d399" stroke-width="1.4"/>
+    <text x="80" y="498" class="section">Deterministic Core (Canonical Training Substrate)</text>
+
+    <rect x="90" y="535" width="230" height="110" rx="12" fill="#082118" stroke="#34d399" stroke-width="1"/>
+    <text x="205" y="563" text-anchor="middle" class="label">ReplicaLabEnv</text>
+    <text x="205" y="585" text-anchor="middle" class="body">state, rounds, protocol, history</text>
+    <text x="205" y="603" text-anchor="middle" class="small">Oracle hooks are optional and additive</text>
+    <text x="205" y="620" text-anchor="middle" class="tiny">OpenEnv-compatible env remains intact</text>
+
+    <rect x="365" y="535" width="255" height="110" rx="12" fill="#082118" stroke="#34d399" stroke-width="1"/>
+    <text x="492" y="563" text-anchor="middle" class="label">Grounded Lab Manager Policy</text>
+    <text x="492" y="585" text-anchor="middle" class="body">check_feasibility -> suggest_alternative</text>
+    <text x="492" y="603" text-anchor="middle" class="small">compose_lab_manager_response</text>
+    <text x="492" y="620" text-anchor="middle" class="tiny">deterministic feasibility remains source of truth</text>
+
+    <rect x="665" y="535" width="275" height="110" rx="12" fill="#082118" stroke="#34d399" stroke-width="1"/>
+    <text x="802" y="563" text-anchor="middle" class="label">Deterministic Judge and Reward</text>
+    <text x="802" y="585" text-anchor="middle" class="body">rigor + feasibility + fidelity + parsimony</text>
+    <text x="802" y="603" text-anchor="middle" class="small">terminal reward plus shaped step penalties/bonuses</text>
+    <text x="802" y="620" text-anchor="middle" class="tiny">canonical RL reward path for reproducibility</text>
+
+    <rect x="985" y="535" width="315" height="110" rx="12" fill="#082118" stroke="#34d399" stroke-width="1"/>
+    <text x="1142" y="563" text-anchor="middle" class="label">Audit and Replay Payload</text>
+    <text x="1142" y="585" text-anchor="middle" class="body">reward_breakdown, judge_notes, verdict</text>
+    <text x="1142" y="603" text-anchor="middle" class="small">top_failure_reasons, rollout traces, replay logs</text>
+    <text x="1142" y="620" text-anchor="middle" class="tiny">same payload drives API, notebook, and UI</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="50" y="780" width="410" height="155" rx="20" fill="url(#train)" stroke="#a78bfa" stroke-width="1.4"/>
+    <text x="80" y="813" class="section">Training Path</text>
+    <text x="255" y="844" text-anchor="middle" class="label">Scientist Policy + Rollout Worker + GRPO</text>
+    <text x="255" y="868" text-anchor="middle" class="body">Notebook / Colab / H100</text>
+    <text x="255" y="888" text-anchor="middle" class="small">Unsloth or HF TRL, reward curves, before/after evaluation</text>
+    <text x="255" y="908" text-anchor="middle" class="tiny">deterministic reward stays comparable across seeds and checkpoints</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="495" y="780" width="360" height="155" rx="20" fill="url(#serve)" stroke="#60a5fa" stroke-width="1.4"/>
+    <text x="525" y="813" class="section">Serving and Deployment</text>
+    <text x="675" y="844" text-anchor="middle" class="label">FastAPI + WebSocket + Docker + HF Space</text>
+    <text x="675" y="868" text-anchor="middle" class="body">current deterministic mode deploys cleanly</text>
+    <text x="675" y="888" text-anchor="middle" class="small">live Oracle mode additionally needs provider SDK + secrets</text>
+    <text x="675" y="908" text-anchor="middle" class="tiny">same endpoints power local, notebook, and hosted usage</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="890" y="780" width="460" height="155" rx="20" fill="#1d0d1f" stroke="#f472b6" stroke-width="1.4"/>
+    <text x="920" y="813" class="section">Frontend and Demo</text>
+    <text x="1120" y="844" text-anchor="middle" class="label">React UI + Replay + Saved Metrics</text>
+    <text x="1120" y="868" text-anchor="middle" class="body">reads the same exported CSV / JSON / PNG artifacts as notebook</text>
+    <text x="1120" y="888" text-anchor="middle" class="small">can show live env, scores, post-mortem, and training curves</text>
+    <text x="1120" y="908" text-anchor="middle" class="tiny">frontend is a presentation layer, not the source of scoring truth</text>
+  </g>
+
+  <line x1="225" y1="262" x2="225" y2="315" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowGold)"/>
+  <line x1="545" y1="262" x2="545" y2="535" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowGold)" stroke-dasharray="6 4"/>
+  <line x1="865" y1="262" x2="865" y2="535" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowGold)" stroke-dasharray="6 4"/>
+  <line x1="1175" y1="262" x2="1175" y2="535" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowGold)" stroke-dasharray="6 4"/>
+
+  <line x1="320" y1="590" x2="365" y2="590" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="620" y1="590" x2="665" y2="590" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="940" y1="590" x2="985" y2="590" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+
+  <line x1="802" y1="645" x2="255" y2="780" stroke="#34d399" stroke-width="2.4" marker-end="url(#arrowPurple)"/>
+  <text x="545" y="725" text-anchor="middle" class="small">canonical reward signal to training</text>
+
+  <line x1="1142" y1="645" x2="1120" y2="780" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="205" y1="645" x2="675" y2="780" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+
+  <line x1="460" y1="858" x2="495" y2="858" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="855" y1="858" x2="890" y2="858" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+
+  <text x="70" y="958" class="tiny">
+    Training mode: cached Oracle scenarios, deterministic reward, optional Oracle features disabled by default.
+  </text>
+  <text x="760" y="958" class="tiny">
+    Demo mode: live Oracle world-building, optional LLM Lab Manager, optional event injection, deterministic reward still canonical.
+  </text>
+</svg>

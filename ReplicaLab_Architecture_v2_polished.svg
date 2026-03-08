@@ -1,0 +1,349 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" font-family="'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <!-- Background -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060b14"/>
+      <stop offset="50%" stop-color="#0b1221"/>
+      <stop offset="100%" stop-color="#0d1526"/>
+    </linearGradient>
+
+    <!-- Section fills -->
+    <linearGradient id="oracleFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="coreFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="trainFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#6d28d9" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="serveFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#2563eb" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="uiFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#db2777" stop-opacity="0.03"/>
+    </linearGradient>
+
+    <!-- Card fills -->
+    <linearGradient id="goldCard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a1308"/>
+      <stop offset="100%" stop-color="#110d05"/>
+    </linearGradient>
+    <linearGradient id="greenCard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#071a12"/>
+      <stop offset="100%" stop-color="#051008"/>
+    </linearGradient>
+    <linearGradient id="adapterCard" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#0f1629"/>
+    </linearGradient>
+
+    <!-- Shadows -->
+    <filter id="cardShadow" x="-6%" y="-6%" width="112%" height="124%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="sectionShadow" x="-2%" y="-2%" width="104%" height="108%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="glowGold" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feFlood flood-color="#fbbf24" flood-opacity="0.15"/>
+      <feComposite in2="b" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Arrows -->
+    <marker id="aGold" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5" fill="none" stroke="#fbbf24" stroke-width="1.2"/>
+    </marker>
+    <marker id="aSlate" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5" fill="none" stroke="#64748b" stroke-width="1.2"/>
+    </marker>
+    <marker id="aGreen" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5" fill="none" stroke="#34d399" stroke-width="1.2"/>
+    </marker>
+    <marker id="aPurple" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5" fill="none" stroke="#a78bfa" stroke-width="1.2"/>
+    </marker>
+    <marker id="aPink" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5" fill="none" stroke="#f472b6" stroke-width="1.2"/>
+    </marker>
+
+    <!-- Dot pattern -->
+    <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="0.5" fill="#fff" opacity="0.025"/>
+    </pattern>
+  </defs>
+
+  <!-- ══════════════ BACKGROUND ══════════════ -->
+  <rect width="1400" height="1000" fill="url(#bg)"/>
+  <rect width="1400" height="1000" fill="url(#dots)"/>
+
+  <!-- Decorative side accent -->
+  <rect x="0" y="0" width="3" height="1000" fill="#fbbf24" opacity="0.15"/>
+
+  <!-- ══════════════ HEADER ══════════════ -->
+  <text x="60" y="42" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="0.5">ReplicaLab</text>
+  <text x="208" y="42" fill="#fbbf24" font-size="22" font-weight="300" letter-spacing="0.5">Hybrid Oracle Architecture</text>
+  <line x1="60" y1="54" x2="520" y2="54" stroke="#fbbf24" stroke-width="0.5" opacity="0.3"/>
+  <text x="60" y="70" fill="#64748b" font-size="11" letter-spacing="0.3">Oracle powers world and narrative layers. Deterministic validation and reward remain canonical for RL training.</text>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 1: ORACLE LAYER -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <g filter="url(#sectionShadow)">
+    <rect x="40" y="92" width="1320" height="310" rx="16" fill="url(#oracleFill)" stroke="#fbbf24" stroke-width="1" opacity="0.95"/>
+  </g>
+
+  <!-- Section header -->
+  <g>
+    <rect x="56" y="104" width="12" height="12" rx="2" fill="#fbbf24" opacity="0.8"/>
+    <text x="78" y="115" fill="#fde68a" font-size="12" font-weight="700" letter-spacing="1.5">ORACLE LAYER</text>
+    <text x="225" y="115" fill="#92711a" font-size="10" letter-spacing="0.5">FEATURE-FLAGGED  ·  OPTIONAL IN TRAINING</text>
+  </g>
+
+  <!-- Card 1: World Architect -->
+  <g filter="url(#cardShadow)">
+    <rect x="60" y="134" width="290" height="100" rx="10" fill="url(#goldCard)" stroke="#fbbf24" stroke-width="0.6" opacity="0.95"/>
+    <!-- Number badge -->
+    <circle cx="82" cy="155" r="11" fill="#fbbf24" opacity="0.15" stroke="#fbbf24" stroke-width="0.5"/>
+    <text x="82" y="159" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="700">1</text>
+    <text x="100" y="159" fill="#f8fafc" font-size="13" font-weight="600">World Architect</text>
+    <text x="205" y="182" text-anchor="middle" fill="#d4a94a" font-size="10.5">Frontier model generates rich scenario</text>
+    <text x="205" y="198" text-anchor="middle" fill="#a08434" font-size="9.5">paper, constraints, hidden spec, substitutions</text>
+    <rect x="80" y="210" width="105" height="16" rx="8" fill="#fbbf24" opacity="0.08" stroke="#fbbf24" stroke-width="0.4"/>
+    <text x="132" y="221" text-anchor="middle" fill="#fbbf24" font-size="8" font-weight="500">cached by seed</text>
+  </g>
+
+  <!-- Card 2: LLM Lab Manager -->
+  <g filter="url(#cardShadow)">
+    <rect x="376" y="134" width="290" height="100" rx="10" fill="url(#goldCard)" stroke="#fbbf24" stroke-width="0.6" opacity="0.95"/>
+    <circle cx="398" cy="155" r="11" fill="#fbbf24" opacity="0.15" stroke="#fbbf24" stroke-width="0.5"/>
+    <text x="398" y="159" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="700">2</text>
+    <text x="416" y="159" fill="#f8fafc" font-size="13" font-weight="600">LLM Lab Manager</text>
+    <text x="521" y="182" text-anchor="middle" fill="#d4a94a" font-size="10.5">Optional live language layer</text>
+    <text x="521" y="198" text-anchor="middle" fill="#a08434" font-size="9.5">narrates grounded feasibility output</text>
+    <rect x="396" y="210" width="170" height="16" rx="8" fill="#fbbf24" opacity="0.08" stroke="#fbbf24" stroke-width="0.4"/>
+    <text x="481" y="221" text-anchor="middle" fill="#fbbf24" font-size="8" font-weight="500">never overrides det. truth</text>
+  </g>
+
+  <!-- Card 3: Event Injector -->
+  <g filter="url(#cardShadow)">
+    <rect x="692" y="134" width="290" height="100" rx="10" fill="url(#goldCard)" stroke="#fbbf24" stroke-width="0.6" opacity="0.95" stroke-dasharray="4 2"/>
+    <circle cx="714" cy="155" r="11" fill="#fbbf24" opacity="0.15" stroke="#fbbf24" stroke-width="0.5"/>
+    <text x="714" y="159" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="700">3</text>
+    <text x="732" y="159" fill="#f8fafc" font-size="13" font-weight="600">Event Injector</text>
+    <text x="837" y="182" text-anchor="middle" fill="#d4a94a" font-size="10.5">Mid-episode perturbations</text>
+    <text x="837" y="198" text-anchor="middle" fill="#a08434" font-size="9.5">booking failure, backorder, budget cut</text>
+    <rect x="712" y="210" width="120" height="16" rx="8" fill="#fbbf24" opacity="0.08" stroke="#fbbf24" stroke-width="0.4"/>
+    <text x="772" y="221" text-anchor="middle" fill="#fbbf24" font-size="8" font-weight="500">off during training</text>
+  </g>
+
+  <!-- Card 4: Post-Mortem -->
+  <g filter="url(#cardShadow)">
+    <rect x="1008" y="134" width="330" height="100" rx="10" fill="url(#goldCard)" stroke="#fbbf24" stroke-width="0.6" opacity="0.95" stroke-dasharray="4 2"/>
+    <circle cx="1030" cy="155" r="11" fill="#fbbf24" opacity="0.15" stroke="#fbbf24" stroke-width="0.5"/>
+    <text x="1030" y="159" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="700">4</text>
+    <text x="1048" y="159" fill="#f8fafc" font-size="13" font-weight="600">Post-Mortem Analyst</text>
+    <text x="1173" y="182" text-anchor="middle" fill="#d4a94a" font-size="10.5">Natural-language score explanation</text>
+    <text x="1173" y="198" text-anchor="middle" fill="#a08434" font-size="9.5">demo, logs, and narrative feedback</text>
+    <rect x="1028" y="210" width="120" height="16" rx="8" fill="#fbbf24" opacity="0.08" stroke="#fbbf24" stroke-width="0.4"/>
+    <text x="1088" y="221" text-anchor="middle" fill="#fbbf24" font-size="8" font-weight="500">not a reward source</text>
+  </g>
+
+  <!-- Adapter bar -->
+  <g filter="url(#cardShadow)">
+    <rect x="160" y="270" width="1080" height="68" rx="10" fill="url(#adapterCard)" stroke="#334155" stroke-width="0.8"/>
+    <!-- Icon -->
+    <rect x="184" y="290" width="4" height="28" rx="2" fill="#fbbf24" opacity="0.5"/>
+    <text x="200" y="300" fill="#e2e8f0" font-size="12" font-weight="600">Scenario Adapter + Feature Flags</text>
+    <text x="200" y="318" fill="#94a3b8" font-size="10">oracle_scenario_to_normalized_pack(...)  →  NormalizedScenarioPack</text>
+    <text x="200" y="332" fill="#64748b" font-size="9">Keeps ScientistAction, LabManagerAction, Observation, StepResult, and client/server contracts stable</text>
+  </g>
+
+  <!-- Oracle internal arrows (cards to adapter) -->
+  <line x1="205" y1="234" x2="205" y2="266" stroke="#fbbf24" stroke-width="1.2" marker-end="url(#aGold)" opacity="0.5"/>
+  <line x1="521" y1="234" x2="521" y2="266" stroke="#fbbf24" stroke-width="1.2" marker-end="url(#aGold)" opacity="0.35" stroke-dasharray="4 3"/>
+  <line x1="837" y1="234" x2="837" y2="266" stroke="#fbbf24" stroke-width="1.2" marker-end="url(#aGold)" opacity="0.25" stroke-dasharray="4 3"/>
+  <line x1="1173" y1="234" x2="1173" y2="266" stroke="#fbbf24" stroke-width="1.2" marker-end="url(#aGold)" opacity="0.25" stroke-dasharray="4 3"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 2: DETERMINISTIC CORE -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <g filter="url(#sectionShadow)">
+    <rect x="40" y="430" width="1320" height="260" rx="16" fill="url(#coreFill)" stroke="#34d399" stroke-width="1" opacity="0.95"/>
+  </g>
+
+  <!-- Section header -->
+  <g>
+    <rect x="56" y="442" width="12" height="12" rx="2" fill="#34d399" opacity="0.8"/>
+    <text x="78" y="453" fill="#6ee7b7" font-size="12" font-weight="700" letter-spacing="1.5">DETERMINISTIC CORE</text>
+    <text x="265" y="453" fill="#256e52" font-size="10" letter-spacing="0.5">CANONICAL TRAINING SUBSTRATE</text>
+  </g>
+
+  <!-- Card: ReplicaLabEnv -->
+  <g filter="url(#cardShadow)">
+    <rect x="60" y="472" width="270" height="110" rx="10" fill="url(#greenCard)" stroke="#34d399" stroke-width="0.6"/>
+    <rect x="72" y="484" width="6" height="6" rx="3" fill="#34d399" opacity="0.8"/>
+    <text x="86" y="491" fill="#f8fafc" font-size="13" font-weight="600">ReplicaLabEnv</text>
+    <text x="195" y="516" text-anchor="middle" fill="#6ee7b7" font-size="10.5">state, rounds, protocol, history</text>
+    <text x="195" y="534" text-anchor="middle" fill="#3d8a6a" font-size="9.5">Oracle hooks are optional and additive</text>
+    <text x="195" y="550" text-anchor="middle" fill="#2d6b52" font-size="9">OpenEnv-compatible env stays intact</text>
+    <rect x="80" y="560" width="50" height="14" rx="7" fill="#34d399" opacity="0.08" stroke="#34d399" stroke-width="0.4"/>
+    <text x="105" y="570" text-anchor="middle" fill="#34d399" font-size="7.5" font-weight="500">OpenEnv</text>
+  </g>
+
+  <!-- Card: Grounded Lab Manager -->
+  <g filter="url(#cardShadow)">
+    <rect x="368" y="472" width="280" height="110" rx="10" fill="url(#greenCard)" stroke="#34d399" stroke-width="0.6"/>
+    <rect x="380" y="484" width="6" height="6" rx="3" fill="#34d399" opacity="0.8"/>
+    <text x="394" y="491" fill="#f8fafc" font-size="13" font-weight="600">Grounded Lab Manager</text>
+    <text x="508" y="516" text-anchor="middle" fill="#6ee7b7" font-size="10.5">check_feasibility → suggest_alternative</text>
+    <text x="508" y="534" text-anchor="middle" fill="#3d8a6a" font-size="9.5">compose_lab_manager_response</text>
+    <text x="508" y="550" text-anchor="middle" fill="#2d6b52" font-size="9">deterministic feasibility = source of truth</text>
+    <rect x="388" y="560" width="74" height="14" rx="7" fill="#34d399" opacity="0.08" stroke="#34d399" stroke-width="0.4"/>
+    <text x="425" y="570" text-anchor="middle" fill="#34d399" font-size="7.5" font-weight="500">rule-based</text>
+  </g>
+
+  <!-- Card: Judge + Reward -->
+  <g filter="url(#cardShadow)">
+    <rect x="686" y="472" width="280" height="110" rx="10" fill="url(#greenCard)" stroke="#34d399" stroke-width="0.6"/>
+    <rect x="698" y="484" width="6" height="6" rx="3" fill="#34d399" opacity="0.8"/>
+    <text x="712" y="491" fill="#f8fafc" font-size="13" font-weight="600">Deterministic Judge + Reward</text>
+    <text x="826" y="516" text-anchor="middle" fill="#6ee7b7" font-size="10.5">rigor x feasibility x fidelity x parsimony</text>
+    <text x="826" y="534" text-anchor="middle" fill="#3d8a6a" font-size="9.5">terminal reward + shaped step bonuses</text>
+    <text x="826" y="550" text-anchor="middle" fill="#2d6b52" font-size="9">canonical RL reward for reproducibility</text>
+    <rect x="706" y="560" width="84" height="14" rx="7" fill="#34d399" opacity="0.08" stroke="#34d399" stroke-width="0.4"/>
+    <text x="748" y="570" text-anchor="middle" fill="#34d399" font-size="7.5" font-weight="500">reproducible</text>
+  </g>
+
+  <!-- Card: Audit + Replay -->
+  <g filter="url(#cardShadow)">
+    <rect x="1004" y="472" width="334" height="110" rx="10" fill="url(#greenCard)" stroke="#34d399" stroke-width="0.6"/>
+    <rect x="1016" y="484" width="6" height="6" rx="3" fill="#34d399" opacity="0.8"/>
+    <text x="1030" y="491" fill="#f8fafc" font-size="13" font-weight="600">Audit + Replay Payload</text>
+    <text x="1171" y="516" text-anchor="middle" fill="#6ee7b7" font-size="10.5">reward_breakdown, judge_notes, verdict</text>
+    <text x="1171" y="534" text-anchor="middle" fill="#3d8a6a" font-size="9.5">top_failure_reasons, rollout traces, replays</text>
+    <text x="1171" y="550" text-anchor="middle" fill="#2d6b52" font-size="9">same payload drives API, notebook, and UI</text>
+    <rect x="1024" y="560" width="64" height="14" rx="7" fill="#34d399" opacity="0.08" stroke="#34d399" stroke-width="0.4"/>
+    <text x="1056" y="570" text-anchor="middle" fill="#34d399" font-size="7.5" font-weight="500">JSONL</text>
+  </g>
+
+  <!-- Core internal arrows -->
+  <line x1="330" y1="527" x2="364" y2="527" stroke="#4ade80" stroke-width="1.2" marker-end="url(#aGreen)" opacity="0.5"/>
+  <line x1="648" y1="527" x2="682" y2="527" stroke="#4ade80" stroke-width="1.2" marker-end="url(#aGreen)" opacity="0.5"/>
+  <line x1="966" y1="527" x2="1000" y2="527" stroke="#4ade80" stroke-width="1.2" marker-end="url(#aGreen)" opacity="0.5"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- ORACLE-TO-CORE DASHED LINES -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <line x1="521" y1="340" x2="521" y2="468" stroke="#fbbf24" stroke-width="1" marker-end="url(#aGold)" opacity="0.2" stroke-dasharray="5 4"/>
+  <line x1="837" y1="340" x2="837" y2="468" stroke="#fbbf24" stroke-width="1" marker-end="url(#aGold)" opacity="0.2" stroke-dasharray="5 4"/>
+  <line x1="1173" y1="340" x2="1173" y2="468" stroke="#fbbf24" stroke-width="1" marker-end="url(#aGold)" opacity="0.2" stroke-dasharray="5 4"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 3: BOTTOM ROW -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <!-- Training -->
+  <g filter="url(#sectionShadow)">
+    <rect x="40" y="726" width="400" height="148" rx="14" fill="url(#trainFill)" stroke="#a78bfa" stroke-width="1" opacity="0.95"/>
+  </g>
+  <g>
+    <rect x="56" y="738" width="10" height="10" rx="2" fill="#a78bfa" opacity="0.8"/>
+    <text x="76" y="748" fill="#c4b5fd" font-size="11" font-weight="700" letter-spacing="1.2">TRAINING PATH</text>
+  </g>
+  <text x="240" y="780" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">Scientist Policy + Rollout Worker + GRPO</text>
+  <text x="240" y="800" text-anchor="middle" fill="#a78bfa" font-size="10.5">Notebook / Colab / H100</text>
+  <text x="240" y="820" text-anchor="middle" fill="#7c6caf" font-size="9.5">Unsloth or HF TRL, reward curves, before/after eval</text>
+  <rect x="116" y="836" width="248" height="16" rx="8" fill="#7c3aed" opacity="0.08" stroke="#a78bfa" stroke-width="0.4"/>
+  <text x="240" y="847" text-anchor="middle" fill="#a78bfa" font-size="8">deterministic reward stays comparable across seeds + checkpoints</text>
+
+  <!-- Serving -->
+  <g filter="url(#sectionShadow)">
+    <rect x="468" y="726" width="406" height="148" rx="14" fill="url(#serveFill)" stroke="#60a5fa" stroke-width="1" opacity="0.95"/>
+  </g>
+  <g>
+    <rect x="484" y="738" width="10" height="10" rx="2" fill="#60a5fa" opacity="0.8"/>
+    <text x="504" y="748" fill="#93c5fd" font-size="11" font-weight="700" letter-spacing="1.2">SERVING + DEPLOYMENT</text>
+  </g>
+  <text x="671" y="780" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">FastAPI + WebSocket + Docker + HF Space</text>
+  <text x="671" y="800" text-anchor="middle" fill="#60a5fa" font-size="10.5">Deterministic mode deploys cleanly</text>
+  <text x="671" y="820" text-anchor="middle" fill="#4876b0" font-size="9.5">Live Oracle mode needs provider SDK + secrets</text>
+  <rect x="544" y="836" width="254" height="16" rx="8" fill="#2563eb" opacity="0.08" stroke="#60a5fa" stroke-width="0.4"/>
+  <text x="671" y="847" text-anchor="middle" fill="#60a5fa" font-size="8">same endpoints power local, notebook, and hosted usage</text>
+
+  <!-- Frontend -->
+  <g filter="url(#sectionShadow)">
+    <rect x="902" y="726" width="458" height="148" rx="14" fill="url(#uiFill)" stroke="#f472b6" stroke-width="1" opacity="0.95"/>
+  </g>
+  <g>
+    <rect x="918" y="738" width="10" height="10" rx="2" fill="#f472b6" opacity="0.8"/>
+    <text x="938" y="748" fill="#f9a8d4" font-size="11" font-weight="700" letter-spacing="1.2">FRONTEND + DEMO</text>
+  </g>
+  <text x="1131" y="780" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">React UI + Replay + Saved Metrics</text>
+  <text x="1131" y="800" text-anchor="middle" fill="#f472b6" font-size="10.5">Reads same CSV / JSON / PNG artifacts as notebook</text>
+  <text x="1131" y="820" text-anchor="middle" fill="#a04e78" font-size="9.5">Live env, scores, post-mortem, training curves</text>
+  <rect x="1004" y="836" width="254" height="16" rx="8" fill="#db2777" opacity="0.08" stroke="#f472b6" stroke-width="0.4"/>
+  <text x="1131" y="847" text-anchor="middle" fill="#f472b6" font-size="8">presentation layer, not the source of scoring truth</text>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- CROSS-SECTION ARROWS -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <!-- Judge reward to Training (the big one) -->
+  <path d="M826,586 L826,610 L400,610 L400,640 L240,640 L240,722" stroke="#34d399" stroke-width="2" fill="none" marker-end="url(#aPurple)" opacity="0.6"/>
+  <rect x="430" y="630" width="184" height="18" rx="9" fill="#0b1221" stroke="#34d399" stroke-width="0.5" opacity="0.9"/>
+  <text x="522" y="642" text-anchor="middle" fill="#6ee7b7" font-size="9" font-weight="500">canonical reward signal to training</text>
+
+  <!-- Audit to Frontend -->
+  <path d="M1171,586 L1171,610 L1131,610 L1131,722" stroke="#64748b" stroke-width="1.2" fill="none" marker-end="url(#aPink)" opacity="0.4"/>
+
+  <!-- Env to Serving -->
+  <path d="M195,586 L195,610 L671,610 L671,722" stroke="#64748b" stroke-width="1.2" fill="none" marker-end="url(#aSlate)" opacity="0.35"/>
+
+  <!-- Training to Serving -->
+  <line x1="440" y1="800" x2="464" y2="800" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#aSlate)" opacity="0.4"/>
+
+  <!-- Serving to Frontend -->
+  <line x1="874" y1="800" x2="898" y2="800" stroke="#60a5fa" stroke-width="1.2" marker-end="url(#aPink)" opacity="0.4"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- FOOTER -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <!-- Mode legend -->
+  <g transform="translate(40, 910)">
+    <text x="0" y="0" fill="#475569" font-size="9" font-weight="600" letter-spacing="1.5">MODES</text>
+
+    <rect x="60" y="-10" width="14" height="14" rx="3" fill="#1a1308" stroke="#fbbf24" stroke-width="0.5"/>
+    <text x="82" y="2" fill="#64748b" font-size="9">Oracle (optional)</text>
+
+    <rect x="175" y="-10" width="14" height="14" rx="3" fill="#071a12" stroke="#34d399" stroke-width="0.5"/>
+    <text x="197" y="2" fill="#64748b" font-size="9">Deterministic (always on)</text>
+
+    <line x1="330" y1="-3" x2="360" y2="-3" stroke="#64748b" stroke-width="1.2" marker-end="url(#aSlate)"/>
+    <text x="368" y="1" fill="#64748b" font-size="9">Data flow</text>
+
+    <line x1="430" y1="-3" x2="460" y2="-3" stroke="#64748b" stroke-width="1.2" marker-end="url(#aSlate)" stroke-dasharray="4 3"/>
+    <text x="468" y="1" fill="#64748b" font-size="9">Optional / feature-flagged</text>
+  </g>
+
+  <!-- Training vs Demo note -->
+  <g transform="translate(40, 940)">
+    <rect x="0" y="-6" width="8" height="8" rx="4" fill="#a78bfa" opacity="0.5"/>
+    <text x="16" y="2" fill="#64748b" font-size="9">Training: cached Oracle scenarios, deterministic reward, optional Oracle disabled by default</text>
+  </g>
+  <g transform="translate(40, 960)">
+    <rect x="0" y="-6" width="8" height="8" rx="4" fill="#fbbf24" opacity="0.5"/>
+    <text x="16" y="2" fill="#64748b" font-size="9">Demo: live Oracle world-building, LLM Lab Manager, event injection enabled, deterministic reward still canonical</text>
+  </g>
+
+  <!-- Branding -->
+  <text x="1340" y="970" text-anchor="end" fill="#1e293b" font-size="8">ReplicaLab · OpenEnv Hackathon 2026</text>
+</svg>

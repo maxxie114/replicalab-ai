@@ -7,7 +7,9 @@ from replicalab.scenarios import (
     NormalizedScenarioPack,
     available_scenario_families,
     generate_scenario,
+    oracle_scenario_to_normalized_pack,
 )
+from replicalab.oracle_models import Scenario as OracleScenario
 
 
 def test_generate_scenario_is_deterministic_for_same_seed() -> None:
@@ -140,3 +142,90 @@ def test_all_domains_produce_bookings_and_windows() -> None:
         pack = generate_scenario(seed=42, template=template, difficulty="medium")
         assert len(pack.resource_bookings) > 0, f"{template} has no bookings"
         assert len(pack.scheduling_windows) > 0, f"{template} has no windows"
+
+
+def test_oracle_scenario_adapter_preserves_domain_and_constraints() -> None:
+    oracle_scenario = OracleScenario.model_validate(
+        {
+            "paper": {
+                "title": "Adapting a benchmark under constraint",
+                "domain": "ml_benchmark",
+                "claim": "A small model remains competitive after budget cuts.",
+                "method_summary": "Train a compact benchmark baseline with fixed controls.",
+                "original_sample_size": 1200,
+                "original_duration_days": 3,
+                "original_technique": "compact_cnn",
+                "required_controls": ["baseline", "seed_control"],
+                "required_equipment": ["GPU cluster"],
+                "required_reagents": ["dataset snapshot"],
+                "statistical_test": "accuracy_gap",
+            },
+            "lab_constraints": {
+                "budget_total": 1800.0,
+                "budget_remaining": 1500.0,
+                "equipment": [
+                    {
+                        "name": "GPU cluster",
+                        "available": True,
+                        "condition": "shared_booking",
+                        "booking_conflicts": ["Monday"],
+                        "cost_per_use": 200.0,
+                    }
+                ],
+                "reagents": [
+                    {
+                        "name": "dataset snapshot",
+                        "in_stock": True,
+                        "quantity_available": 1.0,
+                        "unit": "copy",
+                        "lead_time_days": 0,
+                        "cost": 0.0,
+                    }
+                ],
+                "staff": [
+                    {
+                        "name": "Alex",
+                        "role": "engineer",
+                        "available_days": ["Monday", "Tuesday"],
+                        "skills": ["training", "evaluation"],
+                    }
+                ],
+                "max_duration_days": 5,
+                "safety_rules": ["No external internet during training."],
+                "valid_substitutions": [
+                    {
+                        "original": "GPU cluster",
+                        "substitute": "single high-memory GPU",
+                        "validity": "acceptable_with_caveats",
+                        "caveats": "Longer runtime is acceptable if evaluation fidelity is preserved.",
+                    }
+                ],
+            },
+            "minimum_viable_spec": {
+                "min_sample_size": 800,
+                "must_keep_controls": ["baseline", "seed_control"],
+                "acceptable_techniques": ["compact_cnn"],
+                "min_duration_days": 2,
+                "critical_equipment": ["GPU cluster"],
+                "flexible_equipment": [],
+                "critical_reagents": ["dataset snapshot"],
+                "flexible_reagents": [],
+                "power_threshold": 0.8,
+            },
+            "difficulty": "medium",
+            "narrative_hook": "The preferred GPU window has been partially reallocated.",
+        }
+    )
+
+    pack = oracle_scenario_to_normalized_pack(
+        seed=7,
+        template="ml_benchmark",
+        oracle_scenario=oracle_scenario,
+    )
+
+    assert pack.domain_id == "ml_benchmark"
+    assert pack.scientist_observation.paper_title == "Adapting a benchmark under constraint"
+    assert pack.lab_manager_observation.budget_total == 1800.0
+    assert "GPU cluster" in pack.lab_manager_observation.equipment_booked
+    assert pack.hidden_reference_spec.required_elements
+    assert pack.resource_bookings

@@ -164,9 +164,9 @@ class RolloutWorker:
             )
             record.steps.append(step)
             record.tool_traces.extend(tool_traces)
+            record.total_reward = round(record.total_reward + result.reward, 6)
 
             if result.done:
-                record.total_reward = result.reward
                 record.reward_breakdown = result.info.reward_breakdown
                 record.judge_notes = result.info.judge_notes
                 record.verdict = result.info.verdict

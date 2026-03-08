@@ -109,6 +109,7 @@ def _derive_failure_reasons(
         (breakdown.feasibility, "feasibility", "Feasibility remained too low under the scenario constraints."),
         (breakdown.fidelity, "fidelity", "The final plan diverged too far from the hidden reference requirements."),
         (breakdown.rigor, "rigor", "The plan missed required checks or justification quality targets."),
+        (breakdown.parsimony, "parsimony", "The final plan requested more resources or controls than the scenario complexity justified."),
     ]
     for score, _name, message in components:
         if score < _WEAK_THRESHOLD:
@@ -119,6 +120,13 @@ def _derive_failure_reasons(
     _PENALTY_LABELS: dict[str, str] = {
         "invalid_tool_use": "A bounded-tool usage violation was detected.",
         "unsupported_claim": "An unsupported evidence claim was penalized.",
+        "timeout": "A timeout penalty was applied at the round limit.",
+        "no_agreement": "A no-agreement penalty was applied.",
+        "invalid_action": "An invalid action penalty was applied after a failed protocol proposal.",
+        "hallucination": "A hallucination penalty was applied for unsupported inventory references.",
+        "contradiction": "A contradiction penalty was applied for repeating blocked requirements.",
+        "stalling": "A stalling penalty was applied for repeating an unproductive move.",
+        "regression": "A regression penalty was applied because the revision worsened the protocol.",
     }
     for key, amount in sorted(breakdown.penalties.items()):
         if amount > 0:

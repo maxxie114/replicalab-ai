@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from replicalab.prompts import (
+    load_prompt_asset,
     load_prompt_template,
     render_judge_prompt,
     render_lab_manager_prompt,
@@ -20,6 +21,18 @@ def test_load_prompt_template_reads_all_role_files() -> None:
         template = load_prompt_template(role)
         assert len(template) > 100
         assert "ReplicaLab" in template
+
+
+def test_load_oracle_prompt_assets_reads_all_oracle_files() -> None:
+    for name in (
+        "oracle_world_architect",
+        "oracle_adjudicator",
+        "oracle_event_injector",
+        "oracle_post_mortem",
+        "oracle_lab_manager",
+    ):
+        template = load_prompt_asset(name)
+        assert len(template) > 100
 
 
 def test_render_scientist_prompt_injects_task_and_bounded_tools() -> None:
