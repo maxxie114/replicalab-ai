@@ -20,40 +20,27 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Metric | Value |
 |--------|-------|
 | Total tasks | 152 |
-| Completed | 108 |
+| Completed | 152 |
 | Partial / active | 0 |
-| Remaining | 44 |
-| **Completion rate** | **71.05%** |
+| Remaining | 0 |
+| **Completion rate** | **100.00%** |
 
 ### Completion by Person
 
 | Person | Assigned | Completed (own) | Completed (by others) | Remaining | Rate |
 |--------|----------|----------------|----------------------|-----------|------|
 | Kian (Person A) | 49 (47 solo + 2 shared with B) | 1 shared sign-off (`FND 08`) | 48 (`FND 04`, `FND 09`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`, `MOD 05`, `MOD 06`, `MOD 08`, `MOD 11`, `MOD 12`, `SCN 01` to `SCN 10`, `SCN 13`, `AGT 05`, `AGT 09`, `ENV 01` to `ENV 08`, `ENV 10`, `ENV 11`, `JDG 01` to `JDG 06`, `JDG 08`, `JDG 11`, `OBS 04`, `TST 01` to `TST 05` done by Person B) | 0 | 100.00% |
-| Person B (Ayush) | 29 (27 solo + 2 shared with A) | 19 (`FND 08`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`, `TRN 13`, `TRN 03`, `TRN 04`, `TRN 01`, `TRN 02`, `TRN 14`) | 0 | 10 | 65.52% |
-| Max (Person C) | 41 | 1 (`FND 11`) | 40 (done by Person B or Person D; `API 16`, `UI 11` by Kush) | 0 | **100%** |
-| Kush (Person D) | 32 | 4 (`UI 07`, `UI 10`, `UI 11`, `API 16`) | 1 (`FND 06` done by Person B) | 27 | 15.63% |
-| All (shared) | 3 | 2 (`FND 08`, `AGT 05`) | 0 | 1 | 66.67% |
+| Person B (Ayush) | 29 (27 solo + 2 shared with A) | 29 (`FND 08`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`, `JDG 10`, `TRN 01` to `TRN 10`, `TRN 13`, `TRN 14`, `TRN 15`, `OBS 06`, `TST 09`) | 0 | 0 | 100.00% |
+| Max (Person C) | 41 | 1 (`FND 11`) | 40 (done by Person B or Person D; `API 16`, `UI 11` by Kush) | 0 | 100.00% |
+| Kush (Person D) | 32 | 17 (`FND 13`, `UI 01`-`UI 06`, `UI 07`-`UI 09`, `UI 10`, `UI 11`, `UI 13`-`UI 15`, `JDG 09`, `OBS 05`) | 15 (by Person B: `FND 06`, `SCN 12`, `API 12`, `TRN 12`, `UI 12`, `OBS 08`, `TST 08`, `TST 12`, `DOC 01`-`DOC 07`, `DOC 09`, `DOC 11`) | 0 | **100%** |
+| All (shared) | 3 | 3 (`FND 08`, `AGT 05`, `TST 10`) | 0 | 0 | 100.00% |
 
-Note: Person B (Ayush) has completed two shared tasks in their own lane
-(`FND 08`, `AGT 05`) plus seventeen solo tasks in their own lane (`MOD 09`,
-`SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 06`, `AGT 07`,
-`AGT 08`, `AGT 10`, `AGT 11`, `TRN 13`, `TRN 03`, `TRN 04`, `TRN 01`,
-`TRN 02`, `TRN 14`), and has also executed a large
-cross-owner bundle (`FND 01`, `FND 02`, `FND 04`, `FND 05`, `FND 06`,
-`FND 07`, `FND 09`, `FND 10`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`,
-`MOD 05`, `MOD 06`, `MOD 07`, `MOD 10`, `MOD 11`, `MOD 12`, `SCN 01`
-to `SCN 10`, `SCN 13`, `AGT 09`, `ENV 01` to `ENV 09`, `ENV 10`, `ENV 11`,
-`JDG 01` to `JDG 06`, `JDG 07`, `JDG 08`, `JDG 11`, `TST 01` to `TST 07`,
-`TST 11`, `API 01`, `API 02`, `API 03`, `API 04`, `API 05`, `API 06`,
-`API 07`, `API 08`, `API 09`, `API 10`, `API 11`, `API 13`, `API 14`,
-`API 15`, `API 17`, `API 18`, `API 19`, `OBS 01`, `OBS 02`, `OBS 03`, `OBS 04`,
-`OBS 07`, `OBS 09`, `TRN 11`) to keep the Kian, Max, and Kush dependency
-chain moving. All Person A and Person C implementation tasks are now complete
-All Person C (Max) tasks are now complete (41/41).
-`UI 07`, `UI 10`, `UI 11`, and `API 16` were completed by Kush (Person D).
-`DOC 08` was completed by Person B after verifying repo is public, no secrets tracked, and all required files present.
-Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`.
+**All 152 tasks are now complete (100%).** Every person's lane is closed:
+- Kian (Person A): 49/49 (done by Person B)
+- Ayush (Person B): 29/29
+- Max (Person C): 41/41 (done by Person B and Kush)
+- Kush (Person D): 32/32 (17 by Kush, 15 by Person B)
+- Shared: 3/3
 
 ---
 
@@ -175,6 +162,16 @@ Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`.
 | TRN 01 | E08 | Create notebook skeleton | `notebooks/train_colab.ipynb` | 2026-03-08 | Added a judged-path training notebook with explicit setup, evidence preview, Scientist plan preview, Lab Manager plan preview, gated real-training cell, baseline evaluation cell, and Northflank runtime notes so the flow is readable without hiding logic in notebook-only cells. | Notebook has clear runnable sections in the right order and documents the bounded-tool policy | Yes - verified with notebook JSON load, preview-plan execution, and `python -m pytest tests/test_training_cli.py` |
 | TRN 02 | E08 | Add package install and model setup cell | `notebooks/train_colab.ipynb`, `replicalab/training/runtime.py`, `pyproject.toml` | 2026-03-08 | Added a fresh-runtime install cell that installs the repo plus `unsloth`, `unsloth_zoo`, `trl`, `vllm`, `datasets`, and `matplotlib`, then added runtime helpers and the `replicalab-train` entrypoint so the same model-loading path works in notebooks and Northflank jobs. | Notebook installs dependencies without manual edits beyond secrets | Yes - verified with notebook inspection and `python -m pytest tests/test_training_cli.py` |
 | TRN 14 | E08 | Select and document base model (notebook side) | `docs/agt11_scientist_model_selection.md`, `README.md`, `notebooks/train_colab.ipynb` | 2026-03-08 | Updated the model decision to `Qwen/Qwen3-8B` as the primary shared base for Scientist GRPO and Lab Manager SFT on Northflank H100, kept `Qwen/Qwen3-4B` as the reduced-scale fallback, and aligned the notebook defaults to that choice. | Base model choice is documented and all team members know which model is being trained | Yes - verified by the decision record, README, notebook defaults, and training-preview output |
+| JDG 10 | E05 | Expose component metrics for training plots | `replicalab/training/metrics.py`, `replicalab/training/plots.py`, `replicalab/training/cli.py`, `tests/test_training_metrics.py` | 2026-03-08 | Extended the evaluation and metrics layer to expose average rigor, feasibility, fidelity, parsimony, tool-trace volume, and invalid bounded-tool rate in a notebook- and CLI-friendly shape, then wired those metrics into saved comparison plots. | Notebook can read average rigor, feasibility, fidelity, and bounded tool metrics over time | Yes - verified with `python -m pytest tests/test_training_metrics.py tests/test_training_cli.py` and saved evaluation plots |
+| TRN 05 | E08 | Connect rollouts to GRPO or equivalent trainer | `replicalab/training/art_openenv.py`, `replicalab/training/cli.py`, `tests/test_training_cli.py`, `replicalab/outputs/art-training/` | 2026-03-08 | Added the ART/OpenEnv Scientist training path, converting live ReplicaLab episodes plus frozen evidence packs into ART trajectory groups and executing successful live training updates against the hosted environment. | At least one short training run completes without runtime errors while preserving deterministic reward and frozen evidence inputs | Yes - verified with live `art-scientist-train` runs including `art-scientist-smoke-20260308` and `art-scientist-live-20260308-main` |
+| TRN 06 | E08 | Log episode reward, rigor, feasibility, fidelity, rounds used, and bounded tool metrics | `replicalab/training/metrics.py`, `replicalab/training/art_openenv.py`, `replicalab/training/cli.py` | 2026-03-08 | Added structured episode metric exports covering reward, component scores, rounds used, agreement, parse errors, invalid actions, and invalid bounded-tool rates to JSONL and summary artifacts. | Notebook stores a metrics frame across training episodes including bounded tool metrics | Yes - verified with `reports/metrics.jsonl` outputs from ART training and comparison runs |
+| TRN 07 | E08 | Plot reward curve and component curves with matplotlib | `replicalab/training/plots.py`, `replicalab/training/cli.py`, `replicalab/outputs/art-training/` | 2026-03-08 | Added saved matplotlib plotting for training-history curves, per-step ART reward-component plots, and comparison bar charts for reward, agreement, invalid actions, and invalid bounded-tool rate. | Plotted image shows visible metrics and can be saved to file | Yes - verified with saved images including `art_reward_components.png` and the `compare_*.png` outputs |
+| TRN 08 | E08 | Add before versus after evaluation on fixed seeds and frozen evidence packs | `replicalab/training/evaluation.py`, `replicalab/training/cli.py`, `replicalab/agents/scientist_policy.py` | 2026-03-08 | Added policy-comparison evaluation on fixed seeds and frozen evidence packs, then exercised it against the deterministic baseline and trained ART Scientist checkpoints. | Notebook compares baseline and trained policy on the same scenarios and evidence packs | Yes - verified with `scientist-compare-eval` runs including `art-scientist-compare-smoke-20260308` and `art-scientist-compare-20260308-step5` |
+| TRN 09 | E08 | Add policy loading path for trained adapter or checkpoint | `replicalab/agents/scientist_policy.py`, `replicalab/agents/__init__.py`, `tests/test_scientist_policy.py` | 2026-03-08 | Added remote trained-policy loading for ART checkpoints, including evidence-pack-aware prompt assembly and parser-driven retry, so evaluation can switch cleanly between baseline and trained Scientist policies. | Evaluation can switch between baseline and trained model cleanly | Yes - verified with live `scientist-compare-eval` runs against explicit ART checkpoint steps |
+| TRN 10 | E08 | Export plot image and sample logs to `outputs/plots` | `replicalab/training/cli.py`, `replicalab/outputs/art-training/`, `replicalab/outputs/training/` | 2026-03-08 | Wired the CLI to save training plots, comparison plots, metrics JSONL, summaries, manifests, and run metadata into stable output directories for README and demo reuse. | Plots are saved and versioned for README use | Yes - verified with generated plot and report artifacts under `replicalab/outputs/art-training/` and `replicalab/outputs/training/` |
+| TRN 15 | E08 | Add agreement rate, invalid action rate, and invalid bounded-tool rate aggregation to evaluation outputs | `replicalab/training/metrics.py`, `replicalab/training/evaluation.py`, `replicalab/training/cli.py`, `tests/test_training_metrics.py` | 2026-03-08 | Added aggregate agreement, invalid-action, and invalid bounded-tool metrics across evaluation cases, surfaced them in summaries, and plotted them for before-vs-after comparisons. | Notebook reports reward, rounds, agreement rate, invalid action rate, and invalid bounded-tool rate for baseline and trained runs | Yes - verified with comparison summaries and plots from the ART evaluation runs |
+| OBS 06 | E10 | Log training run metadata including model, seed, scenario set, steps, evidence-pack version, and bounded-tool policy | `replicalab/training/cli.py`, `replicalab/outputs/art-training/*/reports/run_metadata.json` | 2026-03-08 | Added reproducibility metadata exports for every training and evaluation command, including base model, scenario set, checkpoint step, evidence-pack version, and bounded-tool policy. | Notebook exports metadata with each run for reproducibility including evidence-pack version and bounded-tool policy | Yes - verified with generated `run_metadata.json` files in training and comparison smoke runs |
+| TST 09 | E11 | Create notebook smoke test for fresh runtime | `docs/ayush/notebook_smoke_test.md`, `replicalab/outputs/training/`, `replicalab/outputs/art-training/` | 2026-03-08 | Wrote the fresh-runtime smoke checklist and then executed the preview, live ART training, and comparison-eval commands end to end against frozen evidence packs and the hosted ReplicaLab environment. | Training notebook runs from top with minimal edits and the bounded-tool path works against frozen evidence packs | Yes - verified with `scientist-preview-smoke-20260308b`, `lab-manager-preview-smoke-20260308b`, `art-scientist-smoke-20260308b`, and `art-scientist-compare-smoke-20260308b` |
 
 ### Kush (Person D) - Completed on behalf of others
 
@@ -195,11 +192,27 @@ Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`.
 |----|------|------|--------|
 | FND 11 | E01 | Create `server/requirements.txt` pinning runtime dependencies | Completed |
 
-### Kush (Person D) - No tasks completed yet
+### Kush (Person D) - Completed own tasks
 
 | ID | Epic | Task | Status |
 |----|------|------|--------|
-| - | - | No tasks completed | 0 of 32 assigned |
+| FND 13 | E01 | Tailwind v4.2 + theme tokens + light/dark mode | Completed |
+| UI 01 | E09 | App shell with three-panel layout | Completed |
+| UI 02 | E09 | PaperPanel | Completed |
+| UI 03 | E09 | ProtocolPanel with DiffRow | Completed |
+| UI 04 | E09 | NegotiationLog with character avatars | Completed |
+| UI 05 | E09 | ScorePanel with rigor/feasibility/fidelity bars | Completed |
+| UI 06 | E09 | Controls (scenario selector, seed input, difficulty) | Completed |
+| UI 07 | E09 | REST + WebSocket API client (api.ts) | Completed |
+| UI 08 | E09 | ReplayViewer with range slider | Completed |
+| UI 09 | E09 | TrainingResults with LineChart | Completed |
+| UI 10 | E09 | Styling, animations, 3D lab scene | Completed |
+| UI 11 | E09 | Multi-stage Docker, SPA serving | Completed |
+| UI 13 | E09 | JudgeAuditPanel with verdict display | Completed |
+| UI 14 | E09 | Replay scrubber with skip buttons | Completed |
+| UI 15 | E09 | Before vs after training toggle | Completed |
+| JDG 09 | E05 | Mock score cards for frontend | Completed |
+| OBS 05 | E10 | Episode ID + copy-to-clipboard in UI | Completed |
 
 ---
 
@@ -293,15 +306,7 @@ Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`.
 
 ### Current Unblocked and Active Tasks
 
-| ID | Owner | Task | Unblocked By |
-|----|-------|------|-------------|
-| FND 13 | Kush (Person D) | Install and configure Tailwind plus shadcn base setup, theme tokens, and global styles | FND 03 |
-| UI 01 | Kush (Person D) | Create application shell with three panel layout | FND 03 |
-| DOC 01 | Kush (Person D) | Write hook, problem statement, and one line product summary | FND 06 |
-| TRN 05 | Person B (Ayush) | Connect rollouts to GRPO or equivalent trainer | TRN 04 |
-| JDG 10 | Person B (Ayush) | Expose component metrics for training plots | JDG 05, JDG 07 |
-| JDG 09 | Kush (Person D) | Create mock score cards and language for frontend | JDG 05 |
-Note: Person B (Ayush) has completed `TRN 01`, `TRN 02`, `TRN 03`, `TRN 04`, `TRN 13`, and `TRN 14`. Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`. Max's remaining tasks are `API 16`, `API 19`, `DOC 08`, and `UI 11`.
+All 152 tasks are complete. No tasks remain.
 
 ---
 
@@ -309,15 +314,15 @@ Note: Person B (Ayush) has completed `TRN 01`, `TRN 02`, `TRN 03`, `TRN 04`, `TR
 
 | Epic | Total Tasks | Completed | Rate |
 |------|------------|-----------|------|
-| E01. Foundations and repository setup | 13 | 12 | 92.31% |
+| E01. Foundations and repository setup | 13 | 13 | 100.00% |
 | E02. Domain models, validation, state contracts | 12 | 12 | 100.00% |
-| E03. Scenario engine and constraint generation | 13 | 12 | 92.31% |
+| E03. Scenario engine and constraint generation | 13 | 13 | 100.00% |
 | E04. Scientist agent and Lab Manager policy | 11 | 11 | 100.00% |
-| E05. Judge engine and reward logic | 11 | 9 | 81.82% |
+| E05. Judge engine and reward logic | 11 | 11 | 100.00% |
 | E06. OpenEnv environment implementation | 11 | 11 | 100.00% |
-| E07. API, server, Docker, deployment | 19 | 16 | 84.21% |
-| E08. RL training pipeline and evaluation | 15 | 6 | 40.00% |
-| E09. Frontend, UX, replay, demo views | 15 | 0 | 0% |
-| E10. Logging, replay, and observability | 9 | 6 | 66.67% |
-| E11. Testing and quality gates | 12 | 8 | 66.67% |
-| E12. README, demo video, submission packaging | 11 | 0 | 0% |
+| E07. API, server, Docker, deployment | 19 | 19 | 100.00% |
+| E08. RL training pipeline and evaluation | 15 | 15 | 100.00% |
+| E09. Frontend, UX, replay, demo views | 15 | 15 | 100.00% |
+| E10. Logging, replay, and observability | 9 | 9 | 100.00% |
+| E11. Testing and quality gates | 12 | 12 | 100.00% |
+| E12. README, demo video, submission packaging | 11 | 11 | 100.00% |
