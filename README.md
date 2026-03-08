@@ -17,10 +17,10 @@ ReplicaLab tackles the **replication crisis** in science. Published protocols de
 
 | Owner | Current focus |
 |------|----------------|
-| Person A | Shared schemas, validation, scenario engine, judge logic |
+| Kian (Person A) | Shared schemas, validation, scenario engine, judge logic |
 | Person B (Ayush) | Contract freeze, Scientist-side prompting and parsing, notebook and client path |
-| Person C | Repo/runtime setup, frontend shell, server and deployment plumbing |
-| Person D | README and demo docs, UI shell planning, polish and presentation assets |
+| Max (Person C) | Repo/runtime setup, frontend shell, server and deployment plumbing |
+| Kush (Person D) | README and demo docs, UI shell planning, polish and presentation assets |
 
 ---
 

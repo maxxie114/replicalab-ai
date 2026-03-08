@@ -8,6 +8,13 @@ This repository uses file-based project management. Treat the files below as the
 - `docs/changes.md`
 - `docs/<owner>/` folders
 
+Current owner-folder mapping:
+
+- `docs/ayush/` = Person B (Ayush)
+- `docs/kian/` = Person A
+- `docs/max/` = Person C
+- `docs/kush/` = Person D
+
 ## Required start-of-work checklist
 
 Every human contributor and every automated model agent must:

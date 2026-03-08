@@ -1,4 +1,4 @@
-# Person D Task List
+# Kush (Person D) Task List
 
 Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
