@@ -53,6 +53,9 @@ coverage.xml
 # Notebooks
 .ipynb_checkpoints/
 
+# Data (large PDFs)
+data/papers/
+
 # Generated outputs
 replicalab/outputs/*
 !replicalab/outputs/.gitkeep
