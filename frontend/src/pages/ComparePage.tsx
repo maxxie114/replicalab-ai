@@ -17,7 +17,8 @@ export default function ComparePage() {
         <h1 className="mb-2 text-3xl font-bold tracking-tight">Seeded Benchmark Comparison</h1>
         <p className="mx-auto max-w-lg text-muted-foreground">
           Use the same frontend to replay fixed benchmark cases across domains or difficulty levels.
-          This page is the evaluation bench for demo runs, while the training panel holds the baseline-vs-trained story.
+          This page is the evaluation bench for demo runs, while the dedicated Training page holds the artifact-backed
+          training logs and improvement analysis.
         </p>
       </motion.div>
 

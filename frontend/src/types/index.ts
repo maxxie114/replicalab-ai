@@ -3,6 +3,7 @@ export type LabManagerActionType = 'report_feasibility' | 'suggest_alternative' 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type ScenarioTemplate = 'math_reasoning' | 'ml_benchmark' | 'finance_trading';
 export type Role = 'scientist' | 'lab_manager' | 'judge' | 'system';
+export type DemoCase = 'fast-agreement' | 'learning-opportunity' | 'no-agreement';
 
 // --- Backend-aligned action contracts ---
 
@@ -103,6 +104,21 @@ export interface JudgeAudit {
   score_breakdown: ScoreBreakdown;
 }
 
+export interface EpisodeStepTrace {
+  round: number;
+  reward: number;
+  cumulative_reward: number;
+  action_type: string;
+  scientist_message: string;
+  lab_manager_action_type?: string;
+  lab_manager_message?: string;
+  step_reward_components: Record<string, number>;
+  protocol: Protocol | null;
+  oracle_round_score?: Record<string, unknown> | null;
+  oracle_post_mortem?: Record<string, unknown> | null;
+  oracle_event?: Record<string, unknown> | null;
+}
+
 // --- Frontend episode state (assembled from backend responses) ---
 
 export interface EpisodeState {
@@ -120,6 +136,9 @@ export interface EpisodeState {
   conversation: NegotiationMessage[];
   scores: ScoreBreakdown | null;
   judge_audit: JudgeAudit | null;
+  cumulative_reward: number;
+  step_history: EpisodeStepTrace[];
+  demo_case?: DemoCase;
 }
 
 export interface ResetParams {
@@ -190,8 +209,12 @@ export interface BackendStepInfo {
   verdict: string | null;
   top_failure_reasons: string[];
   round: number;
-  stub: boolean;
   episode_id: string;
+  step_reward_components?: Record<string, number>;
+  cumulative_reward?: number;
+  oracle_round_score?: Record<string, unknown> | null;
+  oracle_post_mortem?: Record<string, unknown> | null;
+  oracle_event?: Record<string, unknown> | null;
 }
 
 export interface BackendStepResult {
