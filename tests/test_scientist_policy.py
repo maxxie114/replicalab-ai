@@ -556,3 +556,347 @@ def test_baseline_scientist_finishes_stub_episode_without_crashing() -> None:
 
     assert second_step.done is True
     assert second_step.info.agreement_reached is True
+
+
+# ---------------------------------------------------------------------------
+# AGT 08 — Extended prompt, parser, formatter, and baseline coverage
+# ---------------------------------------------------------------------------
+
+
+# --- Parser happy paths ---
+
+
+def test_parse_scientist_output_accepts_propose_protocol() -> None:
+    raw_text = """{
+      "action_type": "propose_protocol",
+      "sample_size": 48,
+      "controls": ["vehicle_control", "positive_control"],
+      "technique": "wst1_assay",
+      "duration_days": 5,
+      "required_equipment": ["plate_reader"],
+      "required_reagents": ["wst1", "dmso"],
+      "questions": [],
+      "rationale": "Standard viability assay with two controls."
+    }"""
+
+    action = parse_scientist_output(raw_text)
+
+    assert action.action_type is ScientistActionType.PROPOSE_PROTOCOL
+    assert action.sample_size == 48
+    assert action.technique == "wst1_assay"
+    assert action.controls == ["vehicle_control", "positive_control"]
+    assert action.questions == []
+
+
+def test_parse_scientist_output_accepts_accept_action() -> None:
+    raw_text = """{
+      "action_type": "accept",
+      "sample_size": 0,
+      "controls": [],
+      "technique": "",
+      "duration_days": 0,
+      "required_equipment": [],
+      "required_reagents": [],
+      "questions": [],
+      "rationale": ""
+    }"""
+
+    action = parse_scientist_output(raw_text)
+
+    assert action.action_type is ScientistActionType.ACCEPT
+    assert action.sample_size == 0
+    assert action.rationale == ""
+
+
+def test_parse_scientist_output_accepts_prose_wrapped_json() -> None:
+    raw_text = (
+        "After reviewing the constraints I think a request is in order.\n\n"
+        '{"action_type": "request_info", "sample_size": 0, '
+        '"controls": [], "technique": "", "duration_days": 0, '
+        '"required_equipment": [], "required_reagents": [], '
+        '"questions": ["Is the GPU available?"], "rationale": ""}\n\n'
+        "That should clarify the compute situation."
+    )
+
+    action = parse_scientist_output(raw_text)
+
+    assert action.action_type is ScientistActionType.REQUEST_INFO
+    assert action.questions == ["Is the GPU available?"]
+
+
+# --- Parser edge cases ---
+
+
+def test_parse_scientist_output_raises_on_empty_string() -> None:
+    with pytest.raises(ScientistOutputParseError) as exc_info:
+        parse_scientist_output("")
+
+    assert exc_info.value.code == "no_json"
+
+
+def test_parse_scientist_output_raises_on_whitespace_only() -> None:
+    with pytest.raises(ScientistOutputParseError) as exc_info:
+        parse_scientist_output("   \n\t  ")
+
+    assert exc_info.value.code == "no_json"
+
+
+def test_parse_scientist_output_raises_on_json_list() -> None:
+    # The parser's brace extractor finds the inner object from the list,
+    # so this surfaces as an invalid_action (missing required fields)
+    # rather than an invalid_json error.
+    with pytest.raises(ScientistOutputParseError) as exc_info:
+        parse_scientist_output('[{"action_type": "accept"}]')
+
+    assert exc_info.value.code == "invalid_action"
+
+
+def test_parse_scientist_output_raises_on_extra_forbidden_keys() -> None:
+    raw_text = """{
+      "action_type": "accept",
+      "sample_size": 0,
+      "controls": [],
+      "technique": "",
+      "duration_days": 0,
+      "required_equipment": [],
+      "required_reagents": [],
+      "questions": [],
+      "rationale": "",
+      "secret_field": "should not be here"
+    }"""
+
+    with pytest.raises(ScientistOutputParseError) as exc_info:
+        parse_scientist_output(raw_text)
+
+    assert exc_info.value.code == "invalid_action"
+    assert exc_info.value.parsed_payload is not None
+    assert "secret_field" in exc_info.value.parsed_payload
+
+
+def test_parse_error_to_dict_serialization() -> None:
+    try:
+        parse_scientist_output("no json here")
+    except ScientistOutputParseError as exc:
+        result = exc.to_dict()
+        assert result["code"] == "no_json"
+        assert result["raw_text"] == "no json here"
+        assert result["parsed_payload"] is None
+        assert "message" in result
+    else:
+        pytest.fail("Expected ScientistOutputParseError")
+
+
+def test_parse_error_to_dict_with_parsed_payload() -> None:
+    raw_text = """{
+      "action_type": "request_info",
+      "sample_size": 0,
+      "controls": [],
+      "technique": "",
+      "duration_days": 0,
+      "required_equipment": [],
+      "required_reagents": [],
+      "questions": [],
+      "rationale": ""
+    }"""
+    try:
+        parse_scientist_output(raw_text)
+    except ScientistOutputParseError as exc:
+        result = exc.to_dict()
+        assert result["code"] == "invalid_action"
+        assert result["parsed_payload"] is not None
+        assert result["parsed_payload"]["action_type"] == "request_info"
+    else:
+        pytest.fail("Expected ScientistOutputParseError")
+
+
+# --- System prompt: domain coverage ---
+
+
+def test_system_prompt_math_domain() -> None:
+    scenario = generate_scenario(seed=10, template="math_reasoning", difficulty="easy")
+    prompt = build_scientist_system_prompt(scenario)
+
+    assert "Domain: mathematics" in prompt
+    assert scenario.task_summary in prompt
+    assert "You are the Scientist agent" in prompt
+
+
+def test_system_prompt_finance_domain() -> None:
+    scenario = generate_scenario(seed=10, template="finance_trading", difficulty="easy")
+    prompt = build_scientist_system_prompt(scenario)
+
+    assert "Domain: finance_trading" in prompt
+    assert scenario.task_summary in prompt
+
+
+def test_system_prompt_ml_domain() -> None:
+    scenario = generate_scenario(seed=10, template="ml_benchmark", difficulty="easy")
+    prompt = build_scientist_system_prompt(scenario)
+
+    assert "Domain: machine_learning" in prompt
+    assert scenario.task_summary in prompt
+
+
+def test_system_prompt_accepts_dict_input() -> None:
+    scenario = generate_scenario(seed=5, template="math_reasoning", difficulty="easy")
+    pack_dict = scenario.model_dump()
+
+    prompt = build_scientist_system_prompt(pack_dict)
+
+    assert "You are the Scientist agent" in prompt
+    assert scenario.task_summary in prompt
+    assert "Domain: mathematics" in prompt
+
+
+# --- System prompt: bounded-tool policy assertions ---
+
+
+def test_system_prompt_contains_bounded_tool_policy() -> None:
+    scenario = generate_scenario(seed=1, template="math_reasoning", difficulty="easy")
+    prompt = build_scientist_system_prompt(scenario)
+
+    assert "search_evidence" in prompt
+    assert "run_code_check" in prompt
+    assert "inspect_image" in prompt
+
+
+def test_system_prompt_bounded_tool_policy_rules() -> None:
+    scenario = generate_scenario(seed=1, template="ml_benchmark", difficulty="medium")
+    prompt = build_scientist_system_prompt(scenario)
+
+    assert "No unrestricted web browsing" in prompt
+    assert "No audio" in prompt
+    assert "do not override constraints" in prompt or "Tools do not override constraints" in prompt
+
+
+def test_system_prompt_bounded_tool_policy_present_in_all_domains() -> None:
+    for template in ("math_reasoning", "ml_benchmark", "finance_trading"):
+        scenario = generate_scenario(seed=42, template=template, difficulty="easy")
+        prompt = build_scientist_system_prompt(scenario)
+
+        assert "Bounded tool policy" in prompt, f"Missing in {template}"
+        assert "search_evidence" in prompt, f"Missing search_evidence in {template}"
+        assert "run_code_check" in prompt, f"Missing run_code_check in {template}"
+        assert "inspect_image" in prompt, f"Missing inspect_image in {template}"
+
+
+# --- System prompt: role-boundary assertions ---
+
+
+def test_system_prompt_contains_role_boundaries() -> None:
+    scenario = generate_scenario(seed=1, template="math_reasoning", difficulty="easy")
+    prompt = build_scientist_system_prompt(scenario)
+
+    assert "do not invent resources" in prompt
+    assert "do not assume access to hidden ground truth" in prompt.lower() or \
+           "hidden ground truth" in prompt
+
+
+def test_system_prompt_contains_output_contract() -> None:
+    scenario = generate_scenario(seed=1, template="math_reasoning", difficulty="easy")
+    prompt = build_scientist_system_prompt(scenario)
+
+    assert "Output contract" in prompt
+    assert "exactly one JSON object" in prompt
+    assert "no extra keys" in prompt
+
+
+# --- Observation formatter edge cases ---
+
+
+def test_format_observation_final_round() -> None:
+    obs = _base_observation(round_number=5, max_rounds=6)
+    result = format_scientist_observation(obs)
+
+    assert "Round 5 of 6" in result
+    assert "Respond with exactly one JSON" in result
+
+
+def test_format_observation_protocol_with_empty_lists() -> None:
+    protocol = Protocol(
+        sample_size=1,
+        controls=[],
+        technique="minimal_check",
+        duration_days=1,
+        required_equipment=[],
+        required_reagents=[],
+        rationale="Minimal protocol.",
+    )
+    obs = _base_observation(current_protocol=protocol, round_number=1)
+    result = format_scientist_observation(obs)
+
+    assert "Current protocol:" in result
+    assert "technique: minimal_check" in result
+    assert "controls: (none)" in result
+    assert "required_equipment: (none)" in result
+    assert "required_reagents: (none)" in result
+
+
+# --- Baseline: domain inference ---
+
+
+def test_baseline_scientist_infers_ml_domain() -> None:
+    obs = _base_observation(
+        paper_title="Reproducing CIFAR-10 accuracy with ResNet",
+        paper_method="Train on CIFAR dataset with GPU",
+        experiment_goal="Match the published benchmark accuracy.",
+    )
+    action = build_baseline_scientist_action(obs)
+
+    assert action.action_type is ScientistActionType.PROPOSE_PROTOCOL
+    assert action.technique == "published_split_replication"
+
+
+def test_baseline_scientist_infers_finance_domain() -> None:
+    obs = _base_observation(
+        paper_title="Offline backtest of SPY mean-reversion",
+        paper_method="Daily bar backtest with slippage modeling",
+        experiment_goal="Evaluate Sharpe ratio under drawdown limits.",
+    )
+    action = build_baseline_scientist_action(obs)
+
+    assert action.action_type is ScientistActionType.PROPOSE_PROTOCOL
+    assert action.technique == "offline_backtest_workflow"
+
+
+def test_baseline_scientist_infers_math_domain() -> None:
+    obs = _base_observation(
+        paper_title="Planning a proof of AM-GM inequality",
+        paper_method="Algebraic manipulation with induction.",
+        experiment_goal="Verify the proof outline.",
+    )
+    action = build_baseline_scientist_action(obs)
+
+    assert action.action_type is ScientistActionType.PROPOSE_PROTOCOL
+    assert action.technique == "structured_proof_outline"
+
+
+# --- Baseline: forced accept at final round ---
+
+
+def test_baseline_scientist_accepts_at_final_round_even_with_blocker() -> None:
+    obs = _base_observation(
+        current_protocol=Protocol(
+            sample_size=20,
+            controls=["ctrl"],
+            technique="method_a",
+            duration_days=5,
+            required_equipment=[],
+            required_reagents=[],
+            rationale="Full scope plan.",
+        ),
+        conversation_history=[
+            ConversationEntry(
+                role="lab_manager",
+                message="Budget is tight and equipment is booked.",
+                round_number=4,
+                action_type="suggest_alternative",
+            ),
+        ],
+        round_number=5,
+        max_rounds=6,
+    )
+
+    action = build_baseline_scientist_action(obs)
+
+    assert action.action_type is ScientistActionType.ACCEPT

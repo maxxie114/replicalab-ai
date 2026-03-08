@@ -1,4 +1,9 @@
-# ReplicaLab server image (port 7860)
+# Root-level Dockerfile for Hugging Face Spaces deployment.
+#
+# HF Spaces with sdk:docker expects the Dockerfile at the repo root.
+# This is identical to server/Dockerfile. Keep them in sync or remove
+# server/Dockerfile once the team standardizes on this root copy.
+
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -20,7 +25,7 @@ COPY pyproject.toml ./
 # Install the replicalab package (non-editable, deps already present)
 RUN pip install --no-cache-dir . --no-deps
 
-# Run as a non-root user inside the container
+# Run as a non-root user inside the container (HF Spaces requirement)
 RUN useradd -m -u 1000 appuser && chown -R appuser /app
 USER appuser
 

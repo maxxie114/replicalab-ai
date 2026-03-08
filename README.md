@@ -1,3 +1,13 @@
+---
+title: ReplicaLab
+emoji: 🧪
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # ReplicaLab
 
 **A multi-agent constraint-aware planning environment built on [OpenEnv](https://github.com/openenv)**
@@ -8,11 +18,13 @@ ReplicaLab trains an agent to negotiate high-quality plans under real constraint
 
 ## Current Build Status
 
-- The repository is still in the foundation stage.
-- The Python package foundation is verified through editable install plus shared-model import checks.
+- The repository is now past the foundation stage and has a working real environment plus deterministic judge pipeline.
+- The Python package foundation is verified through editable install plus full test-suite checks.
 - Shared contracts currently live in `replicalab/models.py`, with the signed-off freeze in `docs/fnd08_frozen_json_contract.md`.
-- A stub-backed FastAPI and WebSocket server scaffold now exists in `server/app.py`, while real environment wiring is still in progress.
-- `openenv.yaml` now exists and passes local OpenEnv validation.
+- `server/app.py` now serves the real `ReplicaLabEnv` by default, with the legacy stub retained only as a fallback safety path.
+- `openenv.yaml` exists and passes local OpenEnv validation.
+- Local Docker validation has been completed for the server image on port `7860`.
+- Hugging Face Spaces Docker metadata is present in this README and the root `Dockerfile`; live hosted verification is still pending.
 - The frozen outer contract remains stable while the internal scenario engine moves toward a normalized scenario pack.
 - The planned Lab Manager path is hybrid: model-backed negotiation language plus deterministic feasibility grounding.
 
