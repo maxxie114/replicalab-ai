@@ -6,32 +6,28 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ## Current status
 
-- `FND 04` complete
-- `FND 08` complete
-- `FND 09` complete
-- `MOD 01` complete
-- `MOD 02` complete
-- `MOD 03` complete
-- The Kian lane should now move to config, scenario seeding, validation, the remaining state-model pass, and the normalized scenario layer
+- `FND 04`, `FND 08`, `FND 09`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`, `MOD 05`, `MOD 11`, and `MOD 12` are complete
+- Shared `AGT 05` is now complete, so the deterministic feasibility layer exists for both the Lab Manager path and the later judge feasibility score
+- `SCN 01` to `SCN 10` are also complete, so the deterministic scenario layer now exists in code
+- The Kian lane no longer needs to start with scenario seeding or template scaffolding
+- The remaining high-leverage work is semantic edge-case validation, booking conflicts, judge logic, and the real environment
 
 ---
 
 ## Recommended execution order
 
-1. `MOD 12` -- creates one shared config module before env and scoring files branch out
-2. `SCN 01` -- starts the deterministic scenario utility chain
-3. `MOD 05` -- converts the frozen action contract into reusable protocol validation
-4. `MOD 04` -- upgrades state and replay models to match the typed observation path
-5. `SCN 02` -- defines the normalized scenario pack below the stable outer contract
-6. `MOD 11` -- finalizes `StepResult` now that the observation wrapper is typed
+1. `MOD 06` -- extend the new semantic validation layer to catch impossible edge cases early
+2. `SCN 13` -- deepen the normalized scenario layer with booking and scheduling conflicts
+3. `JDG 01`, `JDG 02`, and `JDG 03` -- start the deterministic reward components that are now unblocked
+4. `JDG 04` and `JDG 05` -- complete the reward pipeline once the component scorers exist
+5. `ENV 01` and `ENV 02` -- once typed state and core scoring pieces are in place, start the real OpenEnv environment path
 
 ---
 
 ## Why this order
 
-- `MOD 12` and `SCN 01` are the cleanest foundational follow-ons and reduce future magic numbers and seed drift.
-- `MOD 05` is already unblocked and should land before higher-level environment logic starts trusting protocol payloads.
-- `MOD 04` should land before `SCN 02` so the normalized scenario pack can be threaded into `EpisodeState` cleanly rather than retrofitted later.
-- `SCN 02` is now the key architecture task because it formalizes the normalized pack that mathematics, machine learning, and finance scenarios all have to emit while keeping the outer contract unchanged.
-- `MOD 11` now follows naturally from the typed observation work in `MOD 03`.
-
+- `MOD 06` is the smallest remaining contract-hardening task and builds directly on the completed `MOD 05` validator.
+- `SCN 13` is the remaining scenario-layer depth task; it builds naturally on the completed normalized resource model.
+- `JDG 01` and `JDG 03` can start immediately because their only formal prerequisite, `SCN 08`, is already complete.
+- `JDG 02` is now also unblocked because the deterministic feasibility checker from `AGT 05` exists.
+- The environment path can now start from typed state and step-result contracts instead of loose dict-based placeholders.

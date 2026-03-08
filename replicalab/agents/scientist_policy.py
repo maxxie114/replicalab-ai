@@ -3,21 +3,73 @@
 MOD 09 introduced strict parsing from raw model output into
 ``ScientistAction``. AGT 01 adds the first domain-neutral system prompt
 builder so prompt assembly can be driven by the normalized scenario pack
-instead of hard-coded domain text.
+instead of hard-coded domain text. AGT 02 adds the per-turn observation
+formatter that converts a ``ScientistObservation`` into the user message
+sent to the LLM each round. AGT 03 wraps the formatter and parser in a
+retry loop with error-specific correction prompts and exposed telemetry.
+AGT 04 adds a deterministic baseline Scientist so smoke tests can run
+without a trained model.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import re
-from typing import Any, Literal, Mapping
+from typing import Any, Callable, Literal, Mapping
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
-from replicalab.models import ScientistAction, ScientistActionType
+from replicalab.models import (
+    ConversationEntry,
+    Protocol,
+    ScientistAction,
+    ScientistActionType,
+    ScientistObservation,
+)
 from replicalab.scenarios import NormalizedScenarioPack
 
+log = logging.getLogger(__name__)
+
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.IGNORECASE | re.DOTALL)
+_ML_HINTS = (
+    "benchmark",
+    "dataset",
+    "accuracy",
+    "tokenizer",
+    "train",
+    "gpu",
+    "cifar",
+    "ag news",
+    "bert",
+    "resnet",
+)
+_FINANCE_HINTS = (
+    "backtest",
+    "drawdown",
+    "sharpe",
+    "trading",
+    "slippage",
+    "capital",
+    "spy",
+    "qqq",
+    "futures",
+)
+_BLOCKER_HINTS = (
+    "booked",
+    "unavailable",
+    "not available",
+    "exceeds",
+    "tight",
+    "limited",
+    "deadline",
+    "budget",
+    "cost",
+    "drawdown",
+    "slippage",
+    "risk",
+    "conflict",
+)
 
 
 class ScientistOutputParseError(ValueError):
@@ -46,6 +98,137 @@ class ScientistOutputParseError(ValueError):
             "raw_text": self.raw_text,
             "parsed_payload": self.parsed_payload,
         }
+
+
+GenerateFn = Callable[[list[dict[str, str]]], str]
+"""Type alias for the injected model backend.
+
+Takes a list of chat messages (each ``{"role": ..., "content": ...}``)
+and returns the raw model output string.
+"""
+
+
+class RetryMetadata(BaseModel):
+    """Telemetry from a single ``call_scientist_with_retry`` invocation.
+
+    Exposed so training metrics (TRN 15) and eval (OBS 09) can track
+    retry rates and failure modes without hidden state.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_count: int
+    retry_count: int
+    last_error_code: str | None = None
+    last_error_message: str | None = None
+
+
+class ScientistCallResult(BaseModel):
+    """Bundled action and retry telemetry from ``call_scientist_with_retry``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: ScientistAction
+    metadata: RetryMetadata
+
+
+def call_scientist_with_retry(
+    generate_fn: GenerateFn,
+    system_prompt: str,
+    observation: ScientistObservation,
+    *,
+    max_retries: int = 2,
+) -> ScientistCallResult:
+    """Call an LLM to produce a ``ScientistAction`` with parser-driven retries.
+
+    On parse failure the error is fed back to the model as a correction
+    prompt and the model is asked to try again, up to *max_retries* times.
+    No fields are silently auto-fixed.  If all attempts fail the last
+    ``ScientistOutputParseError`` is raised.
+
+    Parameters
+    ----------
+    generate_fn:
+        Injected model backend.  Called with a list of chat message dicts
+        and must return the raw text output.  No Qwen/API-specific logic
+        lives here — any callable with the right signature works.
+    system_prompt:
+        The system prompt built by ``build_scientist_system_prompt``.
+    observation:
+        The current-turn ``ScientistObservation``.
+    max_retries:
+        Maximum number of correction attempts after the first call.
+        Default is 2 (so up to 3 total attempts).
+    """
+
+    user_message = format_scientist_observation(observation)
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message},
+    ]
+
+    last_error: ScientistOutputParseError | None = None
+    total_attempts = 1 + max_retries
+
+    for attempt in range(1, total_attempts + 1):
+        raw_text = generate_fn(messages)
+
+        try:
+            action = parse_scientist_output(raw_text)
+            return ScientistCallResult(
+                action=action,
+                metadata=RetryMetadata(
+                    attempt_count=attempt,
+                    retry_count=attempt - 1,
+                    last_error_code=last_error.code if last_error else None,
+                    last_error_message=last_error.message if last_error else None,
+                ),
+            )
+        except ScientistOutputParseError as exc:
+            last_error = exc
+            log.info(
+                "Scientist parse failure attempt=%d/%d code=%s",
+                attempt,
+                total_attempts,
+                exc.code,
+            )
+
+            if attempt < total_attempts:
+                messages.append({"role": "assistant", "content": raw_text})
+                messages.append({
+                    "role": "user",
+                    "content": _build_correction_prompt(exc),
+                })
+
+    assert last_error is not None  # guaranteed by loop structure
+    raise last_error
+
+
+def _build_correction_prompt(error: ScientistOutputParseError) -> str:
+    """Build an error-specific correction message for the model."""
+
+    suffix = (
+        "Return exactly one JSON object with all ScientistAction fields. "
+        "No markdown fences, no prose — only the JSON object."
+    )
+
+    if error.code == "no_json":
+        return (
+            "Your previous response did not contain a JSON object. " + suffix
+        )
+
+    if error.code == "invalid_json":
+        return (
+            f"Your previous response contained malformed JSON: {error.message} "
+            + suffix
+        )
+
+    # invalid_action
+    return (
+        "Your previous response contained valid JSON but it failed "
+        f"ScientistAction validation: {error.message} "
+        "Fix the validation error and return a corrected JSON object. " + suffix
+    )
 
 
 def build_scientist_system_prompt(
@@ -99,6 +282,109 @@ def build_scientist_system_prompt(
     ]
 
     return "\n\n".join(section for section in sections if section)
+
+
+def format_scientist_observation(obs: ScientistObservation) -> str:
+    """Format a per-turn ``ScientistObservation`` into a user-message string.
+
+    The output is deterministic and side-effect free.  Sections appear in a
+    fixed order so downstream tests can assert on stable labels.
+    """
+
+    sections: list[str] = []
+
+    # Round status
+    sections.append(f"Round {obs.round_number} of {obs.max_rounds}.")
+
+    # Paper / task summary
+    sections.append(
+        f"Paper: {obs.paper_title}\n"
+        f"Hypothesis: {obs.paper_hypothesis}\n"
+        f"Method: {obs.paper_method}\n"
+        f"Key finding: {obs.paper_key_finding}\n"
+        f"Goal: {obs.experiment_goal}"
+    )
+
+    # Conversation history
+    if obs.conversation_history:
+        sections.append(
+            "Conversation so far:\n" + _render_history(obs.conversation_history)
+        )
+    else:
+        sections.append("No conversation history yet. You are making the first move.")
+
+    # Current protocol snapshot
+    if obs.current_protocol is not None:
+        sections.append(
+            "Current protocol:\n" + _render_protocol(obs.current_protocol)
+        )
+    else:
+        sections.append("No protocol has been proposed yet.")
+
+    allowed_actions = ", ".join(action.value for action in ScientistActionType)
+    sections.append(
+        "ScientistAction schema reminder:\n"
+        f"  allowed action_type values: {allowed_actions}\n"
+        "  include all ScientistAction fields in every response: action_type, "
+        "sample_size, controls, technique, duration_days, required_equipment, "
+        "required_reagents, questions, rationale\n"
+        "  use empty lists, zero values, or empty strings for fields that do "
+        "not apply to the selected action_type"
+    )
+
+    # Closing instruction
+    sections.append(
+        "Respond with exactly one JSON object containing your next "
+        "ScientistAction and no extra text."
+    )
+
+    return "\n\n".join(sections)
+
+
+def build_baseline_scientist_action(
+    observation: ScientistObservation,
+) -> ScientistAction:
+    """Return a deterministic non-LLM Scientist action for smoke tests.
+
+    The baseline follows a conservative policy:
+    - propose a valid protocol when no protocol exists yet
+    - revise the current protocol if the latest Lab Manager message contains
+      an obvious feasibility blocker
+    - otherwise accept the current protocol to complete the episode cleanly
+    """
+
+    latest_feedback = _latest_lab_manager_feedback(observation)
+
+    if observation.current_protocol is not None:
+        if observation.round_number >= max(1, observation.max_rounds - 1):
+            return _build_accept_action()
+        if latest_feedback and _feedback_indicates_blocker(latest_feedback):
+            return _build_revision_action(observation.current_protocol, latest_feedback)
+        return _build_accept_action()
+
+    return _build_initial_protocol_action(observation)
+
+
+def _render_history(entries: list[ConversationEntry]) -> str:
+    lines: list[str] = []
+    for entry in entries:
+        tag = entry.role.upper()
+        action_suffix = f" [{entry.action_type}]" if entry.action_type else ""
+        lines.append(f"  [{tag} r{entry.round_number}{action_suffix}]: {entry.message}")
+    return "\n".join(lines)
+
+
+def _render_protocol(protocol: Protocol) -> str:
+    lines = [
+        f"  technique: {protocol.technique}",
+        f"  sample_size: {protocol.sample_size}",
+        f"  controls: {', '.join(protocol.controls) if protocol.controls else '(none)'}",
+        f"  duration_days: {protocol.duration_days}",
+        f"  required_equipment: {', '.join(protocol.required_equipment) if protocol.required_equipment else '(none)'}",
+        f"  required_reagents: {', '.join(protocol.required_reagents) if protocol.required_reagents else '(none)'}",
+        f"  rationale: {protocol.rationale}",
+    ]
+    return "\n".join(lines)
 
 
 def parse_scientist_output(raw_text: str) -> ScientistAction:
@@ -288,3 +574,126 @@ def _render_substitutions(pack: NormalizedScenarioPack) -> str:
             )
         )
     return "\n".join(lines)
+
+
+def _build_accept_action() -> ScientistAction:
+    return ScientistAction(
+        action_type=ScientistActionType.ACCEPT,
+        sample_size=0,
+        controls=[],
+        technique="",
+        duration_days=0,
+        required_equipment=[],
+        required_reagents=[],
+        questions=[],
+        rationale="",
+    )
+
+
+def _build_initial_protocol_action(
+    observation: ScientistObservation,
+) -> ScientistAction:
+    domain = _infer_domain(observation)
+    defaults = _baseline_defaults_for_domain(domain)
+
+    return ScientistAction(
+        action_type=ScientistActionType.PROPOSE_PROTOCOL,
+        sample_size=defaults["sample_size"],
+        controls=list(defaults["controls"]),
+        technique=defaults["technique"],
+        duration_days=defaults["duration_days"],
+        required_equipment=[],
+        required_reagents=[],
+        questions=[],
+        rationale=(
+            f"Baseline proposal for {observation.paper_title}: "
+            f"use a concise {defaults['technique']} plan aligned to the stated goal "
+            f"'{observation.experiment_goal}'."
+        ),
+    )
+
+
+def _build_revision_action(
+    protocol: Protocol,
+    feedback: ConversationEntry,
+) -> ScientistAction:
+    reduced_sample_size = max(1, protocol.sample_size // 2) if protocol.sample_size else 1
+    reduced_duration = max(1, protocol.duration_days - 1) if protocol.duration_days else 1
+    revised_controls = list(protocol.controls) or ["fallback_review"]
+
+    return ScientistAction(
+        action_type=ScientistActionType.REVISE_PROTOCOL,
+        sample_size=reduced_sample_size,
+        controls=revised_controls,
+        technique=protocol.technique,
+        duration_days=reduced_duration,
+        required_equipment=list(protocol.required_equipment),
+        required_reagents=list(protocol.required_reagents),
+        questions=[],
+        rationale=(
+            "Baseline revision reduces scope to address the latest Lab Manager "
+            f"concern: {feedback.message}"
+        ),
+    )
+
+
+def _latest_lab_manager_feedback(
+    observation: ScientistObservation,
+) -> ConversationEntry | None:
+    for entry in reversed(observation.conversation_history):
+        if entry.role == "lab_manager":
+            return entry
+    return None
+
+
+def _feedback_indicates_blocker(feedback: ConversationEntry) -> bool:
+    """Return True only when the lab manager is flagging a real blocker.
+
+    An ``accept`` action_type means the protocol passed — even if the
+    explanation text mentions words like "budget" or "schedule".
+    """
+    if feedback.action_type in ("accept", "report_feasibility"):
+        return False
+    lowered = feedback.message.lower()
+    return any(token in lowered for token in _BLOCKER_HINTS)
+
+
+def _infer_domain(observation: ScientistObservation) -> str:
+    haystack = " ".join(
+        [
+            observation.paper_title,
+            observation.paper_hypothesis,
+            observation.paper_method,
+            observation.paper_key_finding,
+            observation.experiment_goal,
+        ]
+    ).lower()
+
+    if any(token in haystack for token in _ML_HINTS):
+        return "machine_learning"
+    if any(token in haystack for token in _FINANCE_HINTS):
+        return "finance_trading"
+    return "mathematics"
+
+
+def _baseline_defaults_for_domain(domain: str) -> dict[str, Any]:
+    if domain == "machine_learning":
+        return {
+            "sample_size": 8,
+            "controls": ["published_split_check", "heldout_evaluation"],
+            "technique": "published_split_replication",
+            "duration_days": 2,
+        }
+    if domain == "finance_trading":
+        return {
+            "sample_size": 12,
+            "controls": ["drawdown_guardrail", "offline_evaluation_split"],
+            "technique": "offline_backtest_workflow",
+            "duration_days": 2,
+        }
+    return {
+        "sample_size": 4,
+        "controls": ["equality_case_check", "final_verification_pass"],
+        "technique": "structured_proof_outline",
+        "duration_days": 1,
+    }

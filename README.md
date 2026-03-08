@@ -131,6 +131,12 @@ pytest tests/
 
 RL training improves the Scientist agent's ability to negotiate effective, feasible plans.
 
+### Selected base model
+
+- **Primary Scientist model:** `Qwen3-4B`
+- **Stretch fallback:** `Qwen3-8B`
+- **Decision record:** `docs/agt11_scientist_model_selection.md`
+
 ### Quick Start (Google Colab)
 
 1. Open `notebooks/train_colab.ipynb` in Google Colab

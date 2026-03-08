@@ -6,41 +6,47 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ## Current status
 
-- `FND 04` is complete in `replicalab/models.py`
 - `FND 08` is complete in `docs/fnd08_frozen_json_contract.md`
-- `FND 09` is complete in `openenv.yaml`
-- `MOD 01` is now complete, so `MOD 09` is the next Ayush-owned task ready to execute
-- `MOD 03` is now complete, so the observation side of `AGT 02` is ready once `AGT 01` exists
-- Prompt and parser work should now be built from normalized scenario data, not hard-coded per domain
-- The Lab Manager lane is now hybrid: deterministic feasibility truth plus model-backed response synthesis
-- After `MOD 09`, the next blocked Ayush-side step remains `SCN 11` once `SCN 09` lands
+- `MOD 09` is complete in `replicalab/agents/scientist_policy.py`
+- `SCN 11` is complete in `tests/fixtures/golden_scenarios.json`
+- `AGT 01` is complete in `replicalab/agents/scientist_policy.py`
+- `AGT 02` is complete in `replicalab/agents/scientist_policy.py`
+- `AGT 04` is complete in `replicalab/agents/scientist_policy.py`
+- `AGT 05` is complete in `replicalab/agents/lab_manager_policy.py`
+- `AGT 06` is complete in `replicalab/agents/lab_manager_policy.py`
+- `AGT 07` is complete in `replicalab/agents/lab_manager_policy.py`
+- `AGT 11` is complete in `docs/agt11_scientist_model_selection.md`
+- The scenario prerequisite bundle (`SCN 01` to `SCN 10`) is now present in the repo, so Ayush prompt work is backed by real normalized scenario packs instead of placeholders
+- The next fully unblocked Ayush task is `AGT 03`
+- `AGT 03` is now the highest-leverage next step because the formatter and parser are both in place, so the retry loop can complete the Scientist action path end-to-end
+- `AGT 10` now waits only on `JDG 06`
 
 ---
 
 ## Epic E02. Domain Models
 
-- [ ] **MOD 09** | Add output parser that maps model text to `ScientistAction` | 0.75h | Depends: MOD 01 | Status: unblocked and ready now
+- [x] **MOD 09** | Add output parser that maps model text to `ScientistAction` | 0.75h | Depends: MOD 01 | Status: completed on 2026-03-08
 
 ---
 
 ## Epic E03. Scenario Engine
 
-- [ ] **SCN 11** | Create hand checked golden scenarios for prompt testing | 0.75h | Depends: SCN 09
+- [x] **SCN 11** | Create hand checked golden scenarios for prompt testing | 0.75h | Depends: SCN 09 | Status: completed on 2026-03-08
 
 ---
 
 ## Epic E04. Scientist Agent and Lab Manager Policy
 
-- [ ] **AGT 01** | Draft domain-neutral system prompt for Scientist role from normalized scenario data | 0.75h | Depends: MOD 01, SCN 11
-- [ ] **AGT 02** | Build observation to prompt formatting helper from normalized scenario-derived observations | 0.75h | Depends: AGT 01, MOD 03
-- [ ] **AGT 03** | Add parse plus retry strategy for malformed model output | 0.75h | Depends: MOD 09, AGT 02
-- [ ] **AGT 04** | Build baseline heuristic Scientist for non trained smoke tests | 1h | Depends: AGT 02
-- [ ] **AGT 05** | Implement deterministic feasibility checker over normalized constraints and resources (shared with Person A) | 1.25h | Depends: SCN 07, MOD 05
-- [ ] **AGT 06** | Implement alternative suggestion logic from allowed substitutions and tradeoffs | 1h | Depends: AGT 05, SCN 08
-- [ ] **AGT 07** | Add model-backed Lab Manager response synthesis from checker output | 0.75h | Depends: AGT 05
+- [x] **AGT 01** | Draft domain-neutral system prompt for Scientist role from normalized scenario data | 0.75h | Depends: MOD 01, SCN 11 | Status: completed on 2026-03-08
+- [x] **AGT 02** | Build observation to prompt formatting helper from normalized scenario-derived observations | 0.75h | Depends: AGT 01, MOD 03 | Status: completed on 2026-03-08
+- [x] **AGT 04** | Build baseline heuristic Scientist for non trained smoke tests | 1h | Depends: AGT 02 | Status: completed on 2026-03-08
+- [x] **AGT 05** | Implement deterministic feasibility checker over normalized constraints and resources (shared with Person A) | 1.25h | Depends: SCN 07, MOD 05 | Status: completed on 2026-03-08
+- [x] **AGT 06** | Implement alternative suggestion logic from allowed substitutions and tradeoffs | 1h | Depends: AGT 05, SCN 08 | Status: completed on 2026-03-08
+- [x] **AGT 07** | Add model-backed Lab Manager response synthesis from checker output | 0.75h | Depends: AGT 05 | Status: completed on 2026-03-08
+- [x] **AGT 11** | Select and document base model for Scientist training | 0.5h | Depends: AGT 01 | Status: completed on 2026-03-08
+- [ ] **AGT 03** | Add parse plus retry strategy for malformed model output | 0.75h | Depends: MOD 09, AGT 02 | Status: ready now
 - [ ] **AGT 08** | Add prompt formatting and parse tests | 0.75h | Depends: AGT 01 to AGT 04
 - [ ] **AGT 10** | Write domain-neutral prompt text files for all three roles | 0.75h | Depends: AGT 01, AGT 07, JDG 06
-- [ ] **AGT 11** | Select and document base model for Scientist training | 0.5h | Depends: AGT 01
 
 ---
 
@@ -82,7 +88,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ## Shared Tasks
 
-- [x] **FND 08** | Freeze JSON contract for actions and observations (with Person A) | 0.75h | Depends: FND 04 (done) | Status: completed and signed off
+- [x] **FND 08** | Freeze JSON contract for actions and observations (with Person A) | 0.75h | Depends: FND 04 | Status: completed and signed off
 
 ---
 
@@ -91,4 +97,6 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Metric | Value |
 |--------|-------|
 | Total tasks | 29 |
+| Completed | 10 |
+| Remaining | 19 |
 | Total estimated hours | 21.5h |
