@@ -18,9 +18,7 @@ interface CharacterStageProps {
 }
 
 function getActionFromMessage(msg?: NegotiationMessage): string | undefined {
-  if (!msg?.action) return undefined;
-  if ('action_type' in msg.action) return msg.action.action_type;
-  return undefined;
+  return msg?.action_type ?? undefined;
 }
 
 export default function CharacterStage({

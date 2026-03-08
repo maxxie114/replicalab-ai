@@ -55,10 +55,13 @@ export function roleLabel(role: string): string {
 export function verdictColor(verdict: string): string {
   switch (verdict) {
     case 'success':
+    case 'accept':
       return 'text-lab-manager';
     case 'partial':
+    case 'revise':
       return 'text-judge';
     case 'failure':
+    case 'reject':
       return 'text-destructive';
     default:
       return 'text-muted-foreground';

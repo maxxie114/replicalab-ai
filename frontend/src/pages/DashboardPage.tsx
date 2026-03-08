@@ -15,6 +15,15 @@ import { cn } from '@/lib/utils';
 
 const SCENARIOS = [
   {
+    id: 'math_reasoning',
+    label: 'Math Reasoning',
+    description: 'Replicate proof planning experiments with symbolic computation resources and verification constraints',
+    icon: BarChart3,
+    color: 'text-scientist',
+    bg: 'bg-scientist/10',
+    glare: 'rgba(59,130,246,0.15)',
+  },
+  {
     id: 'ml_benchmark',
     label: 'ML Benchmark',
     description: 'Replicate ViT fine-tuning results with GPU compute budget, seed constraints, and baseline reproduction',
@@ -22,6 +31,15 @@ const SCENARIOS = [
     color: 'text-primary',
     bg: 'bg-primary/10',
     glare: 'rgba(99,102,241,0.15)',
+  },
+  {
+    id: 'finance_trading',
+    label: 'Finance Trading',
+    description: 'Replicate offline trading strategy evaluation under market data access and computational budget constraints',
+    icon: FlaskConical,
+    color: 'text-lab-manager',
+    bg: 'bg-lab-manager/10',
+    glare: 'rgba(16,185,129,0.15)',
   },
 ];
 

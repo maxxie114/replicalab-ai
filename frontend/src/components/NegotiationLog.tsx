@@ -63,9 +63,7 @@ function MessageBubble({
   isLatest: boolean;
 }) {
   const isScientist = message.role === 'scientist';
-  const actionType = message.action && 'action_type' in message.action
-    ? message.action.action_type
-    : undefined;
+  const actionType = message.action_type ?? undefined;
 
   return (
     <motion.div
