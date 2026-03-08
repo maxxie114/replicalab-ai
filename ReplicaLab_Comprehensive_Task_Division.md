@@ -243,6 +243,8 @@ Create a stable shared codebase, contracts, and development workflow so all work
 - `FND 07` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
 - `FND 08` status: partial on 2026-03-08
 - `FND 08` draft completed by: `Person B (Ayush)`; Person A sign-off is still pending
+- `FND 11` status: completed on 2026-03-08
+- `FND 11` completed by: `Max (Person C)`; the branch import and standards validation were handled by `Person B (Ayush)`
 - `FND 10` status: completed on 2026-03-07
 - `FND 10` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
 - Completed scope for `FND 01`: created the agreed repo scaffold for `replicalab/`, `server/`, `frontend/`, `notebooks/`, and `tests/`, including the initial `replicalab/*` and `frontend/src/*` subfolders from the planned layout
@@ -253,12 +255,14 @@ Create a stable shared codebase, contracts, and development workflow so all work
 - Completed scope for `FND 07`: added GitHub PR and task-issue templates and tightened the repo workflow rules for branch naming and required tracking-doc updates
 - Completed scope for `FND 08` draft: added `docs/fnd08_frozen_json_contract.md` with field semantics, enums, nested object schemas, null-vs-empty rules, and canonical JSON examples for all 8 shared models
 - Completed scope for `FND 10`: created `replicalab/outputs/` with tracked `logs/`, `replays/`, and `plots/` subdirectories
+- Completed scope for `FND 11`: added `server/requirements.txt` with standalone runtime dependency pins and verified installation from that file
+- Partial backend scope imported from Max's PR: `server/app.py`, `server/Dockerfile`, and `docs/max/deployment.md` were normalized onto the current standards and validated locally against the stub env
 - Remaining work now unblocked by `FND 01`: `FND 03`
-- Newly unblocked by `FND 02`: `FND 11`
 - Newly unblocked by `FND 04`: `FND 08`, `FND 09`
 - Newly unblocked by `FND 06`: `DOC 01`
-- Remaining Epic E01 work still gated by follow-on dependencies: `FND 11`, `FND 12`, `FND 13`
+- Remaining Epic E01 work still gated by follow-on dependencies: `FND 12`, `FND 13`
 - Remaining completion item for `FND 08`: Person A review and sign-off
+- Remaining completion items for the imported backend scaffold: real-env integration, Docker validation, and final deployment verification
 
 ### User stories
 
@@ -282,7 +286,7 @@ As a team, we want agreed schemas and coding rules so integration risk stays low
 | FND 08 | E01.2 | Person A and B | docs or backlog file | Freeze JSON contract for actions and observations | FND 04 | 0.75h | all owners sign off and no blocking contract ambiguity remains | 🟡 Partial | — |
 | FND 09 | E01.2 | Person A | `openenv.yaml` | Create OpenEnv configuration file specifying environment class, action and observation types, and server settings | FND 04 | 0.5h | OpenEnv can discover and serve the environment using this config file | ⬜ Not started | — |
 | FND 10 | E01.1 | Person C | `replicalab/outputs/` | Create output directory structure with `logs/`, `replays/`, and `plots/` subdirectories and add to gitignore | FND 01 | 0.25h | output directories exist and generated files are not committed to git | ✅ Completed | Person B (Ayush) |
-| FND 11 | E01.1 | Person C | `server/requirements.txt` | Create server requirements file pinning FastAPI, uvicorn, websockets, and other runtime dependencies | FND 02 | 0.25h | server can be installed from requirements.txt independently of pyproject.toml | ⬜ Not started | — |
+| FND 11 | E01.1 | Person C | `server/requirements.txt` | Create server requirements file pinning FastAPI, uvicorn, websockets, and other runtime dependencies | FND 02 | 0.25h | server can be installed from requirements.txt independently of pyproject.toml | ✅ Completed | Max (Person C) |
 | FND 12 | E01.1 | Person C | `frontend/vite.config.ts` | Create Vite config with API and WebSocket proxy support for local development plus stable build output settings | FND 03 | 0.5h | frontend dev server can reach backend without manual URL edits and build output is predictable for Docker packaging | ⬜ Not started | — |
 | FND 13 | E01.1 | Person D | `frontend/tailwind.config.ts` and `frontend/postcss.config.js` | Install and configure Tailwind plus shadcn base setup, theme tokens, and global styles | FND 03 | 0.75h | frontend can use Tailwind utilities and shared shadcn compatible theme tokens without CSS pipeline errors | ⬜ Not started | — |
 
@@ -466,20 +470,20 @@ As the team, we want one click reproducible deployment to HF Spaces.
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| API 01 | E07.1 | Person C | `server/app.py` | Create FastAPI app shell and health endpoint | ENV 01 | 0.5h | `GET /health` returns 200 with simple payload | ⬜ Not started | — |
-| API 02 | E07.1 | Person C | `server/app.py` | Add `POST /reset` endpoint | ENV 02 | 0.75h | reset endpoint starts a new episode and returns initial observation | ⬜ Not started | — |
-| API 03 | E07.1 | Person C | `server/app.py` | Add `POST /step` endpoint | ENV 06 | 0.75h | step endpoint accepts valid action and returns step result | ⬜ Not started | — |
-| API 04 | E07.1 | Person C | `server/app.py` | Add `GET /scenarios` endpoint | SCN 03 to SCN 05 | 0.5h | endpoint lists available scenario families and difficulties | ⬜ Not started | — |
+| API 01 | E07.1 | Person C | `server/app.py` | Create FastAPI app shell and health endpoint | ENV 01 | 0.5h | `GET /health` returns 200 with simple payload | 🟡 Partial | — |
+| API 02 | E07.1 | Person C | `server/app.py` | Add `POST /reset` endpoint | ENV 02 | 0.75h | reset endpoint starts a new episode and returns initial observation | 🟡 Partial | — |
+| API 03 | E07.1 | Person C | `server/app.py` | Add `POST /step` endpoint | ENV 06 | 0.75h | step endpoint accepts valid action and returns step result | 🟡 Partial | — |
+| API 04 | E07.1 | Person C | `server/app.py` | Add `GET /scenarios` endpoint | SCN 03 to SCN 05 | 0.5h | endpoint lists available scenario families and difficulties | 🟡 Partial | — |
 | API 05 | E07.1 | Person C | `server/app.py` | Add `GET /replay/{episode_id}` endpoint | ENV 09 | 0.75h | endpoint returns completed log for valid episode id | ⬜ Not started | — |
-| API 06 | E07.1 | Person C | `server/app.py` | Add WebSocket session handler | ENV 06 | 1.25h | each connection gets isolated environment state and can reset plus step | ⬜ Not started | — |
-| API 07 | E07.1 | Person C | `server/app.py` | Add idle timeout and graceful disconnect cleanup | API 06, ENV 08 | 0.75h | stale connections close cleanly and environment closes without leak | ⬜ Not started | — |
-| API 08 | E07.2 | Person C | `server/Dockerfile` | Build Dockerfile with Python app startup on port 7860 | API 01 to API 07 | 0.75h | local Docker run serves app on port 7860 | ⬜ Not started | — |
+| API 06 | E07.1 | Person C | `server/app.py` | Add WebSocket session handler | ENV 06 | 1.25h | each connection gets isolated environment state and can reset plus step | 🟡 Partial | — |
+| API 07 | E07.1 | Person C | `server/app.py` | Add idle timeout and graceful disconnect cleanup | API 06, ENV 08 | 0.75h | stale connections close cleanly and environment closes without leak | 🟡 Partial | — |
+| API 08 | E07.2 | Person C | `server/Dockerfile` | Build Dockerfile with Python app startup on port 7860 | API 01 to API 07 | 0.75h | local Docker run serves app on port 7860 | 🟡 Partial | — |
 | API 09 | E07.2 | Person C | HF config files | Add Hugging Face Space metadata and deploy instructions | API 08 | 0.5h | Space config is valid for Docker app deployment | ⬜ Not started | — |
 | API 10 | E07.2 | Person C | deployment docs | Deploy live Space and verify health, reset, and step | API 09 | 1h | live Space responds successfully to health and one end to end episode | ⬜ Not started | — |
 | API 11 | E07.1 | Person C | tests | Add server endpoint tests and WebSocket smoke test | API 01 to API 07 | 1h | local server tests pass for health, reset, step, invalid payload, and ws connect | ⬜ Not started | — |
 | API 12 | E07.2 | Person D | docs | Capture deployment screenshots and public link for README | API 10 | 0.25h | README ready screenshots and live link are available | ⬜ Not started | — |
-| API 13 | E07.1 | Person C | `server/app.py` | Add CORS middleware configuration for frontend origins in dev and production | API 01 | 0.25h | frontend on localhost:5173 and HF Space origin can reach the API without CORS errors | ⬜ Not started | — |
-| API 14 | E07.1 | Person C | `server/app.py` | Add REST session management so each user gets isolated environment state | API 02, API 03 | 0.75h | two concurrent REST users do not share or corrupt each other's episode state | ⬜ Not started | — |
+| API 13 | E07.1 | Person C | `server/app.py` | Add CORS middleware configuration for frontend origins in dev and production | API 01 | 0.25h | frontend on localhost:5173 and HF Space origin can reach the API without CORS errors | 🟡 Partial | — |
+| API 14 | E07.1 | Person C | `server/app.py` | Add REST session management so each user gets isolated environment state | API 02, API 03 | 0.75h | two concurrent REST users do not share or corrupt each other's episode state | 🟡 Partial | — |
 | API 15 | E07.2 | Person C | HF Space repo | Create HF Space README.md with YAML frontmatter specifying `sdk: docker`, `app_port: 7860`, title, and emoji | API 08 | 0.25h | HF Space config is valid and Space launches correctly from the metadata | ⬜ Not started | — |
 | API 16 | E07.2 | Person C | `server/Dockerfile` | Configure Docker to build frontend and serve static assets from FastAPI in a single container | API 08, UI 10 | 0.75h | single Docker container serves both API and frontend on port 7860 | ⬜ Not started | — |
 | API 17 | E07.2 | Person C | deployment docs | Document secrets and API key management for Scientist LLM access in deployment and notebook | API 09 | 0.5h | team knows how to set API keys in HF Space secrets, local env, and Colab secrets | ⬜ Not started | — |
@@ -576,7 +580,7 @@ As a judge, I want the same seeded scenario to be replayable.
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | OBS 01 | E10.1 | Person C | `replicalab/utils/logging.py` | Standardize episode log schema for transcript, state snapshots, and scores | ENV 09 | 0.5h | every completed episode log contains the same required fields | ⬜ Not started | — |
-| OBS 02 | E10.1 | Person C | logging config | Add local log levels and readable console formatting | API 01 | 0.5h | debug logs can be toggled without code edits | ⬜ Not started | — |
+| OBS 02 | E10.1 | Person C | logging config | Add local log levels and readable console formatting | API 01 | 0.5h | debug logs can be toggled without code edits | 🟡 Partial | — |
 | OBS 03 | E10.1 | Person C | replay utilities | Add episode id generation and file naming conventions | OBS 01 | 0.25h | logs never overwrite and are easy to locate | ⬜ Not started | — |
 | OBS 04 | E10.2 | Person A | tests | Add deterministic replay test using seed and action sequence | ENV 10 | 0.75h | replay of same seed and actions matches prior state sequence | ⬜ Not started | — |
 | OBS 05 | E10.2 | Person D | UI | Surface episode id and replay link in UI | API 05, UI 08 | 0.5h | user can easily capture or revisit a past episode | ⬜ Not started | — |

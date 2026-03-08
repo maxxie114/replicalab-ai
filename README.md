@@ -11,7 +11,8 @@ ReplicaLab tackles the **replication crisis** in science. Published protocols de
 - The repository is still in the foundation stage.
 - The Python package foundation is verified through editable install plus shared-model import checks.
 - Shared contracts currently live in `replicalab/models.py`, with the draft freeze in `docs/fnd08_frozen_json_contract.md`.
-- Frontend shell, server wiring, and `openenv.yaml` are still in progress.
+- A stub-backed FastAPI and WebSocket server scaffold now exists in `server/app.py`, while real environment wiring is still in progress.
+- Frontend shell and `openenv.yaml` are still in progress.
 
 ## Team Ownership
 
@@ -233,7 +234,7 @@ replicalab-ai/
 ### Docker
 
 ```bash
-docker build -t replicalab .
+docker build -f server/Dockerfile -t replicalab .
 docker run -p 7860:7860 replicalab
 ```
 
