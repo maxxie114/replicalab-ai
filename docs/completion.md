@@ -20,10 +20,10 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Metric | Value |
 |--------|-------|
 | Total tasks | 152 |
-| Completed | 107 |
+| Completed | 108 |
 | Partial / active | 0 |
-| Remaining | 45 |
-| **Completion rate** | **70.39%** |
+| Remaining | 44 |
+| **Completion rate** | **71.05%** |
 
 ### Completion by Person
 
@@ -31,7 +31,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 |--------|----------|----------------|----------------------|-----------|------|
 | Kian (Person A) | 49 (47 solo + 2 shared with B) | 1 shared sign-off (`FND 08`) | 48 (`FND 04`, `FND 09`, `MOD 01`, `MOD 02`, `MOD 03`, `MOD 04`, `MOD 05`, `MOD 06`, `MOD 08`, `MOD 11`, `MOD 12`, `SCN 01` to `SCN 10`, `SCN 13`, `AGT 05`, `AGT 09`, `ENV 01` to `ENV 08`, `ENV 10`, `ENV 11`, `JDG 01` to `JDG 06`, `JDG 08`, `JDG 11`, `OBS 04`, `TST 01` to `TST 05` done by Person B) | 0 | 100.00% |
 | Person B (Ayush) | 29 (27 solo + 2 shared with A) | 19 (`FND 08`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`, `AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`, `TRN 13`, `TRN 03`, `TRN 04`, `TRN 01`, `TRN 02`, `TRN 14`) | 0 | 10 | 65.52% |
-| Max (Person C) | 41 | 1 (`FND 11`) | 39 (done by Person B or Person D; `API 16`, `UI 11` by Kush) | 1 (`DOC 08`) | 97.56% |
+| Max (Person C) | 41 | 1 (`FND 11`) | 40 (done by Person B or Person D; `API 16`, `UI 11` by Kush) | 0 | **100%** |
 | Kush (Person D) | 32 | 4 (`UI 07`, `UI 10`, `UI 11`, `API 16`) | 1 (`FND 06` done by Person B) | 27 | 15.63% |
 | All (shared) | 3 | 2 (`FND 08`, `AGT 05`) | 0 | 1 | 66.67% |
 
@@ -50,8 +50,9 @@ to `SCN 10`, `SCN 13`, `AGT 09`, `ENV 01` to `ENV 09`, `ENV 10`, `ENV 11`,
 `API 15`, `API 17`, `API 18`, `API 19`, `OBS 01`, `OBS 02`, `OBS 03`, `OBS 04`,
 `OBS 07`, `OBS 09`, `TRN 11`) to keep the Kian, Max, and Kush dependency
 chain moving. All Person A and Person C implementation tasks are now complete
-except for 1 remaining Max task (`DOC 08`, blocked on `TRN 10`).
+All Person C (Max) tasks are now complete (41/41).
 `UI 07`, `UI 10`, `UI 11`, and `API 16` were completed by Kush (Person D).
+`DOC 08` was completed by Person B after verifying repo is public, no secrets tracked, and all required files present.
 Ayush's next fully unblocked tasks are `TRN 05` and `JDG 10`.
 
 ---
