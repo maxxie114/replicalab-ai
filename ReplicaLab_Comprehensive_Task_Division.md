@@ -295,12 +295,19 @@ Create a stable shared codebase, contracts, and development workflow so all work
 - Completed scope for `FND 09`: added `openenv.yaml` with OpenEnv manifest metadata plus the minimal repo wiring required for local OpenEnv validation (`openenv-core` dependency, `server` script entry point, `uv.lock`, and `server.app.main()`)
 - Completed scope for `FND 10`: created `replicalab/outputs/` with tracked `logs/`, `replays/`, and `plots/` subdirectories
 - Completed scope for `FND 11`: added `server/requirements.txt` with standalone runtime dependency pins and verified installation from that file
+- Completed scope for `FND 03`: imported the full React plus Vite frontend tree from Kush's branch onto `ayush`, including the app shell, pages, shared components, assets, and TypeScript config, and validated it with `npm --prefix frontend install` plus `npm --prefix frontend run build`
+- Completed scope for `FND 12`: imported `frontend/vite.config.ts` with local `/api` and `/ws` proxy support plus stable Vite build settings and validated the build on `ayush`
 - Partial backend scope imported from Max's PR: `server/app.py`, `server/Dockerfile`, and `docs/max/deployment.md` were normalized onto the current standards and validated locally against the stub env
-- Remaining work now unblocked by `FND 01`: `FND 03`
 - Newly unblocked by `FND 08`: `MOD 01`, `MOD 02`, `MOD 03`, `MOD 12`, `SCN 01`
 - Newly unblocked by `FND 06`: `DOC 01`
-- Remaining Epic E01 work still gated by follow-on dependencies: `FND 12`, `FND 13`
+- Newly unblocked by `FND 03`: `FND 13`, `UI 01`
+- Remaining Epic E01 work still gated by follow-on dependencies: `FND 13`
 - Remaining completion items for the imported backend scaffold: real-env integration, Docker validation, and final deployment verification
+- Completed scope for `SCN 01` to `SCN 10`: added deterministic seed utilities, normalized scenario-pack models, math / ML / finance template builders, difficulty scaling, hidden reference specs, allowed substitutions, and seeded scenario tests
+- Completed scope for `SCN 11`: added three fixed golden scenarios for deterministic prompt and manual checks under `tests/fixtures/golden_scenarios.json`
+- Completed scope for `AGT 01`: added a domain-neutral Scientist system prompt builder that renders role instructions, success criteria, mapped constraints, mapped resources, substitutions, and the strict JSON output contract from normalized scenario data
+- Newly unblocked by `SCN 11` and `AGT 01`: `AGT 02`, `AGT 11`, `TRN 04`, `TRN 08`
+- Remaining Epic E03 work after the scenario bundle: `SCN 12`, `SCN 13`
 
 ### User stories
 
@@ -316,7 +323,7 @@ As a team, we want agreed schemas and coding rules so integration risk stays low
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | FND 01 | E01.1 | Person C | repo root | Create repo structure and base folders from agreed layout | none | 0.5h | all top level folders exist and repo clones cleanly | ✅ Completed | Person B (Ayush) |
 | FND 02 | E01.1 | Person C | `pyproject.toml` | Add Python project config and dependencies placeholder | FND 01 | 0.5h | project installs locally without missing package errors for base modules | ✅ Completed | Person B (Ayush) |
-| FND 03 | E01.1 | Person C | `frontend/package.json` | Initialize React plus Vite frontend shell | FND 01 | 0.5h | `npm install` and dev server run successfully | ⬜ Not started | — |
+| FND 03 | E01.1 | Person C | `frontend/package.json` | Initialize React plus Vite frontend shell | FND 01 | 0.5h | `npm install` and dev server run successfully | ✅ Completed | Kush |
 | FND 04 | E01.2 | Person A | `replicalab/models.py` | Add empty Pydantic models and shared type names | FND 01 | 0.5h | import paths resolve for all placeholder models | ✅ Completed | Person B (Ayush) |
 | FND 05 | E01.2 | Person C | `.gitignore` and `.dockerignore` | Add ignore rules for Python, Node, logs, notebooks, and build artifacts. `.dockerignore` must explicitly exclude `.git`, `node_modules`, `notebooks/`, `tests/`, `__pycache__`, `.venv`, and output files to keep the Docker image lean | FND 01 | 0.25h | repo status stays clean after local run and build, and Docker build excludes non-runtime files | ✅ Completed | Person B (Ayush) |
 | FND 06 | E01.2 | Person D | `README.md` | Add temporary project stub with title, mission, team roles, and local setup placeholder | FND 01 | 0.5h | new contributor can understand repo purpose in under two minutes | ✅ Completed | Person B (Ayush) |
@@ -325,7 +332,7 @@ As a team, we want agreed schemas and coding rules so integration risk stays low
 | FND 09 | E01.2 | Person A | `openenv.yaml` | Create OpenEnv configuration file specifying environment class, action and observation types, and server settings | FND 04 | 0.5h | OpenEnv can discover and serve the environment using this config file | ✅ Completed | Person B (Ayush) |
 | FND 10 | E01.1 | Person C | `replicalab/outputs/` | Create output directory structure with `logs/`, `replays/`, and `plots/` subdirectories and add to gitignore | FND 01 | 0.25h | output directories exist and generated files are not committed to git | ✅ Completed | Person B (Ayush) |
 | FND 11 | E01.1 | Person C | `server/requirements.txt` | Create server requirements file pinning FastAPI, uvicorn, websockets, and other runtime dependencies | FND 02 | 0.25h | server can be installed from requirements.txt independently of pyproject.toml | ✅ Completed | Max (Person C) |
-| FND 12 | E01.1 | Person C | `frontend/vite.config.ts` | Create Vite config with API and WebSocket proxy support for local development plus stable build output settings | FND 03 | 0.5h | frontend dev server can reach backend without manual URL edits and build output is predictable for Docker packaging | ⬜ Not started | — |
+| FND 12 | E01.1 | Person C | `frontend/vite.config.ts` | Create Vite config with API and WebSocket proxy support for local development plus stable build output settings | FND 03 | 0.5h | frontend dev server can reach backend without manual URL edits and build output is predictable for Docker packaging | ✅ Completed | Kush |
 | FND 13 | E01.1 | Person D | `frontend/tailwind.config.ts` and `frontend/postcss.config.js` | Install and configure Tailwind plus shadcn base setup, theme tokens, and global styles | FND 03 | 0.75h | frontend can use Tailwind utilities and shared shadcn compatible theme tokens without CSS pipeline errors | ⬜ Not started | — |
 
 ---
@@ -343,11 +350,29 @@ Define the environment contracts cleanly so state, actions, and observations are
 - `MOD 02` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
 - `MOD 03` status: completed on 2026-03-08
 - `MOD 03` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `MOD 04` status: completed on 2026-03-08
+- `MOD 04` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `MOD 05` status: completed on 2026-03-08
+- `MOD 05` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `MOD 11` status: completed on 2026-03-08
+- `MOD 11` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `MOD 12` status: completed on 2026-03-08
+- `MOD 12` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `MOD 09` status: completed on 2026-03-08
 - Completed scope for `MOD 01`: replaced the placeholder `ScientistAction` with a strict enum-backed schema, required all frozen-contract fields, forbade unknown keys, rejected mixed-mode payloads, added conditional validation for proposal, revision, request-info, and accept modes, added focused schema tests, and patched the stub server so `accept` no longer overwrites the current protocol with default values
 - Completed scope for `MOD 02`: replaced the placeholder `LabManagerAction` with a strict enum-backed schema, required all frozen-contract fields, forbade unknown keys, enforced feasible-flag consistency across budget, equipment, reagent, schedule, and staff checks, rejected suggestion fields outside `suggest_alternative`, and added focused validation tests
 - Completed scope for `MOD 03`: introduced typed `ConversationEntry` and `Protocol` models, upgraded both observation branches to use typed nested structures with non-negative numeric constraints and stable keys, and verified dict-to-model coercion through the current stub server and focused tests
+- Completed scope for `MOD 04`: replaced the remaining loose `dict` state and replay fields with typed `Protocol`, `ConversationEntry`, and `RewardBreakdown` models, updated the stub runtime to construct those nested models explicitly, and added round-trip coverage for serialized state and logs
+- Completed scope for `MOD 05`: added deterministic semantic protocol validation in `replicalab/utils/validation.py` with `ValidationResult` and `validate_protocol(...)` checks for resource vocabulary, allowed substitutions, duration limits, required-element coverage, and obvious impossibilities against the normalized scenario pack
+- Completed scope for `MOD 11`: introduced typed `RewardBreakdown` and `StepInfo` models, upgraded `StepResult.info` to the reserved-key contract while still allowing debug metadata, and updated the stub runtime to build typed reward and step-info payloads explicitly
+- Completed scope for `MOD 12`: added `replicalab/config.py` as the shared constants module for default scenario, difficulty, round cap, budget cap, timeout values, stub reward, and API host or port defaults; updated the server and scenario builders to import those constants instead of repeating magic numbers
+- Completed scope for `MOD 09`: added `replicalab/agents/scientist_policy.py` with a raw-text parser that extracts JSON from plain text or fenced blocks, validates it into `ScientistAction`, and raises an explicit `ScientistOutputParseError` for missing JSON, invalid JSON, or schema failures; added focused parser tests and package exports
 - Newly unblocked by `MOD 01`: `MOD 05`, `MOD 09`
 - Newly unblocked by `MOD 03`: `MOD 04`, `MOD 11`
+- Newly unblocked by `MOD 04`: `MOD 07`, `ENV 01`
+- Newly unblocked by `MOD 05`: `MOD 06`, `AGT 05`
+- `MOD 11` does not introduce a new formal dependency edge by itself, but it stabilizes `StepResult` metadata for environment, API, replay, and training consumers
+- `MOD 09` does not fully unblock a new task by itself, but it removes one half of the blocker on `AGT 03`; `AGT 03` now only waits on `AGT 02`
 
 ### User stories
 
@@ -364,15 +389,15 @@ As the training loop, I need deterministic state serialization so episodes can b
 | MOD 01 | E02.1 | Person A | `replicalab/models.py` | Implement `ScientistAction` schema | FND 08 | 0.5h | valid scientist actions parse and invalid fields raise validation errors | ✅ Completed | Person B (Ayush) |
 | MOD 02 | E02.1 | Person A | `replicalab/models.py` | Implement `LabManagerAction` schema | FND 08 | 0.5h | valid lab manager actions parse and invalid fields raise validation errors | ✅ Completed | Person B (Ayush) |
 | MOD 03 | E02.1 | Person A | `replicalab/models.py` | Implement role specific `Observation` models | FND 08 | 0.75h | scientist and lab observations serialize to JSON with stable keys | ✅ Completed | Person B (Ayush) |
-| MOD 04 | E02.2 | Person A | `replicalab/models.py` | Implement `EpisodeState` and `EpisodeLog` models | MOD 03 | 0.75h | full state round trip serialize plus deserialize works | ⬜ Not started | — |
-| MOD 05 | E02.1 | Person A | `replicalab/utils/validation.py` | Add protocol validation for sample size, controls, duration, equipment vocab, reagent vocab | MOD 01 | 1h | invalid protocol examples are rejected with readable reasons | ⬜ Not started | — |
+| MOD 04 | E02.2 | Person A | `replicalab/models.py` | Implement `EpisodeState` and `EpisodeLog` models | MOD 03 | 0.75h | full state round trip serialize plus deserialize works | ✅ Completed | Person B (Ayush) |
+| MOD 05 | E02.1 | Person A | `replicalab/utils/validation.py` | Add protocol validation for sample size, controls, duration, equipment vocab, reagent vocab | MOD 01 | 1h | invalid protocol examples are rejected with readable reasons | ✅ Completed | Person B (Ayush) |
 | MOD 06 | E02.1 | Person A | `replicalab/utils/validation.py` | Add semantic validators for impossible plans such as zero sample size with positive controls | MOD 05 | 0.75h | semantic validator catches at least five invalid edge cases | ⬜ Not started | — |
 | MOD 07 | E02.2 | Person C | `replicalab/utils/logging.py` | Add state serialization helper for replay logs | MOD 04 | 0.5h | state logs can be written and loaded without loss | ⬜ Not started | — |
 | MOD 08 | E02.2 | Person A | tests | Write unit tests for schemas and validators | MOD 01 to MOD 07 | 1h | tests cover valid parse, invalid parse, and replay serialization | ⬜ Not started | — |
-| MOD 09 | E02.2 | Person B | `replicalab/agents/scientist_policy.py` | Add output parser that maps model text to `ScientistAction` | MOD 01 | 0.75h | parser returns structured action or explicit parse error | ⬜ Not started | — |
+| MOD 09 | E02.2 | Person B | `replicalab/agents/scientist_policy.py` | Add output parser that maps model text to `ScientistAction` | MOD 01 | 0.75h | parser returns structured action or explicit parse error | ✅ Completed | — |
 | MOD 10 | E02.2 | Person C | API docs | Publish schema examples for frontend and notebook clients | MOD 01 to MOD 04 | 0.5h | frontend and notebook can mock against shared sample payloads | ⬜ Not started | — |
-| MOD 11 | E02.1 | Person A | `replicalab/models.py` | Implement `StepResult` model with observation, reward, done flag, and info dict | MOD 03 | 0.5h | step result serializes cleanly and all consumers agree on its shape | ⬜ Not started | — |
-| MOD 12 | E02.2 | Person A | `replicalab/config.py` | Create environment configuration module with constants for max rounds, default difficulty, timeout duration, max budget, and round time limit | FND 08 | 0.5h | all modules import config from one place and no magic numbers remain in env or scoring code | ⬜ Not started | — |
+| MOD 11 | E02.1 | Person A | `replicalab/models.py` | Implement `StepResult` model with observation, reward, done flag, and info dict | MOD 03 | 0.5h | step result serializes cleanly and all consumers agree on its shape | ✅ Completed | Person B (Ayush) |
+| MOD 12 | E02.2 | Person A | `replicalab/config.py` | Create environment configuration module with constants for max rounds, default difficulty, timeout duration, max budget, and round time limit | FND 08 | 0.5h | all modules import config from one place and no magic numbers remain in env or scoring code | ✅ Completed | Person B (Ayush) |
 
 ---
 
@@ -393,17 +418,17 @@ As a judge, I want normalized constraints and resources so the environment tests
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| SCN 01 | E03.1 | Person A | `replicalab/utils/seed.py` | Implement deterministic RNG helper `seed_rng()` in dedicated seed utility module | FND 08 | 0.5h | same seed always yields the same random choices and seed module is importable from scenarios and env | ⬜ Not started | — |
-| SCN 02 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Define normalized scenario schema with task summary, success criteria, constraints, resources, allowed substitutions, and hidden reference spec | MOD 04 | 0.75h | all scenario builders return the same normalized top level structure and mapper-ready inputs | ⬜ Not started | — |
-| SCN 03 | E03.2 | Person A | `replicalab/scenarios/math_reasoning.py` | Implement mathematics template with theorem, proof-goal, tool, time, and review constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
-| SCN 04 | E03.2 | Person A | `replicalab/scenarios/ml_benchmark.py` | Implement ML benchmark template with dataset, compute, time, and evaluation constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
-| SCN 05 | E03.2 | Person A | `replicalab/scenarios/finance_trading.py` | Implement finance and trading planning template with risk, capital, slippage, and backtest constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
-| SCN 06 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Implement difficulty application for easy, medium, hard by mechanically altering constraints, resources, and conflicts | SCN 03 to SCN 05 | 1h | difficulty visibly changes the normalized scenario pack in a meaningful way | ⬜ Not started | — |
-| SCN 07 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement normalized constraint and resource generator for budget, time, compute, personnel, stock, and bookings | SCN 02 | 1.25h | no generated scenario contains contradictory constraints or resources | ⬜ Not started | — |
-| SCN 08 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement hidden reference spec and allowed substitutions per template | SCN 03 to SCN 05 | 1h | hidden reference clearly marks what is fixed versus flexible for deterministic scoring | ⬜ Not started | — |
-| SCN 09 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Implement `generate_scenario(seed, template, difficulty)` | SCN 01 to SCN 08 | 0.75h | function returns a full scenario with deterministic content | ⬜ Not started | — |
-| SCN 10 | E03.1 | Person A | tests | Add seeded generation tests and consistency tests | SCN 09 | 1h | same seed plus template returns same scenario and different seeds vary | ⬜ Not started | — |
-| SCN 11 | E03.2 | Person B | fixtures | Create hand checked golden scenarios for prompt testing | SCN 09 | 0.75h | three fixed scenarios are available for deterministic manual testing | ⬜ Not started | — |
+| SCN 01 | E03.1 | Person A | `replicalab/utils/seed.py` | Implement deterministic RNG helper `seed_rng()` in dedicated seed utility module | FND 08 | 0.5h | same seed always yields the same random choices and seed module is importable from scenarios and env | ✅ Completed | Person B (Ayush) |
+| SCN 02 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Define normalized scenario schema with task summary, success criteria, constraints, resources, allowed substitutions, and hidden reference spec | MOD 04 | 0.75h | all scenario builders return the same normalized top level structure and mapper-ready inputs | ✅ Completed | Person B (Ayush) |
+| SCN 03 | E03.2 | Person A | `replicalab/scenarios/math_reasoning.py` | Implement mathematics template with theorem, proof-goal, tool, time, and review constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ✅ Completed | Person B (Ayush) |
+| SCN 04 | E03.2 | Person A | `replicalab/scenarios/ml_benchmark.py` | Implement ML benchmark template with dataset, compute, time, and evaluation constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ✅ Completed | Person B (Ayush) |
+| SCN 05 | E03.2 | Person A | `replicalab/scenarios/finance_trading.py` | Implement finance and trading planning template with risk, capital, slippage, and backtest constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ✅ Completed | Person B (Ayush) |
+| SCN 06 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Implement difficulty application for easy, medium, hard by mechanically altering constraints, resources, and conflicts | SCN 03 to SCN 05 | 1h | difficulty visibly changes the normalized scenario pack in a meaningful way | ✅ Completed | Person B (Ayush) |
+| SCN 07 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement normalized constraint and resource generator for budget, time, compute, personnel, stock, and bookings | SCN 02 | 1.25h | no generated scenario contains contradictory constraints or resources | ✅ Completed | Person B (Ayush) |
+| SCN 08 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement hidden reference spec and allowed substitutions per template | SCN 03 to SCN 05 | 1h | hidden reference clearly marks what is fixed versus flexible for deterministic scoring | ✅ Completed | Person B (Ayush) |
+| SCN 09 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Implement `generate_scenario(seed, template, difficulty)` | SCN 01 to SCN 08 | 0.75h | function returns a full scenario with deterministic content | ✅ Completed | Person B (Ayush) |
+| SCN 10 | E03.1 | Person A | tests | Add seeded generation tests and consistency tests | SCN 09 | 1h | same seed plus template returns same scenario and different seeds vary | ✅ Completed | Person B (Ayush) |
+| SCN 11 | E03.2 | Person B | fixtures | Create hand checked golden scenarios for prompt testing | SCN 09 | 0.75h | three fixed scenarios are available for deterministic manual testing | ✅ Completed | — |
 | SCN 12 | E03.2 | Person D | docs | Write plain language scenario summaries for UI examples and README | SCN 03 to SCN 05 | 0.5h | each template has a clean one paragraph explanation for judges | ⬜ Not started | — |
 | SCN 13 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement shared booking and scheduling data model for GPUs, rooms, or equipment with time slot conflicts and duration | SCN 07 | 1h | constraint generator can produce realistic booking conflicts across domains and the Lab Manager can check availability | ⬜ Not started | — |
 
@@ -426,17 +451,17 @@ As the Lab Manager, I want grounded negotiation plus deterministic feasibility c
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| AGT 01 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Draft domain-neutral system prompt for Scientist role from normalized scenario data | MOD 01, SCN 11 | 0.75h | prompt clearly explains role, mapped constraints, and JSON output contract | ⬜ Not started | — |
-| AGT 02 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build observation to prompt formatting helper from normalized scenario-derived observations | AGT 01, MOD 03 | 0.75h | formatted prompt includes task info, history, and action schema consistently | ⬜ Not started | — |
+| AGT 01 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Draft domain-neutral system prompt for Scientist role from normalized scenario data | MOD 01, SCN 11 | 0.75h | prompt clearly explains role, mapped constraints, and JSON output contract | ✅ Completed | — |
+| AGT 02 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build observation to prompt formatting helper from normalized scenario-derived observations | AGT 01, MOD 03 | 0.75h | formatted prompt includes task info, history, and action schema consistently | ✅ Completed | — |
 | AGT 03 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Add parse plus retry strategy for malformed model output | MOD 09, AGT 02 | 0.75h | malformed output triggers at least one controlled retry or explicit failure | ⬜ Not started | — |
-| AGT 04 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build baseline heuristic Scientist for non trained smoke tests | AGT 02 | 1h | baseline can complete episodes without crashing | ⬜ Not started | — |
-| AGT 05 | E04.2 | Person A and B | `replicalab/agents/lab_manager_policy.py` | Implement deterministic feasibility checker against normalized constraints, resources, schedule, and policy rules | SCN 07, MOD 05 | 1.25h | checker returns clear pass or fail per constraint dimension | ⬜ Not started | — |
-| AGT 06 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Implement alternative suggestion logic from allowed substitutions and resource tradeoffs | AGT 05, SCN 08 | 1h | lab manager can suggest at least one sensible revision when initial plan fails | ⬜ Not started | — |
-| AGT 07 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Add model-backed response synthesis from feasibility results and suggested revisions | AGT 05 | 0.75h | output is readable, grounded in checker results, and maps cleanly to underlying checks | ⬜ Not started | — |
+| AGT 04 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build baseline heuristic Scientist for non trained smoke tests | AGT 02 | 1h | baseline can complete episodes without crashing | ✅ Completed | — |
+| AGT 05 | E04.2 | Person A and B | `replicalab/agents/lab_manager_policy.py` | Implement deterministic feasibility checker against normalized constraints, resources, schedule, and policy rules | SCN 07, MOD 05 | 1.25h | checker returns clear pass or fail per constraint dimension | ✅ Completed | Person B (Ayush) |
+| AGT 06 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Implement alternative suggestion logic from allowed substitutions and resource tradeoffs | AGT 05, SCN 08 | 1h | lab manager can suggest at least one sensible revision when initial plan fails | ✅ Completed | — |
+| AGT 07 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Add model-backed response synthesis from feasibility results and suggested revisions | AGT 05 | 0.75h | output is readable, grounded in checker results, and maps cleanly to underlying checks | ✅ Completed | — |
 | AGT 08 | E04.1 | Person B | tests | Add prompt formatting and parse tests for Scientist policy | AGT 01 to AGT 04 | 0.75h | tests cover happy path and malformed output handling | ⬜ Not started | — |
 | AGT 09 | E04.2 | Person A | tests | Add deterministic feasibility checker tests for Lab Manager grounding | AGT 05 to AGT 07 | 0.75h | same proposal plus same normalized scenario returns the same checker results every time | ⬜ Not started | — |
 | AGT 10 | E04.1 | Person B | `replicalab/prompts/` | Write prompt text files for all three roles: `scientist.txt`, `lab_manager.txt`, `judge.txt` | AGT 01, AGT 07, JDG 06 | 0.75h | prompt files exist, are loadable, and assemble correctly from normalized scenario data and agreed role behavior | ⬜ Not started | — |
-| AGT 11 | E04.1 | Person B | docs | Select and document base model for Scientist training with rationale for model size, license, and structured output capability | AGT 01 | 0.5h | decision is recorded and all team members know which model will be fine tuned | ⬜ Not started | — |
+| AGT 11 | E04.1 | Person B | docs | Select and document base model for Scientist training with rationale for model size, license, and structured output capability | AGT 01 | 0.5h | decision is recorded and all team members know which model will be fine tuned | ✅ Completed | — |
 
 ---
 
