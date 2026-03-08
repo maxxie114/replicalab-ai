@@ -38,3 +38,14 @@ Current ART/OpenEnv runtime note:
 - The main remaining work is experiment quality iteration, not missing training
   infrastructure.
 
+Current localhost model-runtime note:
+
+- `server/app.py` now exposes `/runtime` and `/agent-step` so the local app can run a backend-selected Scientist policy instead of the frontend stub.
+- Anthropic-backed Scientist inference was wired, but the current Anthropic account cannot be used live because the API billing balance is too low.
+- Localhost therefore currently runs in `ollama` mode with `glm-5:cloud` as the working model-backed Scientist path.
+- The server applies a small deterministic safety adapter to model outputs before env stepping:
+  - trims controls to fit sample size
+  - aligns equipment and reagent requests to the available inventory
+  - clamps duration to the current lab time limit
+- If the local model stalls or errors, `/agent-step` falls back to the deterministic baseline Scientist and records that in the step metadata as `scientist_runtime=ollama_fallback`.
+

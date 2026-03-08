@@ -1,5 +1,5 @@
-import { Suspense } from 'react';
-import { Link } from 'react-router-dom';
+import { Suspense, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FlaskConical,
   Play,
@@ -19,7 +19,7 @@ import AnimatedCharacter from '@/components/AnimatedCharacter';
 import MoleculeScene from '@/components/MoleculeScene';
 import TiltCard from '@/components/TiltCard';
 import { cn } from '@/lib/utils';
-import { DEMO_CASES } from '@/lib/demo';
+import { buildLiveEpisodePath, DEMO_CASES } from '@/lib/demo';
 
 const SCENARIOS = [
   {
@@ -105,6 +105,12 @@ const FLOW = [
 ];
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+
+  const launchDynamicEpisode = useCallback(() => {
+    navigate(buildLiveEpisodePath());
+  }, [navigate]);
+
   return (
     <div className="mx-auto max-w-screen-xl px-4 py-8">
       {/* Hero with 3D background */}
@@ -179,13 +185,14 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-8 flex items-center justify-center gap-3">
-            <Link
-              to="/episode?template=ml_benchmark&difficulty=medium&seed=101&demo=1&autoplay=1&demoCase=fast-agreement"
+            <button
+              type="button"
+              onClick={launchDynamicEpisode}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 shadow-lg shadow-primary/25"
             >
               <Play className="h-4 w-4" />
-              Replicate a Paper
-            </Link>
+              Replicate a Random Paper
+            </button>
             <Link
               to="/training"
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-background/80 backdrop-blur-sm px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
@@ -204,6 +211,9 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+          <p className="mx-auto mt-3 max-w-2xl text-xs text-muted-foreground">
+            The main button now launches a different seeded paper-derived benchmark each time. Use the cards below only when you want a fixed scripted outcome for the demo.
+          </p>
         </div>
       </section>
 
@@ -301,9 +311,9 @@ export default function DashboardPage() {
       </section>
 
       <section className="mb-16">
-        <h2 className="mb-2 text-center text-xl font-semibold">Live Demo Outcomes</h2>
+        <h2 className="mb-2 text-center text-xl font-semibold">Scripted Demo Outcomes</h2>
         <p className="mb-8 text-center text-sm text-muted-foreground">
-          Pick the exact story you want to show: immediate agreement, multi-round learning, or clear rejection.
+          Use these only when you want a fixed story: immediate agreement, multi-round learning, or clear rejection.
         </p>
         <div className="grid gap-4 md:grid-cols-3">
           {DEMO_CASES.map((demo) => {

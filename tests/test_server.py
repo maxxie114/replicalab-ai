@@ -18,6 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
+from replicalab.models import ScientistAction
 from server.app import app
 
 _EXPECTED_FAMILIES = {"math_reasoning", "ml_benchmark", "finance_trading"}
@@ -52,6 +53,38 @@ class TestHealthEndpoint:
         r1 = client.get("/health").json()
         r2 = client.get("/health").json()
         assert r1 == r2
+
+
+class TestRuntimeEndpoint:
+    """Local runtime metadata for model-backed Scientist stepping."""
+
+    def test_runtime_defaults_to_baseline_without_api_key(
+        self, client: TestClient, monkeypatch
+    ) -> None:
+        monkeypatch.delenv("REPLICALAB_SCIENTIST_RUNTIME", raising=False)
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+        resp = client.get("/runtime")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["scientist_runtime"] == "baseline"
+        assert data["scientist_model"] == "baseline-heuristic"
+        assert data["agent_step_available"] is True
+
+    def test_runtime_reports_anthropic_when_enabled(
+        self, client: TestClient, monkeypatch
+    ) -> None:
+        monkeypatch.setenv("REPLICALAB_SCIENTIST_RUNTIME", "anthropic")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+        resp = client.get("/runtime")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["scientist_runtime"] == "anthropic"
+        assert data["scientist_ready"] is True
+        assert data["agent_step_available"] is True
 
 
 class TestLogConfig:
@@ -489,6 +522,65 @@ class TestStepEndpoint:
             "round limit" in reason.lower() or "without agreement" in reason.lower()
             for reason in replay["top_failure_reasons"]
         )
+
+
+class TestAgentStepEndpoint:
+    """POST /agent-step uses the configured Scientist runtime."""
+
+    def test_agent_step_runs_runtime_policy(
+        self, client: TestClient, monkeypatch
+    ) -> None:
+        import server.app as server_app
+
+        monkeypatch.setenv("REPLICALAB_SCIENTIST_RUNTIME", "anthropic")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        server_app._SCIENTIST_POLICY_CACHE.clear()
+
+        action = ScientistAction.model_validate(_good_action_payload(client))
+
+        def fake_policy(observation, **kwargs):
+            assert observation.paper_title
+            assert kwargs["scenario"] == "ml_benchmark"
+            assert kwargs["difficulty"] == "medium"
+            return action
+
+        monkeypatch.setattr(server_app, "_get_scientist_policy", lambda: fake_policy)
+
+        reset_data = _reset(client, scenario="ml_benchmark", difficulty="medium")
+        resp = client.post("/agent-step", json={"session_id": reset_data["session_id"]})
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["info"]["scientist_runtime"] == "anthropic"
+        assert data["info"]["scientist_model"]
+        assert data["info"]["scientist_action"]["action_type"] == "propose_protocol"
+        assert data["observation"]["scientist"]["round_number"] == 1
+
+    def test_agent_step_invalid_session_returns_404(self, client: TestClient) -> None:
+        resp = client.post("/agent-step", json={"session_id": "missing"})
+
+        assert resp.status_code == 404
+        assert "Session not found" in resp.json()["detail"]
+
+    def test_agent_step_falls_back_to_baseline_on_runtime_failure(
+        self, client: TestClient, monkeypatch
+    ) -> None:
+        import server.app as server_app
+
+        monkeypatch.setenv("REPLICALAB_SCIENTIST_RUNTIME", "ollama")
+        monkeypatch.setattr(
+            server_app,
+            "_resolve_scientist_action",
+            lambda session: (_ for _ in ()).throw(RuntimeError("model timeout")),
+        )
+
+        reset_data = _reset(client, scenario="math_reasoning", difficulty="easy")
+        resp = client.post("/agent-step", json={"session_id": reset_data["session_id"]})
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["info"]["scientist_runtime"] == "ollama_fallback"
+        assert data["info"]["scientist_error"] == "model timeout"
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Play, RotateCcw, Dices } from 'lucide-react';
-import type { Difficulty, ScenarioTemplate, ResetParams } from '@/types';
+import type { BackendRuntimeStatus, Difficulty, ScenarioTemplate, ResetParams } from '@/types';
 import { cn } from '@/lib/utils';
 import { sfx } from '@/lib/audio';
 import { healthCheck } from '@/lib/api';
@@ -26,6 +26,7 @@ interface ControlsProps {
   initialSeed?: number;
   initialTemplate?: ScenarioTemplate;
   initialDifficulty?: Difficulty;
+  runtimeStatus?: BackendRuntimeStatus | null;
 }
 
 export default function Controls({
@@ -37,6 +38,7 @@ export default function Controls({
   initialSeed,
   initialTemplate,
   initialDifficulty,
+  runtimeStatus,
 }: ControlsProps) {
   const [seed, setSeed] = useState<string>(initialSeed?.toString() ?? '42');
   const [template, setTemplate] = useState<ScenarioTemplate>(initialTemplate ?? 'ml_benchmark');
@@ -109,6 +111,12 @@ export default function Controls({
         >
           {backendMessage}
         </p>
+        {runtimeStatus && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Scientist runtime: <span className="font-medium text-foreground">{runtimeStatus.scientist_runtime}</span>
+            {' '}({runtimeStatus.scientist_model})
+          </p>
+        )}
       </div>
       <div className="space-y-3">
         <div>
