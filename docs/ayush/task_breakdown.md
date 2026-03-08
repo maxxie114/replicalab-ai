@@ -9,10 +9,15 @@ No assumptions from other documents are used to reclassify blocked status.
 
 ## 1. Blocking Status
 
-Per the source of truth, Person B has finished the draft portion of `FND 08`.
-The immediate next action is Kian (Person A) review and sign-off on `docs/fnd08_frozen_json_contract.md`.
-While waiting on that sign-off, Person B completed `FND 02`, `FND 05`, `FND 06`,
-and `FND 07` on behalf of the assigned owners so Epic E01 could keep moving.
+Per the source of truth, `FND 08` is now complete and `FND 09` has landed in
+`openenv.yaml` with OpenEnv-compatible runtime wiring in the repo.
+`MOD 01` and `MOD 03` are now complete, so `MOD 09` is immediately unblocked
+and the observation side of `AGT 02` is no longer waiting on Person A.
+The next Ayush-owned tasks after `MOD 09` are still gated by Kian's remaining
+scenario and validation deliverables, starting with `SCN 09` and `MOD 05`.
+The prompt and Lab Manager workstream now assumes a normalized scenario pack
+below the stable outer contract, so Ayush-owned prompting should be assembled
+from mapped scenario data rather than hard-coded to one domain.
 
 ---
 
@@ -23,22 +28,19 @@ These tasks are first gated by upstream deliverables, primarily from Kian (Perso
 
 | ID | Task | Depends On | Person A Deliverable | Est |
 |----|------|-----------|---------------------|-----|
-| MOD 09 | Build output parser for ScientistAction | MOD 01 | ScientistAction schema | 0.75h |
-| AGT 01 | Draft Scientist system prompt | MOD 01, SCN 11 | ScientistAction schema + generate_scenario | 0.75h |
-| AGT 05 | Implement feasibility checker (shared A+B) | SCN 07, MOD 05 | Constraint generator + validation | 1.25h |
+| AGT 01 | Draft domain-neutral Scientist system prompt | MOD 01, SCN 11 | ScientistAction schema + generate_scenario | 0.75h |
+| AGT 05 | Implement deterministic feasibility checker (shared A+B) | SCN 07, MOD 05 | Constraint generator + validation | 1.25h |
 | SCN 11 | Create golden scenarios for prompt testing | SCN 09 | generate_scenario() | 0.75h |
 | JDG 10 | Expose component metrics for training plots | JDG 05, JDG 07 | Reward breakdown (A) + logging (C) | 0.5h |
 
-**Total: 5 tasks, 4.0h**
+**Total: 4 tasks, 3.25h**
 
 ### What to ask Kian for first (priority order)
 
-1. **MOD 01** (ScientistAction schema) -- unblocks MOD 09 and, after SCN 11, AGT 01
-2. **MOD 03** (Observation models) -- unblocks AGT 02
-3. **SCN 09** (generate_scenario) -- unblocks SCN 11 golden scenarios
-4. **SCN 07 + MOD 05** (constraints + validation) -- unblocks AGT 05, AGT 06, AGT 07
-5. **JDG 05 + JDG 06** (reward breakdown + explanation) -- unblocks AGT 10 and is only part of the path for JDG 10
-6. **SCN 08** (minimum viable replication spec) -- unblocks AGT 06 after AGT 05
+1. **SCN 09** (generate normalized scenario packs) -- unblocks SCN 11 and then AGT 01
+2. **SCN 07 + MOD 05** (normalized constraints/resources + validation) -- unblocks AGT 05, AGT 06, AGT 07
+3. **JDG 05 + JDG 06** (reward breakdown + explanation) -- unblocks AGT 10 and is only part of the path for JDG 10
+4. **SCN 08** (minimum viable replication spec) -- unblocks AGT 06 after AGT 05
 
 ---
 
@@ -49,13 +51,13 @@ sequentially as both streams deliver.
 
 | ID | Task | Depends On | Blocked By | Est |
 |----|------|-----------|-----------|-----|
-| AGT 02 | Observation to prompt formatting helper | AGT 01 (B) + MOD 03 (A) | Person A: MOD 03, Person B: AGT 01 | 0.75h |
+| AGT 02 | Observation to prompt formatting helper | AGT 01 (B) + MOD 03 (A) | Person B: AGT 01 | 0.75h |
 | AGT 03 | Parse plus retry for malformed output | MOD 09 (B) + AGT 02 (B) | Person B: MOD 09, AGT 02 | 0.75h |
 | AGT 04 | Baseline heuristic Scientist | AGT 02 (B) | Person B: AGT 02 | 1h |
-| AGT 06 | Alternative suggestion logic | AGT 05 (A+B), SCN 08 (A) | Person A: SCN 08, Person A+B: AGT 05 | 1h |
-| AGT 07 | Human readable response templating | AGT 05 (A+B) | Person A+B: AGT 05 | 0.75h |
+| AGT 06 | Alternative suggestion logic from allowed substitutions | AGT 05 (A+B), SCN 08 (A) | Person A: SCN 08, Person A+B: AGT 05 | 1h |
+| AGT 07 | Model-backed Lab Manager response synthesis | AGT 05 (A+B) | Person A+B: AGT 05 | 0.75h |
 | AGT 08 | Prompt formatting and parse tests | AGT 01 to AGT 04 (B) | Person B: AGT 01-04 | 0.75h |
-| AGT 10 | Write prompt text files for all 3 roles | AGT 01 (B) + AGT 07 (B) + JDG 06 (A) | Person A: JDG 06, Person B: AGT 01, AGT 07 | 0.75h |
+| AGT 10 | Write domain-neutral prompt text files for all 3 roles | AGT 01 (B) + AGT 07 (B) + JDG 06 (A) | Person A: JDG 06, Person B: AGT 01, AGT 07 | 0.75h |
 | AGT 11 | Select and document base model | AGT 01 (B) | Person B: AGT 01 | 0.5h |
 
 **Total: 8 tasks, 6.25h**
@@ -120,53 +122,54 @@ All phases are gated by the listed external dependency being delivered first.
 
 ### Phase 1: Active now
 
-1. **FND 08** -- Draft complete in `docs/fnd08_frozen_json_contract.md`; waiting on Person A sign-off
-
-### Phase 2: After Kian and Ayush complete FND 08, and Kian delivers MOD 01 + SCN 09
-
-2. **SCN 11** -- Create golden scenarios for prompt testing
+1. **FND 08** -- Completed and signed off
+2. **FND 09** -- Completed in `openenv.yaml`
 3. **MOD 09** -- Build output parser for ScientistAction
-4. **AGT 01** -- Draft Scientist system prompt
-5. **AGT 11** -- Select and document base model
 
-### Phase 3: After Kian delivers MOD 03
+### Phase 2: After Kian delivers SCN 09
 
-6. **AGT 02** -- Build observation to prompt formatter
-7. **AGT 03** -- Add parse plus retry logic
-8. **AGT 04** -- Build baseline heuristic Scientist
-9. **AGT 08** -- Write tests for prompt formatting and parsing
+4. **SCN 11** -- Create golden scenarios for prompt testing
+5. **AGT 01** -- Draft domain-neutral Scientist system prompt
+6. **AGT 11** -- Select and document base model
+
+### Phase 3: After AGT 01
+
+7. **AGT 02** -- Build observation to prompt formatter
+8. **AGT 03** -- Add parse plus retry logic
+9. **AGT 04** -- Build baseline heuristic Scientist
+10. **AGT 08** -- Write tests for prompt formatting and parsing
 
 ### Phase 4: After Kian delivers SCN 07 + MOD 05 + SCN 08 + JDG 05 + JDG 06, and Max delivers JDG 07
 
-10. **AGT 05** -- Feasibility checker (shared with Person A)
-11. **AGT 06** -- Alternative suggestion logic
-12. **AGT 07** -- Response templating
-13. **AGT 10** -- Write all prompt text files
-14. **JDG 10** -- Expose component metrics for training plots
+11. **AGT 05** -- Deterministic feasibility checker (shared with Person A)
+12. **AGT 06** -- Alternative suggestion logic from allowed substitutions
+13. **AGT 07** -- Model-backed Lab Manager response synthesis
+14. **AGT 10** -- Write all domain-neutral prompt text files
+15. **JDG 10** -- Expose component metrics for training plots
 
 ### Phase 5: After Max delivers API 06 + API 10
 
-15. **TRN 13** -- Build client.py reusable module
-16. **TRN 01** -- Create notebook skeleton
-17. **TRN 02** -- Package install and model setup cell
-18. **TRN 03** -- Environment client wrapper in notebook
-19. **TRN 14** -- Document base model choice (notebook side)
+16. **TRN 13** -- Build client.py reusable module
+17. **TRN 01** -- Create notebook skeleton
+18. **TRN 02** -- Package install and model setup cell
+19. **TRN 03** -- Environment client wrapper in notebook
+20. **TRN 14** -- Document base model choice (notebook side)
 
 ### Phase 6: Training Pipeline (internal chain)
 
-20. **TRN 04** -- Rollout collection loop
-21. **TRN 05** -- Connect to GRPO trainer
-22. **TRN 06** -- Log episode metrics
-23. **TRN 07** -- Plot reward curves
-24. **TRN 08** -- Before vs after evaluation
-25. **TRN 09** -- Policy loading for checkpoints
-26. **TRN 10** -- Export plots
-27. **TRN 15** -- Agreement and invalid action rate metrics
-28. **OBS 06** -- Training run metadata logging
+21. **TRN 04** -- Rollout collection loop
+22. **TRN 05** -- Connect to GRPO trainer
+23. **TRN 06** -- Log episode metrics
+24. **TRN 07** -- Plot reward curves
+25. **TRN 08** -- Before vs after evaluation
+26. **TRN 09** -- Policy loading for checkpoints
+27. **TRN 10** -- Export plots
+28. **TRN 15** -- Agreement and invalid action rate metrics
+29. **OBS 06** -- Training run metadata logging
 
 ### Phase 7: After Kush delivers TRN 12
 
-29. **TST 09** -- Notebook smoke test
+30. **TST 09** -- Notebook smoke test
 
 ---
 
@@ -174,8 +177,8 @@ All phases are gated by the listed external dependency being delivered first.
 
 | Category | Count | Hours |
 |----------|-------|-------|
-| Active shared task | 1 | 0.75h |
-| Blocked by Person A (first-order) | 5 | 4.0h |
+| Active now | 1 | 0.75h |
+| Blocked by Person A (first-order) | 4 | 3.25h |
 | Blocked by Person A then Person B chain | 8 | 6.25h |
 | Blocked by Person C | 3 | 2.5h |
 | Deep training chain (internal) | 11 | 7.5h |
@@ -207,19 +210,33 @@ source of truth). A hosted frontier evaluator may optionally be used for
 post-episode explanation and demo audit. The frontier evaluator is never part
 of the training reward loop.
 
-### Future model-backed Lab Manager
+### Hybrid Lab Manager
 
-If the Lab Manager later becomes model-backed:
+The MVP Lab Manager path is now hybrid:
+- A deterministic feasibility checker remains the source of truth for
+  `feasible`, constraint flags, and any final structured `LabManagerAction`.
+- Model-backed response generation is used for negotiation language and
+  alternative suggestions, but it does not own truth or reward.
 - The reward formula does not change. The deterministic rubric scores the final
-  protocol against ground truth constraints regardless of how the Lab Manager
-  generates its responses.
-- Episode variance increases because the same seed may produce different
-  negotiation paths, but the scoring dimensions (rigor, feasibility, fidelity)
-  remain deterministic.
-- The pragmatic default is same base model (Qwen3-4B) with a separate
-  role-specific adapter. One base model in memory, swap adapters per turn.
+  plan against the hidden reference spec regardless of how the Lab Manager
+  generates its language.
 - Reward does not split into separate Scientist vs Lab Manager objectives.
   Both roles share the same cooperative reward signal.
+- If the team later shares one base model across both roles, the pragmatic
+  default is one base model (Qwen3-4B) with separate role-specific adapters.
+
+### Prompt assembly
+
+Ayush-owned prompts should be assembled from normalized scenario data:
+- `task_summary`
+- `success_criteria`
+- `constraints`
+- `resources`
+- `allowed_substitutions`
+
+This keeps `AGT 01`, `AGT 02`, and `AGT 10` domain-neutral even when the
+scenario families expand from mathematics and machine learning into finance,
+physics, or biology.
 
 ---
 
@@ -227,12 +244,12 @@ If the Lab Manager later becomes model-backed:
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Person A MOD 01-03 delayed | Blocks AGT 01, MOD 09, AGT 02-04 and all downstream | Communicate priority order to Person A early |
+| Person A SCN 09 or MOD 05 delayed | Blocks AGT 01 via SCN 11 and delays AGT 05-07 plus downstream work | Communicate priority order to Person A early |
 | Person C API delayed | Blocks entire training pipeline (TRN 01-15) | Coordinate with Person C on API 06 timeline |
 | Qwen3-4B underperforms on structured output | Scientist produces low quality protocols | Fall back to Qwen3-8B on H100, use reduced-scale Colab fallback |
 | RL training produces flat rewards | No improvement to demo | Have baseline heuristic ready, tune reward weights with Person A |
 | Scientist produces invalid JSON | Rollout loop crashes | AGT 03 parse plus retry is critical, build it robust |
-| Future model-backed Lab Manager increases variance | Slower RL convergence | Keep rule-based for MVP training, introduce model-backed only after Scientist policy is stable |
+| Hybrid Lab Manager increases variance if generation settings are too loose | Slower RL convergence | Keep checker as source of truth, use low-variance generation or frozen manager weights during Scientist training |
 
 ---
 
@@ -241,7 +258,7 @@ If the Lab Manager later becomes model-backed:
 | File | Purpose |
 |------|---------|
 | `replicalab/agents/scientist_policy.py` | Trainable Scientist policy |
-| `replicalab/agents/lab_manager_policy.py` | Rule-based Lab Manager (shared with A) |
+| `replicalab/agents/lab_manager_policy.py` | Hybrid Lab Manager grounded by deterministic feasibility checks (shared with A) |
 | `replicalab/client.py` | Reusable environment client |
 | `replicalab/prompts/scientist.txt` | Scientist system prompt |
 | `replicalab/prompts/lab_manager.txt` | Lab Manager response templates |

@@ -182,12 +182,17 @@ class _StubEnv:
     # ── internal helpers ──────────────────────────────────────────────────
 
     def _scientist_log_entry(self, action: ScientistAction) -> dict[str, Any]:
-        message = action.rationale or f"Scientist chose action '{action.action_type}'."
+        action_type = (
+            action.action_type.value
+            if hasattr(action.action_type, "value")
+            else str(action.action_type)
+        )
+        message = action.rationale or f"Scientist chose action '{action_type}'."
         return {
             "role": "scientist",
             "message": message,
             "round_number": self._state.round_number,
-            "action_type": action.action_type,
+            "action_type": action_type,
         }
 
     def _lab_manager_log_entry(self, action: ScientistAction) -> dict[str, Any]:
@@ -205,7 +210,7 @@ class _StubEnv:
         }
 
     def _protocol_from_action(self, action: ScientistAction) -> dict[str, Any] | None:
-        if action.action_type not in {"propose_protocol", "revise_protocol", "accept"}:
+        if action.action_type not in {"propose_protocol", "revise_protocol"}:
             return self._state.current_protocol
         return {
             "technique": action.technique,
@@ -463,6 +468,12 @@ async def _ws_send(ws: WebSocket, payload: dict) -> None:
     await ws.send_text(json.dumps(payload))
 
 
+def main(host: str = "0.0.0.0", port: int = 7860) -> None:
+    import uvicorn
+
+    uvicorn.run("server.app:app", host=host, port=port, reload=False)
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
@@ -570,6 +581,13 @@ async def websocket_endpoint(ws: WebSocket):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import uvicorn
+    import argparse
 
-    uvicorn.run("server.app:app", host="0.0.0.0", port=7860, reload=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=7860)
+    parser.add_argument("--host", default="0.0.0.0")
+    args = parser.parse_args()
+    if args.host == "0.0.0.0" and args.port == 7860:
+        main()
+    else:
+        main(host=args.host, port=args.port)
