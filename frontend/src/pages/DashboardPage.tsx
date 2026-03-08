@@ -10,12 +10,16 @@ import {
   MessageSquare,
   Scale,
   TrendingUp,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 import TrainingResults from '@/components/TrainingResults';
 import AnimatedCharacter from '@/components/AnimatedCharacter';
 import MoleculeScene from '@/components/MoleculeScene';
 import TiltCard from '@/components/TiltCard';
 import { cn } from '@/lib/utils';
+import { DEMO_CASES } from '@/lib/demo';
 
 const SCENARIOS = [
   {
@@ -50,7 +54,7 @@ const SCENARIOS = [
 const ROLES = [
   {
     key: 'scientist',
-    name: 'Dr. Elara — The Scientist',
+    name: 'Dr. Elara - The Scientist',
     tagline: 'Protects the Science',
     description: 'A brilliant researcher who proposes, revises, and asks questions to build the best replication plan without compromising scientific validity.',
     color: 'text-scientist',
@@ -59,7 +63,7 @@ const ROLES = [
   },
   {
     key: 'lab_manager',
-    name: 'Takuma — The Lab Manager',
+    name: 'Takuma - The Lab Manager',
     tagline: 'Guards Feasibility',
     description: 'A pragmatic organizer who reports budget, equipment, scheduling, and staffing constraints. He ensures plans are actually executable.',
     color: 'text-lab-manager',
@@ -68,7 +72,7 @@ const ROLES = [
   },
   {
     key: 'judge',
-    name: 'Aldric — The Judge',
+    name: 'Aldric - The Judge',
     tagline: 'Delivers the Verdict',
     description: 'An impartial arbiter who scores the final protocol on rigor, feasibility, and fidelity using a deterministic rubric engine.',
     color: 'text-judge',
@@ -176,19 +180,19 @@ export default function DashboardPage() {
 
           <div className="mt-8 flex items-center justify-center gap-3">
             <Link
-              to="/episode?template=ml_benchmark&difficulty=medium&seed=101&demo=1&autoplay=1"
+              to="/episode?template=ml_benchmark&difficulty=medium&seed=101&demo=1&autoplay=1&demoCase=fast-agreement"
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 shadow-lg shadow-primary/25"
             >
               <Play className="h-4 w-4" />
               Replicate a Paper
             </Link>
-            <a
-              href="#training"
+            <Link
+              to="/training"
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-background/80 backdrop-blur-sm px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               <BarChart3 className="h-4 w-4" />
-              See Training Flow
-            </a>
+              See Training Logs
+            </Link>
           </div>
 
           <div className="mx-auto mt-8 grid max-w-4xl gap-3 text-left md:grid-cols-4">
@@ -296,6 +300,41 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <section className="mb-16">
+        <h2 className="mb-2 text-center text-xl font-semibold">Live Demo Outcomes</h2>
+        <p className="mb-8 text-center text-sm text-muted-foreground">
+          Pick the exact story you want to show: immediate agreement, multi-round learning, or clear rejection.
+        </p>
+        <div className="grid gap-4 md:grid-cols-3">
+          {DEMO_CASES.map((demo) => {
+            const Icon =
+              demo.id === 'fast-agreement'
+                ? CheckCircle2
+                : demo.id === 'learning-opportunity'
+                  ? AlertTriangle
+                  : XCircle;
+
+            return (
+              <Link
+                key={demo.id}
+                to={`/episode?template=ml_benchmark&difficulty=medium&seed=${demo.seed}&demo=1&autoplay=1&demoCase=${demo.id}`}
+                className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-muted/40"
+              >
+                <div className="mb-3 inline-flex rounded-full bg-primary/10 p-2 text-primary">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-semibold">{demo.title}</h3>
+                <p className="mt-1 text-xs font-medium text-primary">{demo.subtitle}</p>
+                <p className="mt-3 text-sm text-muted-foreground">{demo.summary}</p>
+                <div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  Launch demo <ArrowRight className="h-3 w-3" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Training Results */}
       <section id="training" className="mb-12">
         <h2 className="mb-2 text-center text-xl font-semibold">Training Results</h2>
@@ -307,10 +346,10 @@ export default function DashboardPage() {
         </div>
         <div className="mt-4 text-center">
           <Link
-            to="/compare"
+            to="/training"
             className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
           >
-            Open the seeded evaluation bench
+            Open the detailed training page
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

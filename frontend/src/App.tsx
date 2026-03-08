@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import EpisodePage from '@/pages/EpisodePage';
 import DashboardPage from '@/pages/DashboardPage';
 import ComparePage from '@/pages/ComparePage';
+import TrainingPage from '@/pages/TrainingPage';
 import Header from '@/components/Header';
 import { ToastProvider } from '@/components/Toast';
 import Onboarding, { useOnboarding } from '@/components/Onboarding';
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/episode" element={<EpisodePage />} />
           <Route path="/episode/:episodeId" element={<EpisodePage />} />
+          <Route path="/training" element={<TrainingPage />} />
           <Route path="/compare" element={<ComparePage />} />
         </Routes>
         <Onboarding show={showOnboarding} onDismiss={dismissOnboarding} />
