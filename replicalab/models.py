@@ -374,8 +374,8 @@ class EpisodeState(BaseModel):
     lab_reagents: list[str] = Field(default_factory=list)
     lab_staff_count: int = 0
     lab_time_limit_days: int = 0
-    current_protocol: Optional[dict] = None
-    conversation_history: list[dict] = Field(default_factory=list)
+    current_protocol: Optional[Protocol] = None
+    conversation_history: list[ConversationEntry] = Field(default_factory=list)
     round_number: int = 0
     max_rounds: int = 0
     done: bool = False
@@ -394,8 +394,8 @@ class EpisodeLog(BaseModel):
     scenario_template: str = ""
     difficulty: str = "easy"
     final_state: Optional[EpisodeState] = None
-    transcript: list[dict] = Field(default_factory=list)
-    reward_breakdown: dict = Field(default_factory=dict)
+    transcript: list[ConversationEntry] = Field(default_factory=list)
+    reward_breakdown: Optional[RewardBreakdown] = None
     total_reward: float = 0.0
     rounds_used: int = 0
     agreement_reached: bool = False

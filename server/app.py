@@ -42,10 +42,12 @@ from replicalab.config import (
 )
 from replicalab.scenarios import available_scenario_families, generate_scenario
 from replicalab.models import (
+    ConversationEntry,
     EpisodeLog,
     EpisodeState,
     LabManagerObservation,
     Observation,
+    Protocol,
     RewardBreakdown,
     ScientistAction,
     ScientistObservation,
@@ -117,7 +119,7 @@ class _StubEnv:
 
     def __init__(self) -> None:
         self._state = EpisodeState()
-        self._logs: list[dict] = []
+        self._logs: list[ConversationEntry] = []
         self._episode_id: str = ""
 
     # ── public interface (matches ReplicaLabEnv) ──────────────────────────
@@ -202,46 +204,46 @@ class _StubEnv:
 
     # ── internal helpers ──────────────────────────────────────────────────
 
-    def _scientist_log_entry(self, action: ScientistAction) -> dict[str, Any]:
+    def _scientist_log_entry(self, action: ScientistAction) -> ConversationEntry:
         action_type = (
             action.action_type.value
             if hasattr(action.action_type, "value")
             else str(action.action_type)
         )
         message = action.rationale or f"Scientist chose action '{action_type}'."
-        return {
-            "role": "scientist",
-            "message": message,
-            "round_number": self._state.round_number,
-            "action_type": action_type,
-        }
+        return ConversationEntry(
+            role="scientist",
+            message=message,
+            round_number=self._state.round_number,
+            action_type=action_type,
+        )
 
-    def _lab_manager_log_entry(self, action: ScientistAction) -> dict[str, Any]:
+    def _lab_manager_log_entry(self, action: ScientistAction) -> ConversationEntry:
         if action.action_type == "accept":
             message = "Stub review: agreement recorded and episode will close."
             action_type = "accept"
         else:
             message = "Stub review: proposal received and remains feasible under the stub lab."
             action_type = "report_feasibility"
-        return {
-            "role": "lab_manager",
-            "message": message,
-            "round_number": self._state.round_number,
-            "action_type": action_type,
-        }
+        return ConversationEntry(
+            role="lab_manager",
+            message=message,
+            round_number=self._state.round_number,
+            action_type=action_type,
+        )
 
-    def _protocol_from_action(self, action: ScientistAction) -> dict[str, Any] | None:
+    def _protocol_from_action(self, action: ScientistAction) -> Optional[Protocol]:
         if action.action_type not in {"propose_protocol", "revise_protocol"}:
             return self._state.current_protocol
-        return {
-            "technique": action.technique,
-            "sample_size": action.sample_size,
-            "controls": list(action.controls),
-            "duration_days": action.duration_days,
-            "required_equipment": list(action.required_equipment),
-            "required_reagents": list(action.required_reagents),
-            "rationale": action.rationale,
-        }
+        return Protocol(
+            technique=action.technique,
+            sample_size=action.sample_size,
+            controls=list(action.controls),
+            duration_days=action.duration_days,
+            required_equipment=list(action.required_equipment),
+            required_reagents=list(action.required_reagents),
+            rationale=action.rationale,
+        )
 
     def _make_observation(self) -> Observation:
         s = self._state
@@ -572,7 +574,7 @@ async def websocket_endpoint(ws: WebSocket):
                             else None,
                             "reward": result.reward,
                             "done": result.done,
-                            "info": result.info,
+                            "info": result.info.model_dump(),
                         },
                     )
                 except Exception as exc:
