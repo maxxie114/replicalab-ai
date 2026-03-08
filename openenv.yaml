@@ -1,0 +1,15 @@
+spec_version: 1
+name: replicalab_env
+description: ReplicaLab environment for scientific replication negotiation.
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
+action: ScientistAction
+observation: Observation
+environment_module: replicalab.env.replicalab_env
+environment_class: ReplicaLabEnv
+state: EpisodeState
+action_module: replicalab.models
+observation_module: replicalab.models
+state_module: replicalab.models

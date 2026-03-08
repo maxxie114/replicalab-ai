@@ -1,9 +1,9 @@
 # FND 08 Frozen JSON Contract
 
-Status: draft complete on 2026-03-08
+Status: completed on 2026-03-08
 Owners: Person A and Person B
 Drafted by: Person B (Ayush)
-Remaining acceptance item: Person A sign-off
+Remaining acceptance item: none
 
 Source schema file: `replicalab/models.py`
 
@@ -505,4 +505,4 @@ Canonical example:
 | Owner | Status | Notes |
 | --- | --- | --- |
 | Person B (Ayush) | signed off | Draft matches current stubs and downstream parser needs |
-| Kian (Person A) | pending | Needs validator and environment owner review before `FND 08` can be marked complete |
+| Kian (Person A) | signed off | Validator and environment-owner review completed; contract is frozen for `MOD 01`, `MOD 03`, `FND 09`, and downstream parser work |

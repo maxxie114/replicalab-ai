@@ -22,9 +22,17 @@ The goal is to let any team member pick up work immediately without confusion.
 
 ## 2. Product summary
 
-**ReplicaLab** is an OpenEnv environment where a **Scientist agent** and a **Lab Manager agent** negotiate how to replicate an experiment under real world constraints such as budget, equipment, schedule, reagent stock, and staffing.
+**ReplicaLab** is an OpenEnv environment where a **Scientist agent** and a **Lab Manager agent** negotiate how to solve a constrained technical task under real world limits such as budget, tools, compute, schedule, stock, and staffing.
 
-The environment is used to **train the Scientist agent with reinforcement learning** so it learns to ask better questions, preserve critical scientific rigor, and produce more feasible replication protocols.
+The environment is used to **train the Scientist agent with reinforcement learning** so it learns to ask better questions, preserve objective quality, and produce more feasible plans under domain-specific constraints.
+
+The first domain focus is:
+
+1. Mathematics
+2. Machine learning
+3. Finance and trading design in offline or backtest form
+
+Physics and biology remain follow-on adapters once the normalized scenario layer is stable.
 
 ### The judged MVP outcome
 
@@ -33,7 +41,7 @@ By judging time, the project should demonstrate:
 1. A working OpenEnv environment deployed on Hugging Face Spaces on port `7860`
 2. At least one full scenario family working end to end, with a target of three
 3. A Scientist agent that can interact with the environment
-4. A rule based Lab Manager
+4. A hybrid model-backed Lab Manager with deterministic feasibility grounding
 5. A deterministic judge and reward engine
 6. A Colab training notebook using Unsloth or HF TRL
 7. A reward curve showing improvement
@@ -51,12 +59,12 @@ By judging time, the project should demonstrate:
 2. FastAPI and WebSocket serving
 3. Hugging Face Docker Space deployment
 4. Scientist agent with structured JSON action output
-5. Rule based Lab Manager policy
+5. Hybrid model-backed Lab Manager grounded by deterministic feasibility checks
 6. Judge rubric engine with deterministic scoring
 7. Three scenario families for MVP
-   1. Cell Biology
-   2. ML Benchmark Replication
-   3. Behavioral Psychology
+   1. Mathematics reasoning and proof planning
+   2. ML benchmark replication
+   3. Finance or trading backtest planning
 8. Reward logging
 9. Replay logs
 10. Colab RL notebook
@@ -69,11 +77,12 @@ By judging time, the project should demonstrate:
 1. Proving whether a real research paper is globally true or false
 2. Parsing arbitrary real papers from the internet
 3. Real wet lab execution
-4. Training both Scientist and Lab Manager in self play
+4. Live trading or production finance execution
 5. Real time collaboration features
-6. Complex third party enterprise integrations
-7. Full six domain rollout unless time remains
-8. Ethics reviewer as a third live agent unless everything else is already stable
+6. Training both Scientist and Lab Manager in self play
+7. Complex third party enterprise integrations
+8. Full multi-domain rollout unless time remains
+9. Manager-led subagent orchestration unless the MVP is already stable
 
 ---
 
@@ -121,9 +130,36 @@ The training reward is always the **deterministic rubric engine** defined in E05
 | Role | MVP implementation | Future stretch |
 | --- | --- | --- |
 | Scientist | Trainable policy (Qwen3-4B) | Qwen3-8B if quality insufficient |
-| Lab Manager | Rule-based deterministic policy | Model-backed policy using same base model with separate adapter |
+| Lab Manager | Hybrid model-backed negotiation plus deterministic feasibility checker | Manager orchestrator with specialist subagents and role-specific adapters |
 | Judge (training reward) | Deterministic rubric engine | Unchanged |
 | Judge (explanation layer) | Optional hosted frontier evaluator | Extended explanation panel in UI |
+
+## 4.2 Domain roadmap and normalized scenario layer
+
+The frozen outer action and observation contract from `FND 08`, `MOD 01`, `MOD 02`, and `MOD 03` remains stable. Domain expansion happens below that contract through a normalized scenario layer.
+
+The internal data flow is:
+
+`scenario adapter -> normalized scenario pack -> observation mapper -> ScientistObservation or LabManagerObservation`
+
+Every scenario family must emit the same normalized scenario pack with, at minimum:
+
+1. `domain_id`
+2. `task_summary`
+3. `success_criteria`
+4. `constraints`
+5. `resources`
+6. `allowed_substitutions`
+7. `hidden_reference_spec`
+8. `scenario_id`
+9. `seed`
+
+Rules for the normalized scenario layer:
+
+1. Domain-specific logic belongs in thin adapters, not in prompts or reward code.
+2. Prompts must be assembled from the normalized scenario pack, not hard-coded to one domain.
+3. Difficulty and curriculum changes should mechanically alter constraints, resources, or conflicts rather than fork separate prompt logic.
+4. The deterministic scorer compares the final agreed plan against `hidden_reference_spec`; model-backed roles never own truth.
 
 ---
 
@@ -132,12 +168,12 @@ The training reward is always the **deterministic rubric engine** defined in E05
 | Module or file | Key functions or classes | Owner | Notes |
 | --- | --- | --- | --- |
 | `replicalab/models.py` | `ScientistAction`, `LabManagerAction`, `Observation`, `StepResult`, `EpisodeState`, `EpisodeLog` | Person A with Person B | shared contract file |
-| `replicalab/scenarios/templates.py` | `generate_scenario()`, `load_template()`, `apply_difficulty()`, `seed_rng()` | Person A | central scenario factory |
-| `replicalab/scenarios/cell_biology.py` | `build_cell_biology_template()` | Person A | first wet lab scenario |
-| `replicalab/scenarios/ml_benchmark.py` | `build_ml_benchmark_template()` | Person A | easiest deterministic scenario |
-| `replicalab/scenarios/behavioral_psych.py` | `build_behavioral_psych_template()` | Person A | survey based scenario |
+| `replicalab/scenarios/templates.py` | `generate_scenario()`, `load_template()`, `apply_difficulty()`, `seed_rng()` | Person A | central normalized scenario factory and mapper inputs |
+| `replicalab/scenarios/math_reasoning.py` | `build_math_reasoning_template()` | Person A | first structured reasoning scenario |
+| `replicalab/scenarios/ml_benchmark.py` | `build_ml_benchmark_template()` | Person A | first reproducible compute scenario |
+| `replicalab/scenarios/finance_trading.py` | `build_finance_trading_template()` | Person A | offline strategy and backtest planning only |
 | `replicalab/agents/scientist_policy.py` | `build_scientist_prompt()`, `parse_scientist_output()` | Person B | trainable role |
-| `replicalab/agents/lab_manager_policy.py` | `generate_lab_manager_response()`, `check_feasibility()` | Person B with Person A | rule based for MVP |
+| `replicalab/agents/lab_manager_policy.py` | `generate_lab_manager_response()`, `check_feasibility()` | Person B with Person A | model-backed negotiation grounded by deterministic checker |
 | `replicalab/agents/judge_policy.py` | `explain_judgement()` optional only | Person A | explanation layer only |
 | `replicalab/scoring/rigor.py` | `score_rigor()` | Person A | deterministic |
 | `replicalab/scoring/feasibility.py` | `score_feasibility()` | Person A | deterministic |
@@ -158,7 +194,7 @@ The training reward is always the **deterministic rubric engine** defined in E05
 | `replicalab/config.py` | `MAX_ROUNDS`, `DEFAULT_DIFFICULTY`, `TIMEOUT_SECONDS`, `MAX_BUDGET` | Person A | single source of truth for constants |
 | `replicalab/client.py` | `ReplicaLabClient.connect()`, `reset()`, `step()`, `close()` | Person B | reusable by notebook and external consumers |
 | `replicalab/utils/seed.py` | `seed_rng()`, `get_deterministic_seed()` | Person A | shared by scenarios and env |
-| `replicalab/prompts/*.txt` | role prompt templates | Person B | loadable text files for all three roles |
+| `replicalab/prompts/*.txt` | role prompt templates | Person B | loadable domain-neutral text files assembled from normalized scenario data |
 | `replicalab/outputs/` | `logs/`, `replays/`, `plots/` | Person C | gitignored output directories |
 | `server/requirements.txt` | pinned runtime dependencies | Person C | standalone server install |
 | `README.md` | project story, setup, results | Person D with all | judged asset |
@@ -241,8 +277,10 @@ Create a stable shared codebase, contracts, and development workflow so all work
 - `FND 06` completed by: `Person B (Ayush)` while the assigned owner remains `Person D`
 - `FND 07` status: completed on 2026-03-08
 - `FND 07` completed by: `Person B (Ayush)` while the assigned owner remains `Person C`
-- `FND 08` status: partial on 2026-03-08
-- `FND 08` draft completed by: `Person B (Ayush)`; Person A sign-off is still pending
+- `FND 08` status: completed on 2026-03-08
+- `FND 08` completed by: `Person A (Kian)` and `Person B (Ayush)` with shared sign-off recorded in `docs/fnd08_frozen_json_contract.md`
+- `FND 09` status: completed on 2026-03-08
+- `FND 09` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
 - `FND 11` status: completed on 2026-03-08
 - `FND 11` completed by: `Max (Person C)`; the branch import and standards validation were handled by `Person B (Ayush)`
 - `FND 10` status: completed on 2026-03-07
@@ -253,15 +291,15 @@ Create a stable shared codebase, contracts, and development workflow so all work
 - Completed scope for `FND 05`: created `.dockerignore` and expanded `.gitignore` to cover Python, Node, notebook, coverage, cache, and generated output artifacts while preserving tracked `.gitkeep` scaffold files
 - Completed scope for `FND 06`: replaced the aspirational README with a temporary foundation stub that reflects the actual repo state, mission, team ownership, and current local setup placeholder
 - Completed scope for `FND 07`: added GitHub PR and task-issue templates and tightened the repo workflow rules for branch naming and required tracking-doc updates
-- Completed scope for `FND 08` draft: added `docs/fnd08_frozen_json_contract.md` with field semantics, enums, nested object schemas, null-vs-empty rules, and canonical JSON examples for all 8 shared models
+- Completed scope for `FND 08`: added `docs/fnd08_frozen_json_contract.md` with field semantics, enums, nested object schemas, null-vs-empty rules, canonical JSON examples for all 8 shared models, and final shared sign-off
+- Completed scope for `FND 09`: added `openenv.yaml` with OpenEnv manifest metadata plus the minimal repo wiring required for local OpenEnv validation (`openenv-core` dependency, `server` script entry point, `uv.lock`, and `server.app.main()`)
 - Completed scope for `FND 10`: created `replicalab/outputs/` with tracked `logs/`, `replays/`, and `plots/` subdirectories
 - Completed scope for `FND 11`: added `server/requirements.txt` with standalone runtime dependency pins and verified installation from that file
 - Partial backend scope imported from Max's PR: `server/app.py`, `server/Dockerfile`, and `docs/max/deployment.md` were normalized onto the current standards and validated locally against the stub env
 - Remaining work now unblocked by `FND 01`: `FND 03`
-- Newly unblocked by `FND 04`: `FND 08`, `FND 09`
+- Newly unblocked by `FND 08`: `MOD 01`, `MOD 02`, `MOD 03`, `MOD 12`, `SCN 01`
 - Newly unblocked by `FND 06`: `DOC 01`
 - Remaining Epic E01 work still gated by follow-on dependencies: `FND 12`, `FND 13`
-- Remaining completion item for `FND 08`: Person A review and sign-off
 - Remaining completion items for the imported backend scaffold: real-env integration, Docker validation, and final deployment verification
 
 ### User stories
@@ -283,8 +321,8 @@ As a team, we want agreed schemas and coding rules so integration risk stays low
 | FND 05 | E01.2 | Person C | `.gitignore` and `.dockerignore` | Add ignore rules for Python, Node, logs, notebooks, and build artifacts. `.dockerignore` must explicitly exclude `.git`, `node_modules`, `notebooks/`, `tests/`, `__pycache__`, `.venv`, and output files to keep the Docker image lean | FND 01 | 0.25h | repo status stays clean after local run and build, and Docker build excludes non-runtime files | ✅ Completed | Person B (Ayush) |
 | FND 06 | E01.2 | Person D | `README.md` | Add temporary project stub with title, mission, team roles, and local setup placeholder | FND 01 | 0.5h | new contributor can understand repo purpose in under two minutes | ✅ Completed | Person B (Ayush) |
 | FND 07 | E01.2 | Person C | repo settings | Define branch naming, PR template, and issue template | FND 01 | 0.5h | all future PRs auto show the template and issue fields | ✅ Completed | Person B (Ayush) |
-| FND 08 | E01.2 | Person A and B | docs or backlog file | Freeze JSON contract for actions and observations | FND 04 | 0.75h | all owners sign off and no blocking contract ambiguity remains | 🟡 Partial | — |
-| FND 09 | E01.2 | Person A | `openenv.yaml` | Create OpenEnv configuration file specifying environment class, action and observation types, and server settings | FND 04 | 0.5h | OpenEnv can discover and serve the environment using this config file | ⬜ Not started | — |
+| FND 08 | E01.2 | Person A and B | docs or backlog file | Freeze JSON contract for actions and observations | FND 04 | 0.75h | all owners sign off and no blocking contract ambiguity remains | ✅ Completed | Person A (Kian) and Person B (Ayush) |
+| FND 09 | E01.2 | Person A | `openenv.yaml` | Create OpenEnv configuration file specifying environment class, action and observation types, and server settings | FND 04 | 0.5h | OpenEnv can discover and serve the environment using this config file | ✅ Completed | Person B (Ayush) |
 | FND 10 | E01.1 | Person C | `replicalab/outputs/` | Create output directory structure with `logs/`, `replays/`, and `plots/` subdirectories and add to gitignore | FND 01 | 0.25h | output directories exist and generated files are not committed to git | ✅ Completed | Person B (Ayush) |
 | FND 11 | E01.1 | Person C | `server/requirements.txt` | Create server requirements file pinning FastAPI, uvicorn, websockets, and other runtime dependencies | FND 02 | 0.25h | server can be installed from requirements.txt independently of pyproject.toml | ✅ Completed | Max (Person C) |
 | FND 12 | E01.1 | Person C | `frontend/vite.config.ts` | Create Vite config with API and WebSocket proxy support for local development plus stable build output settings | FND 03 | 0.5h | frontend dev server can reach backend without manual URL edits and build output is predictable for Docker packaging | ⬜ Not started | — |
@@ -296,6 +334,20 @@ As a team, we want agreed schemas and coding rules so integration risk stays low
 
 ### Epic goal
 Define the environment contracts cleanly so state, actions, and observations are deterministic and easy to train against.
+
+### Current status
+
+- `MOD 01` status: completed on 2026-03-08
+- `MOD 01` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `MOD 02` status: completed on 2026-03-08
+- `MOD 02` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `MOD 03` status: completed on 2026-03-08
+- `MOD 03` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- Completed scope for `MOD 01`: replaced the placeholder `ScientistAction` with a strict enum-backed schema, required all frozen-contract fields, forbade unknown keys, rejected mixed-mode payloads, added conditional validation for proposal, revision, request-info, and accept modes, added focused schema tests, and patched the stub server so `accept` no longer overwrites the current protocol with default values
+- Completed scope for `MOD 02`: replaced the placeholder `LabManagerAction` with a strict enum-backed schema, required all frozen-contract fields, forbade unknown keys, enforced feasible-flag consistency across budget, equipment, reagent, schedule, and staff checks, rejected suggestion fields outside `suggest_alternative`, and added focused validation tests
+- Completed scope for `MOD 03`: introduced typed `ConversationEntry` and `Protocol` models, upgraded both observation branches to use typed nested structures with non-negative numeric constraints and stable keys, and verified dict-to-model coercion through the current stub server and focused tests
+- Newly unblocked by `MOD 01`: `MOD 05`, `MOD 09`
+- Newly unblocked by `MOD 03`: `MOD 04`, `MOD 11`
 
 ### User stories
 
@@ -309,9 +361,9 @@ As the training loop, I need deterministic state serialization so episodes can b
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| MOD 01 | E02.1 | Person A | `replicalab/models.py` | Implement `ScientistAction` schema | FND 08 | 0.5h | valid scientist actions parse and invalid fields raise validation errors | ⬜ Not started | — |
-| MOD 02 | E02.1 | Person A | `replicalab/models.py` | Implement `LabManagerAction` schema | FND 08 | 0.5h | valid lab manager actions parse and invalid fields raise validation errors | ⬜ Not started | — |
-| MOD 03 | E02.1 | Person A | `replicalab/models.py` | Implement role specific `Observation` models | FND 08 | 0.75h | scientist and lab observations serialize to JSON with stable keys | ⬜ Not started | — |
+| MOD 01 | E02.1 | Person A | `replicalab/models.py` | Implement `ScientistAction` schema | FND 08 | 0.5h | valid scientist actions parse and invalid fields raise validation errors | ✅ Completed | Person B (Ayush) |
+| MOD 02 | E02.1 | Person A | `replicalab/models.py` | Implement `LabManagerAction` schema | FND 08 | 0.5h | valid lab manager actions parse and invalid fields raise validation errors | ✅ Completed | Person B (Ayush) |
+| MOD 03 | E02.1 | Person A | `replicalab/models.py` | Implement role specific `Observation` models | FND 08 | 0.75h | scientist and lab observations serialize to JSON with stable keys | ✅ Completed | Person B (Ayush) |
 | MOD 04 | E02.2 | Person A | `replicalab/models.py` | Implement `EpisodeState` and `EpisodeLog` models | MOD 03 | 0.75h | full state round trip serialize plus deserialize works | ⬜ Not started | — |
 | MOD 05 | E02.1 | Person A | `replicalab/utils/validation.py` | Add protocol validation for sample size, controls, duration, equipment vocab, reagent vocab | MOD 01 | 1h | invalid protocol examples are rejected with readable reasons | ⬜ Not started | — |
 | MOD 06 | E02.1 | Person A | `replicalab/utils/validation.py` | Add semantic validators for impossible plans such as zero sample size with positive controls | MOD 05 | 0.75h | semantic validator catches at least five invalid edge cases | ⬜ Not started | — |
@@ -327,40 +379,40 @@ As the training loop, I need deterministic state serialization so episodes can b
 ## Epic E03. Scenario engine and constraint generation
 
 ### Epic goal
-Generate deterministic, varied, and internally consistent scientific scenarios.
+Generate deterministic, varied, and internally consistent technical scenarios through a normalized scenario layer.
 
 ### User stories
 
 **US E03.1**  
-As a user, I want seeded scenarios so I can replay identical experiments.
+As a user, I want seeded scenarios so I can replay identical tasks.
 
 **US E03.2**  
-As a judge, I want diverse but believable constraints so the environment tests real tradeoffs.
+As a judge, I want normalized constraints and resources so the environment tests real tradeoffs across domains without changing the outer contract.
 
 ### Tasks
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | SCN 01 | E03.1 | Person A | `replicalab/utils/seed.py` | Implement deterministic RNG helper `seed_rng()` in dedicated seed utility module | FND 08 | 0.5h | same seed always yields the same random choices and seed module is importable from scenarios and env | ⬜ Not started | — |
-| SCN 02 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Define common scenario schema with paper, lab constraints, and hidden rubric sections | MOD 04 | 0.75h | all scenario builders return the same top level structure | ⬜ Not started | — |
-| SCN 03 | E03.2 | Person A | `replicalab/scenarios/cell_biology.py` | Implement cell biology template with required controls, equipment, and reagent rules | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
-| SCN 04 | E03.2 | Person A | `replicalab/scenarios/ml_benchmark.py` | Implement ML benchmark template with GPU, time, and baseline constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
-| SCN 05 | E03.2 | Person A | `replicalab/scenarios/behavioral_psych.py` | Implement behavioral psychology survey template with participant, budget, and ethics placeholders | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
-| SCN 06 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Implement difficulty application for easy, medium, hard | SCN 03 to SCN 05 | 1h | difficulty visibly changes budget or availability in a meaningful way | ⬜ Not started | — |
-| SCN 07 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement lab constraint generator for budget, time limit, staff, stock, bookings | SCN 02 | 1.25h | no generated scenario contains contradictory constraints | ⬜ Not started | — |
-| SCN 08 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement minimum viable replication spec per template | SCN 03 to SCN 05 | 1h | hidden rubric clearly marks what is fixed versus flexible | ⬜ Not started | — |
+| SCN 02 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Define normalized scenario schema with task summary, success criteria, constraints, resources, allowed substitutions, and hidden reference spec | MOD 04 | 0.75h | all scenario builders return the same normalized top level structure and mapper-ready inputs | ⬜ Not started | — |
+| SCN 03 | E03.2 | Person A | `replicalab/scenarios/math_reasoning.py` | Implement mathematics template with theorem, proof-goal, tool, time, and review constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
+| SCN 04 | E03.2 | Person A | `replicalab/scenarios/ml_benchmark.py` | Implement ML benchmark template with dataset, compute, time, and evaluation constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
+| SCN 05 | E03.2 | Person A | `replicalab/scenarios/finance_trading.py` | Implement finance and trading planning template with risk, capital, slippage, and backtest constraints | SCN 02 | 1h | generated scenario passes structure and internal consistency tests | ⬜ Not started | — |
+| SCN 06 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Implement difficulty application for easy, medium, hard by mechanically altering constraints, resources, and conflicts | SCN 03 to SCN 05 | 1h | difficulty visibly changes the normalized scenario pack in a meaningful way | ⬜ Not started | — |
+| SCN 07 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement normalized constraint and resource generator for budget, time, compute, personnel, stock, and bookings | SCN 02 | 1.25h | no generated scenario contains contradictory constraints or resources | ⬜ Not started | — |
+| SCN 08 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement hidden reference spec and allowed substitutions per template | SCN 03 to SCN 05 | 1h | hidden reference clearly marks what is fixed versus flexible for deterministic scoring | ⬜ Not started | — |
 | SCN 09 | E03.1 | Person A | `replicalab/scenarios/templates.py` | Implement `generate_scenario(seed, template, difficulty)` | SCN 01 to SCN 08 | 0.75h | function returns a full scenario with deterministic content | ⬜ Not started | — |
 | SCN 10 | E03.1 | Person A | tests | Add seeded generation tests and consistency tests | SCN 09 | 1h | same seed plus template returns same scenario and different seeds vary | ⬜ Not started | — |
 | SCN 11 | E03.2 | Person B | fixtures | Create hand checked golden scenarios for prompt testing | SCN 09 | 0.75h | three fixed scenarios are available for deterministic manual testing | ⬜ Not started | — |
 | SCN 12 | E03.2 | Person D | docs | Write plain language scenario summaries for UI examples and README | SCN 03 to SCN 05 | 0.5h | each template has a clean one paragraph explanation for judges | ⬜ Not started | — |
-| SCN 13 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement equipment booking calendar data model with time slot availability, conflict detection, and booking duration | SCN 07 | 1h | constraint generator can produce realistic booking conflicts and the Lab Manager can check calendar availability | ⬜ Not started | — |
+| SCN 13 | E03.2 | Person A | `replicalab/scenarios/templates.py` | Implement shared booking and scheduling data model for GPUs, rooms, or equipment with time slot conflicts and duration | SCN 07 | 1h | constraint generator can produce realistic booking conflicts across domains and the Lab Manager can check availability | ⬜ Not started | — |
 
 ---
 
 ## Epic E04. Scientist agent and Lab Manager policy
 
 ### Epic goal
-Create the interactive roles that operate inside the environment.
+Create the interactive roles that operate inside the environment while keeping truth in deterministic checkers and reward logic.
 
 ### User stories
 
@@ -368,22 +420,22 @@ Create the interactive roles that operate inside the environment.
 As the Scientist agent, I want a structured action space so I can learn consistent policy behavior.
 
 **US E04.2**  
-As the Lab Manager, I want deterministic feasibility checks so the environment remains stable and fair.
+As the Lab Manager, I want grounded negotiation plus deterministic feasibility checks so the environment remains stable and fair.
 
 ### Tasks
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| AGT 01 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Draft system prompt for Scientist role | MOD 01, SCN 11 | 0.75h | prompt clearly explains role, constraints, and JSON output contract | ⬜ Not started | — |
-| AGT 02 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build observation to prompt formatting helper | AGT 01, MOD 03 | 0.75h | formatted prompt includes paper info, history, and action schema consistently | ⬜ Not started | — |
+| AGT 01 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Draft domain-neutral system prompt for Scientist role from normalized scenario data | MOD 01, SCN 11 | 0.75h | prompt clearly explains role, mapped constraints, and JSON output contract | ⬜ Not started | — |
+| AGT 02 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build observation to prompt formatting helper from normalized scenario-derived observations | AGT 01, MOD 03 | 0.75h | formatted prompt includes task info, history, and action schema consistently | ⬜ Not started | — |
 | AGT 03 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Add parse plus retry strategy for malformed model output | MOD 09, AGT 02 | 0.75h | malformed output triggers at least one controlled retry or explicit failure | ⬜ Not started | — |
 | AGT 04 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build baseline heuristic Scientist for non trained smoke tests | AGT 02 | 1h | baseline can complete episodes without crashing | ⬜ Not started | — |
-| AGT 05 | E04.2 | Person A and B | `replicalab/agents/lab_manager_policy.py` | Implement feasibility checker against budget, equipment, reagents, schedule, personnel | SCN 07, MOD 05 | 1.25h | checker returns clear pass or fail per constraint dimension | ⬜ Not started | — |
-| AGT 06 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Implement alternative suggestion logic such as substitute technique or smaller sample size | AGT 05, SCN 08 | 1h | lab manager can suggest at least one sensible revision when initial plan fails | ⬜ Not started | — |
-| AGT 07 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Add human readable response templating from feasibility results | AGT 05 | 0.75h | output is stable, readable, and maps cleanly to underlying checks | ⬜ Not started | — |
+| AGT 05 | E04.2 | Person A and B | `replicalab/agents/lab_manager_policy.py` | Implement deterministic feasibility checker against normalized constraints, resources, schedule, and policy rules | SCN 07, MOD 05 | 1.25h | checker returns clear pass or fail per constraint dimension | ⬜ Not started | — |
+| AGT 06 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Implement alternative suggestion logic from allowed substitutions and resource tradeoffs | AGT 05, SCN 08 | 1h | lab manager can suggest at least one sensible revision when initial plan fails | ⬜ Not started | — |
+| AGT 07 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Add model-backed response synthesis from feasibility results and suggested revisions | AGT 05 | 0.75h | output is readable, grounded in checker results, and maps cleanly to underlying checks | ⬜ Not started | — |
 | AGT 08 | E04.1 | Person B | tests | Add prompt formatting and parse tests for Scientist policy | AGT 01 to AGT 04 | 0.75h | tests cover happy path and malformed output handling | ⬜ Not started | — |
-| AGT 09 | E04.2 | Person A | tests | Add deterministic policy tests for Lab Manager | AGT 05 to AGT 07 | 0.75h | same proposal plus same lab state returns same response every time | ⬜ Not started | — |
-| AGT 10 | E04.1 | Person B | `replicalab/prompts/` | Write prompt text files for all three roles: `scientist.txt`, `lab_manager.txt`, `judge.txt` | AGT 01, AGT 07, JDG 06 | 0.75h | prompt files exist, are loadable, and match the agreed role behavior | ⬜ Not started | — |
+| AGT 09 | E04.2 | Person A | tests | Add deterministic feasibility checker tests for Lab Manager grounding | AGT 05 to AGT 07 | 0.75h | same proposal plus same normalized scenario returns the same checker results every time | ⬜ Not started | — |
+| AGT 10 | E04.1 | Person B | `replicalab/prompts/` | Write prompt text files for all three roles: `scientist.txt`, `lab_manager.txt`, `judge.txt` | AGT 01, AGT 07, JDG 06 | 0.75h | prompt files exist, are loadable, and assemble correctly from normalized scenario data and agreed role behavior | ⬜ Not started | — |
 | AGT 11 | E04.1 | Person B | docs | Select and document base model for Scientist training with rationale for model size, license, and structured output capability | AGT 01 | 0.5h | decision is recorded and all team members know which model will be fine tuned | ⬜ Not started | — |
 
 ---
@@ -391,7 +443,7 @@ As the Lab Manager, I want deterministic feasibility checks so the environment r
 ## Epic E05. Judge engine and reward logic
 
 ### Epic goal
-Score the final protocol fairly, explainably, and deterministically.
+Score the final plan fairly, explainably, and deterministically against the hidden reference spec.
 
 ### User stories
 
@@ -405,9 +457,9 @@ As a judge, I need a readable score breakdown so I can understand why the enviro
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| JDG 01 | E05.1 | Person A | `replicalab/scoring/rigor.py` | Implement rigor score for sample size, controls, method, stats, duration | SCN 08 | 1.25h | score is between 0 and 1 and matches rubric examples | ⬜ Not started | — |
-| JDG 02 | E05.1 | Person A | `replicalab/scoring/feasibility.py` | Implement feasibility score for budget, equipment, reagents, time, staffing | SCN 07, AGT 05 | 1.25h | score is between 0 and 1 and matches lab constraint logic | ⬜ Not started | — |
-| JDG 03 | E05.1 | Person A | `replicalab/scoring/fidelity.py` | Implement fidelity score for sample ratio, technique match, control completeness | SCN 08 | 1h | score is between 0 and 1 and matches rubric examples | ⬜ Not started | — |
+| JDG 01 | E05.1 | Person A | `replicalab/scoring/rigor.py` | Implement rigor or objective-validity score for plan completeness, required checks, method quality, and justification | SCN 08 | 1.25h | score is between 0 and 1 and matches rubric examples | ⬜ Not started | — |
+| JDG 02 | E05.1 | Person A | `replicalab/scoring/feasibility.py` | Implement feasibility score for budget, resources, time, staffing, compute, and bookings | SCN 07, AGT 05 | 1.25h | score is between 0 and 1 and matches normalized constraint logic | ⬜ Not started | — |
+| JDG 03 | E05.1 | Person A | `replicalab/scoring/fidelity.py` | Implement fidelity score against hidden reference spec, required steps, and allowed substitutions | SCN 08 | 1h | score is between 0 and 1 and matches rubric examples | ⬜ Not started | — |
 | JDG 04 | E05.1 | Person A | `replicalab/scoring/rubric.py` | Implement total reward formula with bonuses and penalties | JDG 01 to JDG 03 | 0.75h | total reward formula matches agreed math and returns consistent output | ⬜ Not started | — |
 | JDG 05 | E05.2 | Person A | `replicalab/scoring/rubric.py` | Build reward breakdown object with component scores and penalties | JDG 04 | 0.5h | breakdown includes rigor, feasibility, fidelity, bonuses, and penalties | ⬜ Not started | — |
 | JDG 06 | E05.2 | Person A | `replicalab/agents/judge_policy.py` | Add optional plain English explanation function from reward breakdown | JDG 05 | 0.75h | explanation mirrors rubric and introduces no new hidden logic | ⬜ Not started | — |
@@ -755,7 +807,7 @@ The MVP is complete when all of the following are true:
 | 2 | add judge plain English explanation panel | better judge readability |
 | 3 | add second and third difficulty levels to all templates | stronger world modeling story |
 | 4 | add curriculum training path | stronger self improvement story |
-| 5 | add model-backed Lab Manager using same base model with a separate role adapter | stronger multi agent depth but higher risk, reward stays deterministic, Lab Manager affects trajectory variance not reward definition |
+| 5 | add Lab Manager orchestrator with specialist subagents for compute, scheduling, budget, or risk review | stronger multi agent depth while preserving the same outer contract |
 | 6 | add third agent such as ethics reviewer | potential partner fit extension |
 | 7 | add post episode self critique before retry | stronger self improvement story from Blueprint Section 14.2 |
 | 8 | add automatic scenario difficulty scaling | adaptive curriculum from Blueprint Section 14.2 |
@@ -767,13 +819,14 @@ The MVP is complete when all of the following are true:
 | Risk | Likely impact | Mitigation owner | Mitigation plan |
 | --- | --- | --- | --- |
 | schema churn breaks integration | high | Person A | freeze contracts early and review all changes in PR |
-| RL training is unstable | high | Person B | use Scientist only training and rule based Lab Manager |
+| RL training is unstable | high | Person B | keep the reward deterministic, train Scientist first, and keep the model-backed Lab Manager grounded by the deterministic checker with low-variance settings or frozen weights during Scientist training |
 | HF Space deployment issues | high | Person C | test local Docker first and keep `/health` simple |
 | frontend polish consumes too much time | medium | Person D | keep fallback to OpenEnv `/web` or a very thin React view |
 | reward too noisy or subjective | high | Person A | keep judge deterministic and rubric based |
 | final demo breaks live | high | all | keep replay logs and a pre tested demo seed ready |
 | too many scenarios | medium | Person A | ship one excellent scenario, then add more only if stable |
-| future model-backed Lab Manager increases episode variance | medium | Person B | keep rule-based Lab Manager for MVP training, introduce model-backed version only after Scientist policy is stable, use same base model with separate adapter to limit infra complexity |
+| scenario adapters become mini business-logic engines | medium | Person A | keep adapters thin, emit normalized packs only, and push scoring or validation rules back into shared checker modules |
+| hybrid Lab Manager drifts from checker truth | medium | Person B | treat checker output as source of truth, derive final action fields from validated checker results, and use model-backed text only for negotiation language and alternatives |
 
 ---
 
@@ -804,11 +857,12 @@ The environment client must expose:
 ### Scenario to judge contract
 Every scenario must provide:
 
-1. original experiment fields
-2. minimum viable replication spec
+1. normalized scenario pack
+2. success criteria
 3. allowed substitutions
-4. lab constraints
-5. scenario id and seed
+4. constraints and resources
+5. hidden reference spec
+6. scenario id and seed
 
 ---
 
@@ -843,4 +897,4 @@ The project wins on **clarity and working proof**, not on the largest number of 
 
 ## 17. One sentence team mission
 
-**Build a deterministic OpenEnv world where a Scientist learns, through RL, to negotiate scientifically valid replication plans with a constraint aware Lab Manager under realistic lab conditions.**
+**Build a deterministic OpenEnv world where a Scientist learns, through RL, to negotiate high quality technical plans with a constraint-aware Lab Manager across seeded domains, starting with mathematics and machine learning.**

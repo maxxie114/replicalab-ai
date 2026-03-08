@@ -1,25 +1,27 @@
 # ReplicaLab
 
-**A multi-agent scientific replication environment built on [OpenEnv](https://github.com/openenv)**
+**A multi-agent constraint-aware planning environment built on [OpenEnv](https://github.com/openenv)**
 
-> *How do we adapt an experiment without breaking the science?*
+> *How do we adapt a plan without breaking the objective?*
 
-ReplicaLab tackles the **replication crisis** in science. Published protocols describe ideal conditions, but real labs face missing equipment, tight budgets, booking conflicts, and reagent shortages. ReplicaLab trains an AI agent to negotiate realistic experiment adaptations while preserving scientific validity.
+ReplicaLab trains an agent to negotiate high-quality plans under real constraints. The initial domain focus is mathematics and machine learning, with finance and trading design in offline or backtest form as the third scenario family. Physics and biology remain later adapters once the core normalized scenario layer is stable.
 
 ## Current Build Status
 
 - The repository is still in the foundation stage.
 - The Python package foundation is verified through editable install plus shared-model import checks.
-- Shared contracts currently live in `replicalab/models.py`, with the draft freeze in `docs/fnd08_frozen_json_contract.md`.
+- Shared contracts currently live in `replicalab/models.py`, with the signed-off freeze in `docs/fnd08_frozen_json_contract.md`.
 - A stub-backed FastAPI and WebSocket server scaffold now exists in `server/app.py`, while real environment wiring is still in progress.
-- Frontend shell and `openenv.yaml` are still in progress.
+- `openenv.yaml` now exists and passes local OpenEnv validation.
+- The frozen outer contract remains stable while the internal scenario engine moves toward a normalized scenario pack.
+- The planned Lab Manager path is hybrid: model-backed negotiation language plus deterministic feasibility grounding.
 
 ## Team Ownership
 
 | Owner | Current focus |
 |------|----------------|
-| Kian (Person A) | Shared schemas, validation, scenario engine, judge logic |
-| Person B (Ayush) | Contract freeze, Scientist-side prompting and parsing, notebook and client path |
+| Kian (Person A) | Shared schemas, validation, normalized scenario engine, judge logic |
+| Person B (Ayush) | Contract freeze, domain-neutral Scientist prompting and parsing, notebook and client path |
 | Max (Person C) | Repo/runtime setup, frontend shell, server and deployment plumbing |
 | Kush (Person D) | README and demo docs, UI shell planning, polish and presentation assets |
 
@@ -35,22 +37,22 @@ ReplicaLab tackles the **replication crisis** in science. Published protocols de
 
 ## How It Works
 
-Each episode simulates a negotiation between two agents inside a constrained virtual lab:
+Each episode simulates a negotiation between two agents inside a constrained technical scenario:
 
 | Role | Type | Responsibility |
 |------|------|----------------|
-| **Scientist** | Trainable LLM policy | Proposes replication protocols, preserves scientific rigor |
-| **Lab Manager** | Rule-based policy | Enforces budget, equipment, staffing, and feasibility constraints |
-| **Judge** | Deterministic rubric engine | Scores the final protocol on Rigor, Feasibility, and Fidelity |
+| **Scientist** | Trainable model policy | Proposes plans, asks questions, and preserves objective quality |
+| **Lab Manager** | Hybrid model-backed policy with deterministic grounding | Negotiates revisions while the checker enforces feasibility and constraint truth |
+| **Judge** | Deterministic rubric engine | Scores the final plan on Rigor, Feasibility, and Fidelity |
 
 ### Episode Lifecycle
 
-1. **Reset** -- `reset(seed)` generates a paper template, lab constraints, and a hidden evaluation rubric
-2. **Scientist observes** -- Paper summary, experiment goal, conversation history, current protocol
-3. **Lab Manager observes** -- Budget, equipment, calendar, reagents, staff, safety rules
+1. **Reset** -- `reset(seed)` generates a normalized scenario pack, mapped role observations, and a hidden reference spec
+2. **Scientist observes** -- Task summary, experiment or benchmark goal, conversation history, current plan
+3. **Lab Manager observes** -- Resource, scheduling, staffing, and policy constraints mapped from the same normalized pack
 4. **Negotiation** -- Multiple rounds of proposals, counteroffers, and questions
 5. **Agreement or timeout** -- Both accept, or the round limit is reached
-6. **Reward** -- Judge scores the final protocol
+6. **Reward** -- Judge scores the final plan against the hidden reference spec
 
 ### Reward Formula
 
@@ -58,7 +60,11 @@ Each episode simulates a negotiation between two agents inside a constrained vir
 total_reward = 10 * rigor * feasibility * fidelity + efficiency_bonus + communication_bonus - penalties
 ```
 
-The **multiplicative core** prevents fake wins: a scientifically perfect but impossible plan scores low, and a cheap but scientifically broken plan also scores low.
+The **multiplicative core** prevents fake wins: a theoretically strong but impossible plan scores low, and a cheap but invalid plan also scores low.
+
+### Internal normalization rule
+
+The outer action and observation models stay stable. Domain-specific content is converted into a normalized scenario pack first, then mapped into the current `ScientistObservation` and `LabManagerObservation` contracts. Prompts are assembled from that normalized data rather than hard-coded per domain.
 
 ---
 
@@ -123,7 +129,7 @@ pytest tests/
 
 ## Training the Scientist
 
-RL training improves the Scientist agent's ability to negotiate effective, feasible protocols.
+RL training improves the Scientist agent's ability to negotiate effective, feasible plans.
 
 ### Quick Start (Google Colab)
 
@@ -138,36 +144,40 @@ Environment resets -> Scientist proposes -> Lab Manager responds -> ... -> Episo
 ```
 
 **Target behaviors over training:**
-- Ask better questions before committing to a protocol
-- Preserve critical controls (positive/negative controls, minimum sample sizes)
-- Choose realistic substitutions (e.g., WST1 instead of MTT when appropriate)
+- Ask better questions before committing to a plan
+- Preserve critical checks, assumptions, and required steps
+- Choose realistic substitutions when a preferred method or resource is unavailable
 - Reach agreement in fewer rounds
-- Avoid over-budget plans
+- Avoid impossible or over-budget plans
 
 ---
 
 ## Scenario System
 
-Scenarios are generated deterministically from a seed. Each template defines:
+Scenarios are generated deterministically from a seed. Each template first emits a normalized scenario pack with:
 
-- Required equipment and valid substitutes
-- Must-keep controls and minimum sample sizes
-- Typical costs and likely bottlenecks
-- Difficulty-scaled constraints
+- `task_summary`
+- `success_criteria`
+- `constraints`
+- `resources`
+- `allowed_substitutions`
+- `hidden_reference_spec`
+
+Difficulty scaling should then mechanically tighten constraints, remove resources, or add conflicts instead of changing the outer contract or prompt structure.
 
 | Difficulty | Description |
 |------------|-------------|
-| **Easy** | Lab has most of what is needed |
-| **Medium** | Some missing items, tighter budget and time |
-| **Hard** | Major shortages, bigger tradeoffs, booking conflicts |
+| **Easy** | Most required resources are present and tradeoffs are light |
+| **Medium** | Some missing items, tighter budgets or time, and at least one meaningful conflict |
+| **Hard** | Multiple shortages, sharper tradeoffs, and serious scheduling or resource conflicts |
 
 ### Included Scenario Templates
 
-| Template | Domain | Example Experiment |
+| Template | Domain | Example Task |
 |----------|--------|--------------------|
-| `cell_biology` | Wet lab | Drug cytotoxicity assay (MTT/WST1) |
-| `ml_benchmark` | Compute lab | Model evaluation with GPU/dataset constraints |
-| `behavioral_psych` | Human subjects | Survey replication with participant pool limits |
+| `math_reasoning` | Mathematics | Proof planning under tool, review, and time constraints |
+| `ml_benchmark` | Machine learning | Model evaluation with dataset, compute, and time constraints |
+| `finance_trading` | Finance and trading | Offline strategy and backtest planning under risk and capital limits |
 
 ---
 
@@ -188,15 +198,15 @@ replicalab-ai/
 │   │   ├── lab_manager.txt    # Lab Manager response templates
 │   │   └── judge.txt          # Judge rubric prompt
 │   ├── scenarios/
-│   │   ├── templates.py       # Base scenario template
-│   │   ├── cell_biology.py    # Cell biology scenarios
+│   │   ├── templates.py       # Normalized scenario template layer
+│   │   ├── math_reasoning.py  # Mathematics scenarios
 │   │   ├── ml_benchmark.py    # ML benchmark scenarios
-│   │   └── behavioral_psych.py
+│   │   └── finance_trading.py
 │   ├── scoring/
 │   │   ├── rubric.py          # Main scoring engine
-│   │   ├── rigor.py           # Scientific rigor scorer
-│   │   ├── feasibility.py     # Lab feasibility scorer
-│   │   └── fidelity.py        # Protocol fidelity scorer
+│   │   ├── rigor.py           # Objective-validity scorer
+│   │   ├── feasibility.py     # Constraint feasibility scorer
+│   │   └── fidelity.py        # Hidden-reference fidelity scorer
 │   ├── agents/
 │   │   ├── scientist_policy.py
 │   │   ├── lab_manager_policy.py
