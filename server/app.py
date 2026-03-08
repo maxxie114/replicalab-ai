@@ -31,13 +31,25 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from replicalab.config import (
+    API_HOST,
+    API_PORT,
+    DEFAULT_DIFFICULTY,
+    DEFAULT_SCENARIO_TEMPLATE,
+    SESSION_TTL_SECONDS,
+    STUB_ACCEPT_REWARD,
+    WS_IDLE_TIMEOUT_SECONDS,
+)
+from replicalab.scenarios import available_scenario_families, generate_scenario
 from replicalab.models import (
     EpisodeLog,
     EpisodeState,
     LabManagerObservation,
     Observation,
+    RewardBreakdown,
     ScientistAction,
     ScientistObservation,
+    StepInfo,
     StepResult,
 )
 
@@ -65,18 +77,18 @@ except ImportError:
     log.warning("ReplicaLabEnv not found — using _StubEnv (replace when Person A ships env)")
 
 
-def _reward_breakdown_from_state(state: EpisodeState) -> dict[str, Any]:
-    return {
-        "rigor": state.rigor_score,
-        "feasibility": state.feasibility_score,
-        "fidelity": state.fidelity_score,
-        "efficiency_bonus": 0.0,
-        "communication_bonus": 0.0,
-        "penalties": {
+def _reward_breakdown_from_state(state: EpisodeState) -> RewardBreakdown:
+    return RewardBreakdown(
+        rigor=state.rigor_score,
+        feasibility=state.feasibility_score,
+        fidelity=state.fidelity_score,
+        efficiency_bonus=0.0,
+        communication_bonus=0.0,
+        penalties={
             "invalid_action": 0.0,
             "timeout": 0.0,
         },
-    }
+    )
 
 
 def _build_episode_log(episode_id: str, state: EpisodeState) -> EpisodeLog:
@@ -113,29 +125,33 @@ class _StubEnv:
     def reset(
         self,
         seed: int = 0,
-        scenario: str = "cell_biology",
-        difficulty: str = "easy",
+        scenario: str = DEFAULT_SCENARIO_TEMPLATE,
+        difficulty: str = DEFAULT_DIFFICULTY,
     ) -> Observation:
         self._episode_id = str(uuid.uuid4())
         self._logs = []
+        pack = generate_scenario(seed=seed, template=scenario, difficulty=difficulty)
         self._state = EpisodeState(
             seed=seed,
             scenario_template=scenario,
             difficulty=difficulty,
-            paper_title="[stub] Effect of compound X on cell proliferation",
+            paper_title=pack.scientist_observation.paper_title,
             paper_hypothesis="Compound X inhibits cell growth at 10 µM",
-            paper_method="MTT assay, 96-well plate, 72 h incubation",
+            paper_method=pack.scientist_observation.paper_method,
             paper_key_finding="IC50 = 8.3 µM",
-            experiment_goal="Replicate IC50 measurement within 20 % margin",
-            lab_budget_total=5000.0,
-            lab_budget_remaining=5000.0,
-            lab_equipment=["96-well plate reader", "incubator", "pipettes"],
+            experiment_goal=pack.scientist_observation.experiment_goal,
+            lab_budget_total=pack.lab_manager_observation.budget_total,
+            lab_budget_remaining=pack.lab_manager_observation.budget_remaining,
+            lab_equipment=list(pack.lab_manager_observation.equipment_available),
             lab_reagents=["MTT reagent", "DMSO", "cell culture media"],
-            lab_staff_count=2,
-            lab_time_limit_days=14,
-            max_rounds=6,
+            lab_staff_count=pack.lab_manager_observation.staff_count,
+            lab_time_limit_days=pack.lab_manager_observation.time_limit_days,
+            max_rounds=pack.scientist_observation.max_rounds,
             round_number=0,
         )
+        self._state.paper_hypothesis = pack.scientist_observation.paper_hypothesis
+        self._state.paper_key_finding = pack.scientist_observation.paper_key_finding
+        self._state.lab_reagents = list(pack.lab_manager_observation.reagents_in_stock)
         self._state.conversation_history = list(self._logs)
         log.info("Stub reset | episode=%s seed=%d scenario=%s", self._episode_id, seed, scenario)
         return self._make_observation()
@@ -150,7 +166,7 @@ class _StubEnv:
             action.action_type == "accept"
             or self._state.round_number >= self._state.max_rounds
         )
-        reward = 5.0 if done and action.action_type == "accept" else 0.0
+        reward = STUB_ACCEPT_REWARD if done and action.action_type == "accept" else 0.0
         if done:
             self._state.done = True
             self._state.agreement_reached = action.action_type == "accept"
@@ -163,11 +179,16 @@ class _StubEnv:
             observation=self._make_observation(),
             reward=reward,
             done=done,
-            info={
-                "round": self._state.round_number,
-                "stub": True,
-                "episode_id": self._episode_id,
-            },
+            info=StepInfo(
+                agreement_reached=self._state.agreement_reached,
+                error=None,
+                reward_breakdown=_reward_breakdown_from_state(self._state) if done else None,
+                judge_notes="Stub audit until judge integration lands." if done else None,
+                verdict=("accept" if self._state.agreement_reached else "revise") if done else None,
+                round=self._state.round_number,
+                stub=True,
+                episode_id=self._episode_id,
+            ),
         )
 
     def state(self) -> EpisodeState:
@@ -264,7 +285,7 @@ def _make_env() -> "_StubEnv":
 # In-memory session store (REST sessions)
 # ---------------------------------------------------------------------------
 
-_SESSION_TTL_SECONDS = 300  # 5 minutes idle before cleanup
+_SESSION_TTL_SECONDS = SESSION_TTL_SECONDS
 
 _sessions: dict[str, dict[str, Any]] = {}
 # { session_id: { "env": env_instance, "last_active": float, "episode_id": str } }
@@ -340,11 +361,7 @@ app.add_middleware(
 # Available scenarios constant
 # ---------------------------------------------------------------------------
 
-SCENARIOS = [
-    {"family": "cell_biology", "difficulties": ["easy", "medium", "hard"]},
-    {"family": "ml_benchmark", "difficulties": ["easy", "medium", "hard"]},
-    {"family": "behavioral_psych", "difficulties": ["easy", "medium", "hard"]},
-]
+SCENARIOS = available_scenario_families()
 
 # ---------------------------------------------------------------------------
 # REST request/response schemas
@@ -353,8 +370,8 @@ SCENARIOS = [
 
 class ResetRequest(BaseModel):
     seed: int = 0
-    scenario: str = "cell_biology"
-    difficulty: str = "easy"
+    scenario: str = DEFAULT_SCENARIO_TEMPLATE
+    difficulty: str = DEFAULT_DIFFICULTY
     session_id: Optional[str] = None  # pass to reuse an existing session slot
 
 
@@ -451,7 +468,7 @@ async def get_replay(episode_id: str):
 
 # WebSocket message protocol:
 #   Client → Server:
-#     { "type": "reset", "seed": 42, "scenario": "cell_biology", "difficulty": "easy" }
+#     { "type": "reset", "seed": 42, "scenario": DEFAULT_SCENARIO_TEMPLATE, "difficulty": DEFAULT_DIFFICULTY }
 #     { "type": "step", "action": { ...ScientistAction fields... } }
 #     { "type": "ping" }
 #
@@ -461,14 +478,14 @@ async def get_replay(episode_id: str):
 #     { "type": "pong" }
 #     { "type": "error", "message": "..." }
 
-_WS_IDLE_TIMEOUT = 300  # seconds before server closes an idle WebSocket
+_WS_IDLE_TIMEOUT = WS_IDLE_TIMEOUT_SECONDS
 
 
 async def _ws_send(ws: WebSocket, payload: dict) -> None:
     await ws.send_text(json.dumps(payload))
 
 
-def main(host: str = "0.0.0.0", port: int = 7860) -> None:
+def main(host: str = API_HOST, port: int = API_PORT) -> None:
     import uvicorn
 
     uvicorn.run("server.app:app", host=host, port=port, reload=False)
@@ -503,8 +520,8 @@ async def websocket_endpoint(ws: WebSocket):
 
             elif msg_type == "reset":
                 seed = int(msg.get("seed", 0))
-                scenario = str(msg.get("scenario", "cell_biology"))
-                difficulty = str(msg.get("difficulty", "easy"))
+                scenario = str(msg.get("scenario", DEFAULT_SCENARIO_TEMPLATE))
+                difficulty = str(msg.get("difficulty", DEFAULT_DIFFICULTY))
 
                 try:
                     obs = env.reset(seed=seed, scenario=scenario, difficulty=difficulty)
@@ -584,10 +601,10 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=7860)
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=API_PORT)
+    parser.add_argument("--host", default=API_HOST)
     args = parser.parse_args()
-    if args.host == "0.0.0.0" and args.port == 7860:
+    if args.host == API_HOST and args.port == API_PORT:
         main()
     else:
         main(host=args.host, port=args.port)
