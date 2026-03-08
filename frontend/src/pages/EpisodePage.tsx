@@ -225,6 +225,7 @@ export default function EpisodePage() {
             difficulty={episode.difficulty}
             round={episode.round}
             maxRounds={episode.max_rounds}
+            episodeId={episode.episode_id}
           />
           <LabInventory constraints={episode.lab_constraints} />
           <Controls
