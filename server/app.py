@@ -22,6 +22,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
+import threading
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -81,6 +83,110 @@ logging.basicConfig(
     format=LOG_FORMAT,
 )
 log = logging.getLogger("replicalab.server")
+
+# ---------------------------------------------------------------------------
+# Scientist model — loaded once at startup from the GRPO checkpoint
+# ---------------------------------------------------------------------------
+
+_SCIENTIST_CHECKPOINT = os.environ.get(
+    "SCIENTIST_CHECKPOINT",
+    "/home/jovyan/replicalab-qwen3.5-grpo/checkpoint-200",
+)
+_scientist_model: Any = None
+_scientist_tokenizer: Any = None
+_scientist_lock = threading.Lock()
+_scientist_ready = threading.Event()  # set when load attempt completes
+
+
+def _load_scientist_model() -> None:
+    """Load the fine-tuned Qwen LoRA adapter in a background thread."""
+    global _scientist_model, _scientist_tokenizer
+    checkpoint = Path(_SCIENTIST_CHECKPOINT)
+    if not checkpoint.exists():
+        log.warning(
+            "Scientist checkpoint not found at %s — suggest endpoint will use deterministic baseline",
+            checkpoint,
+        )
+        _scientist_ready.set()
+        return
+    try:
+        from unsloth import FastLanguageModel  # type: ignore
+        log.info("Loading Scientist model from %s …", checkpoint)
+        model, tokenizer = FastLanguageModel.from_pretrained(
+            model_name=str(checkpoint),
+            max_seq_length=2048,
+            load_in_4bit=False,
+        )
+        FastLanguageModel.for_inference(model)
+        _scientist_model = model
+        _scientist_tokenizer = tokenizer
+        log.info("Scientist model loaded ✓")
+    except Exception:
+        log.exception("Failed to load Scientist model — suggest endpoint will use deterministic baseline")
+    _scientist_ready.set()
+
+
+def _run_scientist_inference(sci_obs: "ScientistObservation", scenario_pack: Any) -> "ScientistAction":
+    """Blocking inference call — run via executor to avoid blocking the event loop."""
+    from replicalab.agents.scientist_policy import (
+        build_baseline_scientist_action,
+        build_scientist_system_prompt,
+        format_scientist_observation,
+        parse_scientist_output,
+    )
+
+    if _scientist_model is None:
+        return build_baseline_scientist_action(sci_obs)
+
+    try:
+        system = (
+            build_scientist_system_prompt(scenario_pack)
+            if scenario_pack is not None
+            else _generic_scientist_system_prompt()
+        )
+        user = format_scientist_observation(sci_obs)
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+
+        with _scientist_lock:
+            import torch  # type: ignore
+            inputs = _scientist_tokenizer.apply_chat_template(
+                messages,
+                tokenize=True,
+                add_generation_prompt=True,
+                return_tensors="pt",
+            )
+            # Move to same device as model
+            device = next(_scientist_model.parameters()).device
+            inputs = inputs.to(device)
+            with torch.no_grad():
+                outputs = _scientist_model.generate(
+                    input_ids=inputs,
+                    max_new_tokens=512,
+                    temperature=0.7,
+                    do_sample=True,
+                )
+            generated_ids = outputs[0][inputs.shape[1]:]
+            raw_text = _scientist_tokenizer.decode(generated_ids, skip_special_tokens=True)
+
+        return parse_scientist_output(raw_text)
+
+    except Exception:
+        log.exception("Scientist model inference failed — falling back to baseline")
+        from replicalab.agents.scientist_policy import build_baseline_scientist_action
+        return build_baseline_scientist_action(sci_obs)
+
+
+def _generic_scientist_system_prompt() -> str:
+    from replicalab.models import ScientistActionType
+    allowed = ", ".join(a.value for a in ScientistActionType)
+    return (
+        "You are the Scientist agent in ReplicaLab. "
+        "Negotiate toward the strongest feasible replication plan under the given constraints. "
+        f"Return exactly one JSON object with all ScientistAction fields. Allowed action_type values: {allowed}."
+    )
 
 # ---------------------------------------------------------------------------
 # Environment factory — prefer ReplicaLabEnv, retain _StubEnv only as fallback
@@ -381,6 +487,7 @@ async def _session_cleanup_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    threading.Thread(target=_load_scientist_model, daemon=True, name="scientist-model-loader").start()
     task = asyncio.create_task(_session_cleanup_loop())
     log.info("ReplicaLab server starting up")
     yield
@@ -862,6 +969,58 @@ async def step_episode(req: StepRequest):
         )
 
     return result
+
+
+class SuggestRequest(BaseModel):
+    session_id: str
+
+
+@_api.post("/scientist/suggest", response_model=ScientistAction)
+async def suggest_scientist_action(req: SuggestRequest):
+    """Return a model-generated ScientistAction for the current session state.
+
+    Uses the fine-tuned Qwen LoRA checkpoint if available, otherwise falls
+    back to the deterministic baseline policy.
+    """
+    if req.session_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found. Call /reset first.")
+
+    _touch(req.session_id)
+    session = _sessions[req.session_id]
+    env = session["env"]
+
+    # Get current observation — works for both _StubEnv and ReplicaLabEnv
+    obs: Optional[Observation] = None
+    if hasattr(env, "_make_observation"):
+        obs = env._make_observation()
+    elif hasattr(env, "state"):
+        pass  # fall through to baseline
+
+    if obs is None or obs.scientist is None:
+        raise HTTPException(status_code=400, detail="No observation available for this session.")
+
+    sci_obs = obs.scientist
+    scenario_pack = getattr(env, "_scenario_pack", None)
+
+    # Wait for model load to complete (non-blocking with timeout)
+    await asyncio.get_event_loop().run_in_executor(
+        None, lambda: _scientist_ready.wait(timeout=5)
+    )
+
+    action = await asyncio.get_event_loop().run_in_executor(
+        None, _run_scientist_inference, sci_obs, scenario_pack
+    )
+    return action
+
+
+@_api.get("/scientist/status")
+async def scientist_model_status():
+    """Report whether the Scientist model is loaded."""
+    return {
+        "loaded": _scientist_model is not None,
+        "ready": _scientist_ready.is_set(),
+        "checkpoint": _SCIENTIST_CHECKPOINT,
+    }
 
 
 @_api.get("/replay/{episode_id}", response_model=EpisodeLog)

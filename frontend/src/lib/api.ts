@@ -271,6 +271,20 @@ export async function stepEpisode(
   };
 }
 
+export async function suggestScientistAction(sessionId: string): Promise<ScientistAction> {
+  try {
+    const res = await fetch(`${BASE_URL}/scientist/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error(`Suggest failed: ${res.status}`);
+    return res.json();
+  } catch (error) {
+    throw normalizeFetchError(error, 'Failed to get scientist suggestion');
+  }
+}
+
 export async function getReplay(episodeId: string): Promise<unknown> {
   try {
     const res = await fetch(`${BASE_URL}/replay/${episodeId}`);
