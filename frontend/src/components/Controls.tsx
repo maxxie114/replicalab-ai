@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Play, RotateCcw, Dices } from 'lucide-react';
 import type { Difficulty, ScenarioTemplate, ResetParams } from '@/types';
 import { cn } from '@/lib/utils';
 import { sfx } from '@/lib/audio';
+import { healthCheck } from '@/lib/api';
 
 const TEMPLATES: { value: ScenarioTemplate; label: string }[] = [
   { value: 'math_reasoning', label: 'Math Reasoning' },
@@ -22,22 +23,96 @@ interface ControlsProps {
   disabled?: boolean;
   episodeActive?: boolean;
   className?: string;
+  initialSeed?: number;
+  initialTemplate?: ScenarioTemplate;
+  initialDifficulty?: Difficulty;
 }
 
-export default function Controls({ onStart, onStep, disabled, episodeActive, className }: ControlsProps) {
-  const [seed, setSeed] = useState<string>('42');
-  const [template, setTemplate] = useState<ScenarioTemplate>('ml_benchmark');
-  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+export default function Controls({
+  onStart,
+  onStep,
+  disabled,
+  episodeActive,
+  className,
+  initialSeed,
+  initialTemplate,
+  initialDifficulty,
+}: ControlsProps) {
+  const [seed, setSeed] = useState<string>(initialSeed?.toString() ?? '42');
+  const [template, setTemplate] = useState<ScenarioTemplate>(initialTemplate ?? 'ml_benchmark');
+  const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty ?? 'medium');
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+  const [backendMessage, setBackendMessage] = useState<string>('Checking backend connection...');
+
+  useEffect(() => {
+    if (initialSeed !== undefined) {
+      setSeed(initialSeed.toString());
+    }
+  }, [initialSeed]);
+
+  useEffect(() => {
+    if (initialTemplate) {
+      setTemplate(initialTemplate);
+    }
+  }, [initialTemplate]);
+
+  useEffect(() => {
+    if (initialDifficulty) {
+      setDifficulty(initialDifficulty);
+    }
+  }, [initialDifficulty]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkBackend() {
+      setBackendStatus('checking');
+      setBackendMessage('Checking backend connection...');
+      try {
+        await healthCheck();
+        if (!cancelled) {
+          setBackendStatus('ok');
+          setBackendMessage('Backend connected. The live environment is ready.');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : 'Backend unavailable.';
+          setBackendStatus('error');
+          setBackendMessage(message);
+        }
+      }
+    }
+
+    void checkBackend();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function randomSeed() { sfx.click(); setSeed(Math.floor(Math.random() * 10000).toString()); }
   function handleStart() { sfx.click(); onStart({ seed: seed ? parseInt(seed, 10) : undefined, template, difficulty }); }
 
   return (
     <div className={cn('rounded-lg border border-border bg-card p-4', className)}>
-      <h2 className="mb-3 text-sm font-semibold">Controls</h2>
+      <div className="mb-3">
+        <h2 className="text-sm font-semibold">Replication Setup</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Choose the seeded paper-derived benchmark that becomes this negotiation environment.
+        </p>
+        <p
+          className={cn(
+            'mt-2 text-xs',
+            backendStatus === 'ok' && 'text-emerald-600',
+            backendStatus === 'checking' && 'text-muted-foreground',
+            backendStatus === 'error' && 'text-destructive',
+          )}
+        >
+          {backendMessage}
+        </p>
+      </div>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Scenario</label>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Scenario Family</label>
           <select value={template} onChange={(e) => setTemplate(e.target.value as ScenarioTemplate)} disabled={disabled || episodeActive}
             className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50">
             {TEMPLATES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -56,7 +131,7 @@ export default function Controls({ onStart, onStep, disabled, episodeActive, cla
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Seed</label>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Seeded Benchmark</label>
           <div className="flex gap-1.5">
             <input type="number" value={seed} onChange={(e) => setSeed(e.target.value)} disabled={disabled || episodeActive} placeholder="Random"
               className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
@@ -70,12 +145,12 @@ export default function Controls({ onStart, onStep, disabled, episodeActive, cla
           <button onClick={handleStart} disabled={disabled}
             className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50',
               episodeActive ? 'border border-border text-muted-foreground hover:bg-muted' : 'bg-primary text-primary-foreground hover:bg-primary/90')}>
-            {episodeActive ? (<><RotateCcw className="h-4 w-4" />Restart</>) : (<><Play className="h-4 w-4" />Start Episode</>)}
+            {episodeActive ? (<><RotateCcw className="h-4 w-4" />Reset Episode</>) : (<><Play className="h-4 w-4" />Start Replication</>)}
           </button>
           {episodeActive && onStep && (
             <button onClick={onStep} disabled={disabled}
               className="flex items-center gap-1.5 rounded-md bg-scientist px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-scientist/90 disabled:opacity-50">
-              <Play className="h-4 w-4" />Step
+              <Play className="h-4 w-4" />Advance Round
             </button>
           )}
         </div>

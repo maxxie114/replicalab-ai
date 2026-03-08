@@ -68,3 +68,6 @@ replicalab/outputs/replays/*
 !replicalab/outputs/replays/.gitkeep
 replicalab/outputs/plots/*
 !replicalab/outputs/plots/.gitkeep
+
+# Local experiment tracking
+wandb/

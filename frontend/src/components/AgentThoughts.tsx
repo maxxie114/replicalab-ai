@@ -22,7 +22,6 @@ export default function AgentThoughts({
 
   if (messages.length === 0) return null;
 
-  const lastMsg = messages[messages.length - 1];
   const lastScientist = [...messages].reverse().find((m) => m.role === 'scientist');
   const lastLabManager = [...messages].reverse().find((m) => m.role === 'lab_manager');
 

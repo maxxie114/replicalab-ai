@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, FlaskConical, Scale, TrendingUp, Play, Pencil } from 'lucide-react';
 import type { EpisodeState, ResetParams, ScientistAction } from '@/types';
 import { resetEpisode, stepEpisode, buildDefaultScientistAction, buildAcceptAction } from '@/lib/api';
 import { sfx, startAmbient, stopAmbient } from '@/lib/audio';
@@ -24,15 +25,19 @@ import AgentThoughts from '@/components/AgentThoughts';
 import ProtocolEditor from '@/components/ProtocolEditor';
 import LabScene3D from '@/components/LabScene3D';
 
+const TEMPLATE_OPTIONS = ['math_reasoning', 'ml_benchmark', 'finance_trading'] as const;
+const DIFFICULTY_OPTIONS = ['easy', 'medium', 'hard'] as const;
+
 export default function EpisodePage() {
-  const { episodeId: routeEpisodeId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
   const [episode, setEpisode] = useState<EpisodeState | null>(null);
   const [loading, setLoading] = useState(false);
   const [isJudging, setIsJudging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoStartTriggered, setAutoStartTriggered] = useState(false);
 
   // Feature 5: Auto-play
   const [autoPlaying, setAutoPlaying] = useState(false);
@@ -43,6 +48,28 @@ export default function EpisodePage() {
 
   // Feature 13: 3D lab toggle
   const [show3DLab, setShow3DLab] = useState(false);
+  const initialTemplate = useMemo(() => {
+    const value = searchParams.get('template');
+    return TEMPLATE_OPTIONS.find((option) => option === value);
+  }, [searchParams]);
+  const initialDifficulty = useMemo(() => {
+    const value = searchParams.get('difficulty');
+    return DIFFICULTY_OPTIONS.find((option) => option === value);
+  }, [searchParams]);
+  const initialSeed = useMemo(() => {
+    const value = searchParams.get('seed');
+    if (!value) return undefined;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }, [searchParams]);
+  const demoRequested = useMemo(
+    () => searchParams.get('demo') === '1' || searchParams.get('autostart') === '1',
+    [searchParams],
+  );
+  const autoPlayRequested = useMemo(
+    () => demoRequested || searchParams.get('autoplay') === '1',
+    [demoRequested, searchParams],
+  );
 
   const phase = useMemo(() => {
     if (!episode) return 'waiting' as const;
@@ -119,7 +146,17 @@ export default function EpisodePage() {
       prevMsgCountRef.current = 0;
       toast('Episode started!', 'info');
       // Feature 9: Update URL for shareable link
-      navigate(`/episode/${state.episode_id}`, { replace: true });
+      const nextSearch = new URLSearchParams();
+      nextSearch.set('template', state.template);
+      nextSearch.set('difficulty', state.difficulty);
+      nextSearch.set('seed', String(state.seed));
+      if (demoRequested) {
+        nextSearch.set('demo', '1');
+      }
+      if (autoPlayRequested) {
+        nextSearch.set('autoplay', '1');
+      }
+      navigate(`/episode/${state.episode_id}?${nextSearch.toString()}`, { replace: true });
     } catch (err) {
       console.error('Failed to start episode:', err);
       const msg = err instanceof Error ? err.message : 'Failed to start episode';
@@ -128,7 +165,7 @@ export default function EpisodePage() {
     } finally {
       setLoading(false);
     }
-  }, [toast, navigate]);
+  }, [autoPlayRequested, demoRequested, navigate, toast]);
 
   const handleStepWithAction = useCallback(async (action?: ScientistAction) => {
     if (!episode || episode.done) return;
@@ -141,7 +178,7 @@ export default function EpisodePage() {
 
     try {
       const isLastRound = episode.round >= episode.max_rounds - 1;
-      const finalAction = action ?? (isLastRound ? buildAcceptAction() : buildDefaultScientistAction());
+      const finalAction = action ?? (isLastRound ? buildAcceptAction() : buildDefaultScientistAction(episode));
 
       if (isLastRound && !action) {
         setIsJudging(true);
@@ -169,6 +206,35 @@ export default function EpisodePage() {
       setLoading(false);
     }
   }, [episode, toast]);
+
+  useEffect(() => {
+    if (!demoRequested || autoStartTriggered || episode || loading) {
+      return;
+    }
+    setAutoStartTriggered(true);
+    void handleStart({
+      seed: initialSeed ?? 101,
+      template: initialTemplate ?? 'ml_benchmark',
+      difficulty: initialDifficulty ?? 'medium',
+    });
+  }, [
+    autoStartTriggered,
+    demoRequested,
+    episode,
+    handleStart,
+    initialDifficulty,
+    initialSeed,
+    initialTemplate,
+    loading,
+  ]);
+
+  useEffect(() => {
+    if (!episode || episode.done || !autoPlayRequested) {
+      return;
+    }
+    setAutoSpeed(2);
+    setAutoPlaying(true);
+  }, [autoPlayRequested, episode?.done, episode?.episode_id]);
 
   const handleStep = useCallback(() => handleStepWithAction(), [handleStepWithAction]);
 
@@ -233,8 +299,14 @@ export default function EpisodePage() {
           </motion.div>
 
           <motion.div className="mb-8 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-            <h1 className="mb-2 text-2xl font-bold">Start a New Episode</h1>
-            <p className="text-muted-foreground">Choose a scenario, set difficulty, and watch them negotiate</p>
+            <h1 className="mb-2 text-2xl font-bold">
+              {demoRequested ? 'Launching Live Replication Demo' : 'Start a Paper Replication Episode'}
+            </h1>
+            <p className="text-muted-foreground">
+              {demoRequested
+                ? 'Loading the seeded benchmark, starting the agents, and running the negotiation automatically.'
+                : 'Pick a seeded paper-derived benchmark, parse it into the environment, and watch the agents negotiate a reproducible plan.'}
+            </p>
             <ShortcutHint className="mt-2" />
           </motion.div>
 
@@ -244,9 +316,18 @@ export default function EpisodePage() {
             </motion.div>
           )}
 
-          <motion.div className="w-full max-w-sm" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-            <Controls onStart={handleStart} disabled={loading} episodeActive={false} />
-          </motion.div>
+          {!demoRequested && (
+            <motion.div className="w-full max-w-sm" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+              <Controls
+                onStart={handleStart}
+                disabled={loading}
+                episodeActive={false}
+                initialSeed={initialSeed}
+                initialTemplate={initialTemplate}
+                initialDifficulty={initialDifficulty}
+              />
+            </motion.div>
+          )}
         </div>
       </div>
     );
@@ -275,6 +356,78 @@ export default function EpisodePage() {
       {error && (
         <motion.div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           {error}
+        </motion.div>
+      )}
+
+      <motion.div
+        className="mb-4 grid gap-3 md:grid-cols-4"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        {[
+          {
+            title: '1. Source Paper',
+            description: 'The left panel keeps the original claim, method, and protocol visible.',
+            icon: FileText,
+          },
+          {
+            title: '2. Negotiation',
+            description: 'The Scientist and Lab Manager revise the protocol under explicit lab constraints.',
+            icon: FlaskConical,
+          },
+          {
+            title: '3. Deterministic Judge',
+            description: 'The final plan is scored on rigor, feasibility, and fidelity with a fixed rubric.',
+            icon: Scale,
+          },
+          {
+            title: '4. Training Loop',
+            description: 'That terminal reward is exactly what powers the Scientist training path later.',
+            icon: TrendingUp,
+          },
+        ].map((item) => (
+          <div key={item.title} className="rounded-lg border border-border bg-card p-3">
+            <item.icon className="mb-2 h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold">{item.title}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+          </div>
+        ))}
+      </motion.div>
+
+      {!episode.done && episode.conversation.length === 0 && (
+        <motion.div
+          className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-4"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">Episode ready</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The paper and constraints are loaded. Advance the first round to generate the Scientist proposal and the Lab Manager response.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleStep}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                <Play className="h-4 w-4" />
+                Advance First Round
+              </button>
+              <button
+                onClick={() => setShowEditor(true)}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                <Pencil className="h-4 w-4" />
+                Open Protocol Editor
+              </button>
+            </div>
+          </div>
         </motion.div>
       )}
 
@@ -360,6 +513,10 @@ export default function EpisodePage() {
         <motion.div className="flex flex-col lg:col-span-5" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <NegotiationLog
             messages={episode.conversation}
+            episodeActive={true}
+            disabled={loading}
+            onKickoff={!episode.done ? handleStep : undefined}
+            onOpenEditor={!episode.done ? () => setShowEditor(true) : undefined}
             className="min-h-[400px] rounded-lg border border-border bg-card"
           />
 
@@ -381,6 +538,20 @@ export default function EpisodePage() {
         <motion.div className="space-y-4 lg:col-span-4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
           <ProtocolPanel protocol={episode.protocol} paper={episode.paper} />
           <ScorePanel scores={episode.scores} done={episode.done} />
+          {episode.done && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <h2 className="text-sm font-semibold">Why This Matters for Training</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This final judge result is not just a demo scorecard. It becomes the deterministic reward signal
+                used by the minimal Colab notebook and the heavier training runtime to improve the Scientist policy.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-medium">
+                <span className="rounded-full bg-background px-2 py-1 text-primary">same seed</span>
+                <span className="rounded-full bg-background px-2 py-1 text-primary">same rubric</span>
+                <span className="rounded-full bg-background px-2 py-1 text-primary">baseline vs trained</span>
+              </div>
+            </div>
+          )}
 
           {/* Feature 11: Protocol editor toggle */}
           {!episode.done && (

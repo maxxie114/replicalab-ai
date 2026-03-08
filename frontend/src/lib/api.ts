@@ -5,7 +5,6 @@ import type {
   NegotiationMessage,
   ScoreBreakdown,
   JudgeAudit,
-  Protocol,
   PaperSummary,
   LabConstraints,
   BackendResetResponse,
@@ -18,8 +17,24 @@ import type {
   Difficulty,
 } from '@/types';
 
-const BASE_URL = '/api';
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+const WS_URL =
+  import.meta.env.VITE_WS_URL ??
+  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+
+function backendUnavailableMessage(context: string): string {
+  return `${context}: backend unavailable at ${BASE_URL}. Start the API server with "python -m uvicorn server.app:app --host 127.0.0.1 --port 7860" and refresh.`;
+}
+
+function normalizeFetchError(error: unknown, context: string): Error {
+  if (error instanceof Error && /Failed to fetch/i.test(error.message)) {
+    return new Error(backendUnavailableMessage(context));
+  }
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(`${context}: unknown network error`);
+}
 
 // ---------------------------------------------------------------------------
 // Adapter helpers: transform backend shapes into frontend types
@@ -42,6 +57,7 @@ function adaptRewardBreakdown(rb: BackendRewardBreakdown, totalReward: number): 
     rigor: rb.rigor,
     feasibility: rb.feasibility,
     fidelity: rb.fidelity,
+    parsimony: rb.parsimony,
     total_reward: totalReward,
     efficiency_bonus: rb.efficiency_bonus,
     communication_bonus: rb.communication_bonus,
@@ -77,6 +93,7 @@ function adaptLabConstraints(obs: BackendObservation): LabConstraints {
     staff_count: lab.staff_count,
     booking_conflicts: lab.equipment_booked,
     safety_rules: lab.safety_restrictions,
+    time_limit_days: lab.time_limit_days,
   };
 }
 
@@ -112,15 +129,26 @@ function observationToEpisodeState(
 // ---------------------------------------------------------------------------
 
 export async function healthCheck(): Promise<{ status: string }> {
-  const res = await fetch(`${BASE_URL}/health`);
-  return res.json();
+  try {
+    const res = await fetch(`${BASE_URL}/health`);
+    if (!res.ok) {
+      throw new Error(`Health check failed: ${res.status}`);
+    }
+    return res.json();
+  } catch (error) {
+    throw normalizeFetchError(error, 'Health check failed');
+  }
 }
 
 export async function getScenarios(): Promise<BackendScenarioFamily[]> {
-  const res = await fetch(`${BASE_URL}/scenarios`);
-  if (!res.ok) throw new Error('Failed to fetch scenarios');
-  const data = await res.json();
-  return data.scenarios;
+  try {
+    const res = await fetch(`${BASE_URL}/scenarios`);
+    if (!res.ok) throw new Error('Failed to fetch scenarios');
+    const data = await res.json();
+    return data.scenarios;
+  } catch (error) {
+    throw normalizeFetchError(error, 'Failed to fetch scenarios');
+  }
 }
 
 export async function resetEpisode(params: ResetParams): Promise<EpisodeState> {
@@ -128,24 +156,28 @@ export async function resetEpisode(params: ResetParams): Promise<EpisodeState> {
   const template = params.template ?? 'math_reasoning';
   const difficulty = params.difficulty ?? 'easy';
 
-  const res = await fetch(`${BASE_URL}/reset`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ seed, scenario: template, difficulty }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to reset episode: ${text}`);
+  try {
+    const res = await fetch(`${BASE_URL}/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seed, scenario: template, difficulty }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Failed to reset episode: ${text}`);
+    }
+    const data: BackendResetResponse = await res.json();
+    return observationToEpisodeState(
+      data.observation,
+      data.session_id,
+      data.episode_id,
+      seed,
+      template,
+      difficulty,
+    );
+  } catch (error) {
+    throw normalizeFetchError(error, 'Failed to reset episode');
   }
-  const data: BackendResetResponse = await res.json();
-  return observationToEpisodeState(
-    data.observation,
-    data.session_id,
-    data.episode_id,
-    seed,
-    template,
-    difficulty,
-  );
 }
 
 export async function stepEpisode(
@@ -153,16 +185,21 @@ export async function stepEpisode(
   action: ScientistAction,
   prevState: EpisodeState,
 ): Promise<EpisodeState> {
-  const res = await fetch(`${BASE_URL}/step`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: sessionId, action }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to step episode: ${text}`);
+  let data: BackendStepResult;
+  try {
+    const res = await fetch(`${BASE_URL}/step`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, action }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Failed to step episode: ${text}`);
+    }
+    data = await res.json();
+  } catch (error) {
+    throw normalizeFetchError(error, 'Failed to step episode');
   }
-  const data: BackendStepResult = await res.json();
   const info = data.info;
 
   // Build scores if done and reward breakdown is available
@@ -202,9 +239,13 @@ export async function stepEpisode(
 }
 
 export async function getReplay(episodeId: string): Promise<unknown> {
-  const res = await fetch(`${BASE_URL}/replay/${episodeId}`);
-  if (!res.ok) throw new Error('Failed to fetch replay');
-  return res.json();
+  try {
+    const res = await fetch(`${BASE_URL}/replay/${episodeId}`);
+    if (!res.ok) throw new Error('Failed to fetch replay');
+    return res.json();
+  } catch (error) {
+    throw normalizeFetchError(error, 'Failed to fetch replay');
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -255,17 +296,42 @@ export function sendWsMessage(ws: WebSocket, msg: WebSocketMessage) {
 // Default scientist action (for auto-step)
 // ---------------------------------------------------------------------------
 
-export function buildDefaultScientistAction(): ScientistAction {
+export function buildDefaultScientistAction(state?: EpisodeState): ScientistAction {
+  if (state?.protocol) {
+    return buildAcceptAction();
+  }
+
+  const durationLimit = Math.max(1, state?.lab_constraints.time_limit_days ?? 3);
+  const originalDuration = state?.paper.original_duration_days ?? 0;
+  const durationDays = Math.max(1, Math.min(durationLimit, originalDuration || durationLimit));
+  const template = state?.template;
+
+  const technique =
+    state?.paper.original_technique && state.paper.original_technique !== 'N/A'
+      ? state.paper.original_technique
+      : template === 'math_reasoning'
+        ? 'structured_proof_check'
+        : template === 'finance_trading'
+          ? 'offline_backtest'
+          : 'published_training_recipe';
+
+  const controls = state?.paper.original_controls.length
+    ? state.paper.original_controls
+    : ['baseline'];
+
+  const requiredEquipment = state?.lab_constraints.equipment_available.slice(0, 1) ?? [];
+  const requiredReagents = state?.lab_constraints.reagents_available.slice(0, 1) ?? [];
+
   return {
     action_type: 'propose_protocol',
     sample_size: 3,
-    controls: ['baseline'],
-    technique: 'standard',
-    duration_days: 5,
-    required_equipment: [],
-    required_reagents: [],
+    controls,
+    technique,
+    duration_days: durationDays,
+    required_equipment: requiredEquipment,
+    required_reagents: requiredReagents,
     questions: [],
-    rationale: 'Initial protocol proposal to begin negotiation.',
+    rationale: `Replicate the source result within the available lab window of ${durationLimit} days using currently available resources.`,
   };
 }
 
