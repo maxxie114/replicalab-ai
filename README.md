@@ -160,16 +160,18 @@ RL training improves the Scientist agent’s ability to negotiate effective, fea
 
 ### Selected Base Model
 
-- **Primary Scientist model:** `Qwen3-4B`
-- **Stretch fallback:** `Qwen3-8B`
+- **Primary shared base:** `Qwen/Qwen3-8B`
+- **Scientist artifact:** `Qwen/Qwen3-8B` + Unsloth GRPO LoRA
+- **Lab Manager artifact:** `Qwen/Qwen3-8B` + Unsloth SFT LoRA
+- **Reduced-scale fallback:** `Qwen/Qwen3-4B`
 - **Decision record:** `docs/agt11_scientist_model_selection.md`
 
 ### Planned Training Path
 
-1. Connect the notebook to the environment via `replicalab/client.py`
-2. Collect rollouts with `replicalab/training/rollout.py`
-3. Train with **Unsloth or HF TRL**
-4. Save:
+1. Use the judged notebook `notebooks/train_colab.ipynb` as the readable driver
+2. Use the reusable training stack under `replicalab/training/`
+3. Run heavy jobs on Northflank H100 with `replicalab-train`
+4. Save separate Scientist and Lab Manager adapters plus:
    - reward curves
    - component curves
    - before/after evaluation metrics
@@ -271,7 +273,17 @@ replicalab-ai/
 │   ├── env/
 │   │   └── replicalab_env.py    # Real env with optional Oracle hooks
 │   ├── training/
-│   │   └── rollout.py
+│   │   ├── artifacts.py
+│   │   ├── cli.py
+│   │   ├── corpus.py
+│   │   ├── datasets.py
+│   │   ├── evaluation.py
+│   │   ├── lab_manager_sft.py
+│   │   ├── metrics.py
+│   │   ├── plots.py
+│   │   ├── rollout.py
+│   │   ├── runtime.py
+│   │   └── scientist_grpo.py
 │   └── utils/
 │       ├── seed.py
 │       ├── validation.py
@@ -341,7 +353,7 @@ The deterministic deployment itself does not need to be redesigned.
 | **Tailwind + shadcn/ui** | Styling |
 | **Docker** | Packaging |
 | **Hugging Face Spaces** | Public hosting |
-| **Notebook / Colab / H100** | Training and evaluation |
+| **Notebook / Colab / Northflank H100** | Training and evaluation |
 
 ---
 

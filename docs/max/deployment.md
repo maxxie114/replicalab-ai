@@ -270,6 +270,42 @@ To force a full rebuild (e.g. after dependency changes):
 
 ---
 
+## Northflank CLI Access
+
+### Local verification (2026-03-08)
+
+- Installed globally with `npm i -g @northflank/cli`
+- Verified locally with `northflank --version`
+- Current verified version: `0.10.16`
+
+### Login
+
+```bash
+northflank login -n <context-name> -t <token>
+```
+
+`<token>` must come from the user's Northflank account or team secret
+manager. Do not commit it to the repo.
+
+### Service access commands for `replica-labs/replicalab-ai`
+
+```bash
+northflank forward service --projectId replica-labs --serviceId replicalab-ai
+northflank get service logs --tail --projectId replica-labs --serviceId replicalab-ai
+northflank ssh service --projectId replica-labs --serviceId replicalab-ai
+northflank exec service --projectId replica-labs --serviceId replicalab-ai
+northflank upload service file --projectId replica-labs --serviceId replicalab-ai --localPath dir/file.txt --remotePath /home/file.txt
+northflank download service file --projectId replica-labs --serviceId replicalab-ai --localPath dir/file.txt --remotePath /home/file.txt
+```
+
+### Windows note
+
+Global npm binaries resolve from `C:\Users\ayush\AppData\Roaming\npm` on this
+machine. If `northflank` is not found in a new shell, reopen the terminal so
+the updated PATH is reloaded.
+
+---
+
 ## Hand-off To Ayush
 
 **Local server:**

@@ -11,13 +11,15 @@ No assumptions from other documents are used to reclassify blocked status.
 
 `FND 08`, `FND 09`, `MOD 09`, `SCN 11`, `AGT 01`, `AGT 02`, `AGT 03`,
 `AGT 04`, `AGT 05`, `AGT 06`, `AGT 07`, `AGT 08`, `AGT 10`, `AGT 11`,
-`TRN 13`, `TRN 03`, and `TRN 04` are now complete.
+`TRN 13`, `TRN 03`, `TRN 04`, `TRN 01`, `TRN 02`, and `TRN 14` are now
+complete.
 The scenario prerequisite bundle (`SCN 01` to `SCN 10`) also exists in the
 repo, so Ayush no longer waits on `SCN 09` to start prompt-layer work.
 
-Ayush now has one fully unblocked task:
+Ayush now has two fully unblocked tasks:
 
 1. `TRN 05` -- connect collected rollouts to the trainer now that `TRN 04` is complete
+2. `JDG 10` -- expose component metrics now that `JDG 07` is closed
 
 The prompt and Lab Manager workstream continues to assume a normalized scenario
 pack below the stable outer contract, so Ayush-owned prompting should be
@@ -38,9 +40,10 @@ Bounded-tool scope note:
 
 | ID | Task | Depends On | Why It Is Ready | Est |
 |----|------|-----------|-----------------|-----|
-| TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | The rollout worker is complete, so the next step is wiring those trajectories into the trainer loop | 1.25h |
+| TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | The reusable GRPO stack now exists, so the remaining work is validating a short real run and adapter-loading path | 1.25h |
+| JDG 10 | Expose component metrics for training plots | JDG 05, JDG 07 | Reward logging is closed and the training metrics layer now exists, so notebook-facing aggregation can be finalized | 0.5h |
 
-**Total: 1 task, 1.25h**
+**Total: 2 tasks, 1.75h**
 
 ---
 
@@ -66,27 +69,22 @@ These are blocked only by earlier Ayush-owned work.
 
 ### What to ask Kian for first
 
-1. `SCN 13` -- deepens the booking-conflict layer for the Lab Manager path
-2. `ENV 10` -- strengthens environment regression coverage before training ramps
-3. `JDG 11` -- structured final audit payload for env, API, logs, and UI
+1. No active Kian dependency is blocking the Ayush lane right now
 
 ---
 
-## 5. Blocked by Max (Person C)
-
-Cannot proceed until Max delivers the remaining server and deployment pieces.
+## 5. Previously Blocked by Max (Person C)
 
 | ID | Task | Depends On | Max Deliverable | Est |
 |----|------|-----------|----------------|-----|
-| JDG 10 | Expose component metrics for training plots | JDG 05, JDG 07 | `JDG 07` from Max | 0.5h |
-| TRN 01 | Notebook skeleton | API 10 | Deployed HF Space or stable hosted env URL | 0.5h |
+| - | No Ayush tasks are currently blocked on Max-only deliverables | - | - | - |
 
-**Total: 2 tasks, 1h**
+**Total: 0 tasks, 0h**
 
 ### What to ask Max for first
 
-1. `API 10` -- unlocks `TRN 01`
-2. `JDG 07` -- unlocks `JDG 10`
+1. `OBS 09` -- needed later for `TRN 15`
+2. `API 18` -- needed later for UI and replay-facing audit consumers
 
 ---
 
@@ -97,20 +95,17 @@ are done.
 
 | Order | ID | Task | Depends On | Est |
 |-------|----|------|-----------|-----|
-| 1 | TRN 01 | Notebook skeleton | API 10 | 0.5h |
-| 2 | TRN 02 | Package install and model setup cell | TRN 01 | 0.75h |
-| 3 | TRN 14 | Select and document base model (notebook side) | TRN 01 | 0.5h |
-| 4 | TRN 04 | Rollout collection loop with frozen evidence packs and bounded tool traces | TRN 03, AGT 01 | 1h |
-| 5 | TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | 1.25h |
-| 6 | TRN 06 | Log episode metrics plus bounded tool metrics | JDG 10, TRN 04 | 0.75h |
-| 7 | TRN 07 | Plot reward curves | TRN 06 | 0.5h |
-| 8 | TRN 08 | Before vs after eval on fixed seeds and frozen evidence packs | SCN 11, TRN 05 | 1h |
-| 9 | TRN 09 | Policy loading for trained checkpoint | TRN 05 | 0.5h |
-| 10 | TRN 10 | Export plots to outputs/plots | TRN 07 | 0.25h |
-| 11 | TRN 15 | Agreement, invalid action, and invalid bounded-tool rate aggregation | TRN 06, TRN 08, OBS 09 | 0.5h |
-| 12 | OBS 06 | Log training run metadata | TRN 06 | 0.5h |
+| 1 | JDG 10 | Notebook-facing component metrics | JDG 05, JDG 07 | 0.5h |
+| 2 | TRN 05 | Connect rollouts to GRPO trainer | TRN 04 | 1.25h |
+| 3 | TRN 06 | Log episode metrics plus bounded tool metrics | JDG 10, TRN 04 | 0.75h |
+| 4 | TRN 07 | Plot reward curves | TRN 06 | 0.5h |
+| 5 | TRN 08 | Before vs after eval on fixed seeds and frozen evidence packs | SCN 11, TRN 05 | 1h |
+| 6 | TRN 09 | Policy loading for trained checkpoint | TRN 05 | 0.5h |
+| 7 | TRN 10 | Export plots to outputs/plots | TRN 07 | 0.25h |
+| 8 | TRN 15 | Agreement, invalid action, and invalid bounded-tool rate aggregation | TRN 06, TRN 08, OBS 09 | 0.5h |
+| 9 | OBS 06 | Log training run metadata | TRN 06 | 0.5h |
 
-**Total: 12 tasks, 8h**
+**Total: 9 tasks, 5.75h**
 
 ---
 
@@ -148,22 +143,16 @@ are done.
 
 16. `AGT 10`
 17. `TRN 04`
+18. `TRN 01`
+19. `TRN 02`
+20. `TRN 14`
 
 ### Phase 3: Active now
 
-18. `TRN 05`
+21. `JDG 10`
+22. `TRN 05`
 
-### Phase 4: After `API 10`
-
-19. `TRN 01`
-20. `TRN 02`
-21. `TRN 14`
-
-### Phase 5: After judge work
-
-22. `JDG 10`
-
-### Phase 6: Training pipeline
+### Phase 4: Training pipeline
 
 23. `TRN 06`
 24. `TRN 07`
@@ -173,7 +162,7 @@ are done.
 28. `TRN 15`
 29. `OBS 06`
 
-### Phase 7: Final notebook validation
+### Phase 5: Final notebook validation
 
 30. `TST 09`
 
@@ -183,13 +172,13 @@ are done.
 
 | Category | Count | Hours |
 |----------|-------|-------|
-| Active now | 1 | 1.25h |
+| Active now | 2 | 1.75h |
 | Internal Ayush chain after API 06 | 1 | 0.5h |
 | Blocked by Kian or mixed A+B work | 0 | 0h |
-| Blocked by Max | 2 | 1h |
-| Remaining downstream training chain | 8 | 4.75h |
+| Blocked by Max | 0 | 0h |
+| Remaining downstream training chain | 6 | 3.5h |
 | Blocked by Kush | 1 | 0.5h |
-| **Total remaining** | **13** | **8h** |
+| **Total remaining** | **10** | **6.25h** |
 
 ---
 
@@ -197,17 +186,17 @@ are done.
 
 ### Trainable Scientist policy
 
-Primary model: **Qwen3-4B**
+Primary model: **Qwen3-8B**
 
-| Constraint | Qwen3-4B | Qwen3-8B (stretch) |
-|-----------|----------|-------------------|
-| H100 training (BF16, ~3-4x inference mem) | ~14GB weights, ~42-56GB total. Fits 80GB easily | ~19GB weights, ~57-76GB total. Tight |
-| Colab T4 (16GB, 4-bit QLoRA) | 5.5GB. Fits comfortably | 6.5GB. Fits but less headroom |
-| Structured JSON output | Good | Better |
-| RL iteration speed | Fast | Slower |
+| Constraint | Qwen3-8B | Qwen3-4B (fallback) |
+|-----------|----------|---------------------|
+| Northflank H100 training (BF16, ~3-4x inference mem) | Strong primary fit with more reasoning headroom | Also fits, but lower-capacity default |
+| Colab or low-memory debug path | Heavier | Easier reduced-scale fallback |
+| Structured JSON output | Better | Good |
+| V2 dual-role reuse | Shared base for Scientist and Lab Manager | Debug-only fallback |
 
-Qwen3-8B is H100-only stretch. Use only if Qwen3-4B quality is insufficient and
-Colab demo uses a reduced-scale fallback.
+Use `Qwen3-8B` for the primary Northflank H100 runs and keep `Qwen3-4B` as the
+reduced-scale fallback for notebook demos or lighter debugging.
 
 ### Reward
 
@@ -229,8 +218,8 @@ The MVP Lab Manager path is hybrid:
   generates its language.
 - Reward does not split into separate Scientist versus Lab Manager objectives.
   Both roles share the same cooperative reward signal.
-- If the team later shares one base model across both roles, the pragmatic
-  default is one base model (`Qwen3-4B`) with separate role-specific adapters.
+- The active V2 setup now uses one shared base model (`Qwen3-8B`) with
+  separate Scientist and Lab Manager adapters.
 
 ### Prompt assembly
 
@@ -259,3 +248,4 @@ physics, or biology.
 | `replicalab/prompts/lab_manager.txt` | Lab Manager response templates |
 | `replicalab/prompts/judge.txt` | Judge explanation prompt |
 | `notebooks/train_colab.ipynb` | RL training notebook (judged asset) |
+| `replicalab/training/*.py` | Reusable training stack and Northflank job entrypoints |
