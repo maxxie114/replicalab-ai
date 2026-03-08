@@ -24,7 +24,7 @@ The goal is to let any team member pick up work immediately without confusion.
 
 **ReplicaLab** is an OpenEnv environment where a **Scientist agent** and a **Lab Manager agent** negotiate how to solve a constrained technical task under real world limits such as budget, tools, compute, schedule, stock, and staffing.
 
-The environment is used to **train the Scientist agent with reinforcement learning** so it learns to ask better questions, preserve objective quality, and produce more feasible plans under domain-specific constraints.
+The environment is used to **train the Scientist agent with reinforcement learning** so it learns to ask better questions, preserve objective quality, use bounded evidence tools correctly, and produce more feasible plans under domain-specific constraints.
 
 The first domain focus is:
 
@@ -40,8 +40,8 @@ By judging time, the project should demonstrate:
 
 1. A working OpenEnv environment deployed on Hugging Face Spaces on port `7860`
 2. At least one full scenario family working end to end, with a target of three
-3. A Scientist agent that can interact with the environment
-4. A hybrid model-backed Lab Manager with deterministic feasibility grounding
+3. A Scientist agent that can interact with the environment through structured actions and bounded evidence tools
+4. A hybrid model-backed Lab Manager with deterministic feasibility grounding and bounded validation tools
 5. A deterministic judge and reward engine
 6. A Colab training notebook using Unsloth or HF TRL
 7. A reward curve showing improvement
@@ -58,31 +58,34 @@ By judging time, the project should demonstrate:
 1. OpenEnv environment implementation
 2. FastAPI and WebSocket serving
 3. Hugging Face Docker Space deployment
-4. Scientist agent with structured JSON action output
-5. Hybrid model-backed Lab Manager grounded by deterministic feasibility checks
+4. Scientist agent with structured JSON action output plus bounded search, code-check, and image-inspection capability
+5. Hybrid model-backed Lab Manager grounded by deterministic feasibility checks plus bounded validation tools
 6. Judge rubric engine with deterministic scoring
 7. Three scenario families for MVP
    1. Mathematics reasoning and proof planning
    2. ML benchmark replication
    3. Finance or trading backtest planning
-8. Reward logging
-9. Replay logs
-10. Colab RL notebook
-11. Reward curve image
-12. Thin React plus Vite frontend or OpenEnv `/web` fallback
-13. README, demo video, submission package
+8. Frozen evidence packs for deterministic training plus limited live validation during demo or eval
+9. Reward logging
+10. Replay logs
+11. Colab RL notebook
+12. Reward curve image
+13. Thin React plus Vite frontend or OpenEnv `/web` fallback
+14. README, demo video, submission package
 
 ## 3.2 Out of scope for the hackathon MVP
 
 1. Proving whether a real research paper is globally true or false
-2. Parsing arbitrary real papers from the internet
+2. Unrestricted parsing of arbitrary live internet content inside the training loop
 3. Real wet lab execution
 4. Live trading or production finance execution
 5. Real time collaboration features
 6. Training both Scientist and Lab Manager in self play
-7. Complex third party enterprise integrations
-8. Full multi-domain rollout unless time remains
-9. Manager-led subagent orchestration unless the MVP is already stable
+7. Open-ended autonomous coding outside a bounded verification or analysis sandbox
+8. Image generation or audio capabilities in the agent policy loop
+9. Complex third party enterprise integrations
+10. Full multi-domain rollout unless time remains
+11. Manager-led subagent orchestration unless the MVP is already stable
 
 ---
 
@@ -161,6 +164,56 @@ Rules for the normalized scenario layer:
 3. Difficulty and curriculum changes should mechanically alter constraints, resources, or conflicts rather than fork separate prompt logic.
 4. The deterministic scorer compares the final agreed plan against `hidden_reference_spec`; model-backed roles never own truth.
 
+For the bounded-tool MVP, pending scenario and environment work will extend the
+existing normalized scenario pack with additive evidence fields. This is an
+extension below the frozen outer contract, not a reopening of `FND 08`,
+`MOD 01`, `MOD 02`, or `MOD 03`.
+
+Tool-capable scenario extensions:
+
+1. `evidence_pack`
+2. `artifact_refs`
+3. `allowed_tools`
+4. `tool_budget`
+5. `validation_policy`
+
+## 4.3 Bounded tool capability policy
+
+The richer-capability MVP keeps the final outward action contract stable while
+adding bounded tools below it.
+
+### Scientist allowed capabilities
+
+1. `search_evidence`
+   - retrieve supporting facts, benchmark rules, paper details, or official references
+   - not a reward source
+2. `run_code_check`
+   - bounded code or config analysis, metric checks, value generation, runtime or cost estimation
+3. `inspect_image`
+   - read tables, plots, figures, screenshots, and charts for evidence extraction
+
+### Lab Manager allowed capabilities
+
+1. `search_resources`
+   - retrieve resource, policy, benchmark, or documentation constraints
+2. `run_code_check`
+   - validate cost, runtime, config, reproducibility, or execution assumptions
+3. `inspect_image`
+   - inspect figures, charts, and screenshots relevant to feasibility or policy review
+
+### Judge capability rules
+
+1. The judge reward remains deterministic and must not depend on live web search.
+2. Tool traces and evidence references may inform deterministic penalties, bonuses, or audit text.
+3. The judge may use bounded evidence verification for demo or audit text, but never as the training reward source.
+
+### Training and demo rules
+
+1. Training uses frozen evidence packs and deterministic tool traces whenever possible.
+2. Live web search is limited to demo-time or eval-time validation, not the core training reward loop.
+3. Image generation and audio are excluded from the policy loop for the hackathon MVP.
+4. Coding capability must stay sandboxed and task-scoped rather than open-ended.
+
 ---
 
 ## 5. Module and function ownership map
@@ -175,6 +228,9 @@ Rules for the normalized scenario layer:
 | `replicalab/agents/scientist_policy.py` | `build_scientist_prompt()`, `parse_scientist_output()` | Person B | trainable role |
 | `replicalab/agents/lab_manager_policy.py` | `generate_lab_manager_response()`, `check_feasibility()` | Person B with Person A | model-backed negotiation grounded by deterministic checker |
 | `replicalab/agents/judge_policy.py` | `explain_judgement()` optional only | Person A | explanation layer only |
+| `replicalab/tools/search.py` | `search_evidence()`, `search_resources()` | Person B with Person C | bounded retrieval and validation only |
+| `replicalab/tools/code_tools.py` | `run_code_check()` | Person B | bounded code analysis, config checks, and derived-value generation |
+| `replicalab/tools/image_tools.py` | `inspect_image()` | Person B with Person D | bounded table, chart, figure, and screenshot inspection |
 | `replicalab/scoring/rigor.py` | `score_rigor()` | Person A | deterministic |
 | `replicalab/scoring/feasibility.py` | `score_feasibility()` | Person A | deterministic |
 | `replicalab/scoring/fidelity.py` | `score_fidelity()` | Person A | deterministic |
@@ -297,12 +353,12 @@ Create a stable shared codebase, contracts, and development workflow so all work
 - Completed scope for `FND 11`: added `server/requirements.txt` with standalone runtime dependency pins and verified installation from that file
 - Completed scope for `FND 03`: imported the full React plus Vite frontend tree from Kush's branch onto `ayush`, including the app shell, pages, shared components, assets, and TypeScript config, and validated it with `npm --prefix frontend install` plus `npm --prefix frontend run build`
 - Completed scope for `FND 12`: imported `frontend/vite.config.ts` with local `/api` and `/ws` proxy support plus stable Vite build settings and validated the build on `ayush`
-- Partial backend scope imported from Max's PR: `server/app.py`, `server/Dockerfile`, and `docs/max/deployment.md` were normalized onto the current standards and validated locally against the stub env
+- Backend and deployment scope imported from Max's PR has now been normalized onto the current standards, validated against the real env, Docker-verified locally, and extended with HF Spaces metadata plus deployment instructions
 - Newly unblocked by `FND 08`: `MOD 01`, `MOD 02`, `MOD 03`, `MOD 12`, `SCN 01`
 - Newly unblocked by `FND 06`: `DOC 01`
 - Newly unblocked by `FND 03`: `FND 13`, `UI 01`
 - Remaining Epic E01 work still gated by follow-on dependencies: `FND 13`
-- Remaining completion items for the imported backend scaffold: real-env integration, Docker validation, and final deployment verification
+- Remaining completion items for the backend and deployment path: live HF Space bring-up (`API 10`), secrets documentation (`API 17`), replay persistence, and the remaining partial API polish tasks
 - Completed scope for `SCN 01` to `SCN 10`: added deterministic seed utilities, normalized scenario-pack models, math / ML / finance template builders, difficulty scaling, hidden reference specs, allowed substitutions, and seeded scenario tests
 - Completed scope for `SCN 11`: added three fixed golden scenarios for deterministic prompt and manual checks under `tests/fixtures/golden_scenarios.json`
 - Completed scope for `AGT 01`: added a domain-neutral Scientist system prompt builder that renders role instructions, success criteria, mapped constraints, mapped resources, substitutions, and the strict JSON output contract from normalized scenario data
@@ -453,14 +509,14 @@ As the Lab Manager, I want grounded negotiation plus deterministic feasibility c
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | AGT 01 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Draft domain-neutral system prompt for Scientist role from normalized scenario data | MOD 01, SCN 11 | 0.75h | prompt clearly explains role, mapped constraints, and JSON output contract | ✅ Completed | — |
 | AGT 02 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build observation to prompt formatting helper from normalized scenario-derived observations | AGT 01, MOD 03 | 0.75h | formatted prompt includes task info, history, and action schema consistently | ✅ Completed | — |
-| AGT 03 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Add parse plus retry strategy for malformed model output | MOD 09, AGT 02 | 0.75h | malformed output triggers at least one controlled retry or explicit failure | ⬜ Not started | — |
+| AGT 03 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Add parse plus retry strategy for malformed model output | MOD 09, AGT 02 | 0.75h | malformed output triggers at least one controlled retry or explicit failure | ✅ Completed | — |
 | AGT 04 | E04.1 | Person B | `replicalab/agents/scientist_policy.py` | Build baseline heuristic Scientist for non trained smoke tests | AGT 02 | 1h | baseline can complete episodes without crashing | ✅ Completed | — |
 | AGT 05 | E04.2 | Person A and B | `replicalab/agents/lab_manager_policy.py` | Implement deterministic feasibility checker against normalized constraints, resources, schedule, and policy rules | SCN 07, MOD 05 | 1.25h | checker returns clear pass or fail per constraint dimension | ✅ Completed | Person B (Ayush) |
 | AGT 06 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Implement alternative suggestion logic from allowed substitutions and resource tradeoffs | AGT 05, SCN 08 | 1h | lab manager can suggest at least one sensible revision when initial plan fails | ✅ Completed | — |
 | AGT 07 | E04.2 | Person B | `replicalab/agents/lab_manager_policy.py` | Add model-backed response synthesis from feasibility results and suggested revisions | AGT 05 | 0.75h | output is readable, grounded in checker results, and maps cleanly to underlying checks | ✅ Completed | — |
-| AGT 08 | E04.1 | Person B | tests | Add prompt formatting and parse tests for Scientist policy | AGT 01 to AGT 04 | 0.75h | tests cover happy path and malformed output handling | ⬜ Not started | — |
+| AGT 08 | E04.1 | Person B | tests | Add prompt formatting, parse, and bounded-tool policy tests for Scientist policy | AGT 01 to AGT 04 | 0.75h | tests cover happy path, malformed output handling, and stable tool-policy reminders | ✅ Completed | — |
 | AGT 09 | E04.2 | Person A | tests | Add deterministic feasibility checker tests for Lab Manager grounding | AGT 05 to AGT 07 | 0.75h | same proposal plus same normalized scenario returns the same checker results every time | ⬜ Not started | — |
-| AGT 10 | E04.1 | Person B | `replicalab/prompts/` | Write prompt text files for all three roles: `scientist.txt`, `lab_manager.txt`, `judge.txt` | AGT 01, AGT 07, JDG 06 | 0.75h | prompt files exist, are loadable, and assemble correctly from normalized scenario data and agreed role behavior | ⬜ Not started | — |
+| AGT 10 | E04.1 | Person B | `replicalab/prompts/` | Write prompt text files for all three roles: `scientist.txt`, `lab_manager.txt`, `judge.txt`, including bounded rules for search, code checks, and image inspection | AGT 01, AGT 07, JDG 06 | 0.75h | prompt files exist, are loadable, encode bounded tool rules clearly, and assemble correctly from normalized scenario data and agreed role behavior | ⬜ Not started | — |
 | AGT 11 | E04.1 | Person B | docs | Select and document base model for Scientist training with rationale for model size, license, and structured output capability | AGT 01 | 0.5h | decision is recorded and all team members know which model will be fine tuned | ✅ Completed | — |
 
 ---
@@ -478,20 +534,26 @@ As the training system, I need a stable reward so the model can improve.
 **US E05.2**  
 As a judge, I need a readable score breakdown so I can understand why the environment rewarded or penalized the agent.
 
+### Executor notes
+
+- `JDG 01` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `JDG 02` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+- `JDG 03` completed by: `Person B (Ayush)` while the assigned owner remains `Person A`
+
 ### Tasks
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| JDG 01 | E05.1 | Person A | `replicalab/scoring/rigor.py` | Implement rigor or objective-validity score for plan completeness, required checks, method quality, and justification | SCN 08 | 1.25h | score is between 0 and 1 and matches rubric examples | ⬜ Not started | — |
-| JDG 02 | E05.1 | Person A | `replicalab/scoring/feasibility.py` | Implement feasibility score for budget, resources, time, staffing, compute, and bookings | SCN 07, AGT 05 | 1.25h | score is between 0 and 1 and matches normalized constraint logic | ⬜ Not started | — |
-| JDG 03 | E05.1 | Person A | `replicalab/scoring/fidelity.py` | Implement fidelity score against hidden reference spec, required steps, and allowed substitutions | SCN 08 | 1h | score is between 0 and 1 and matches rubric examples | ⬜ Not started | — |
-| JDG 04 | E05.1 | Person A | `replicalab/scoring/rubric.py` | Implement total reward formula with bonuses and penalties | JDG 01 to JDG 03 | 0.75h | total reward formula matches agreed math and returns consistent output | ⬜ Not started | — |
-| JDG 05 | E05.2 | Person A | `replicalab/scoring/rubric.py` | Build reward breakdown object with component scores and penalties | JDG 04 | 0.5h | breakdown includes rigor, feasibility, fidelity, bonuses, and penalties | ⬜ Not started | — |
-| JDG 06 | E05.2 | Person A | `replicalab/agents/judge_policy.py` | Add optional plain English explanation function from reward breakdown | JDG 05 | 0.75h | explanation mirrors rubric and introduces no new hidden logic | ⬜ Not started | — |
-| JDG 07 | E05.1 | Person C | `replicalab/utils/logging.py` | Log reward breakdown to CSV or JSONL per episode | JDG 05, MOD 07 | 0.5h | reward file contains seed, scenario, score components, total reward, rounds, agreement | ⬜ Not started | — |
+| JDG 01 | E05.1 | Person A | `replicalab/scoring/rigor.py` | Implement rigor or objective-validity score for plan completeness, required checks, method quality, justification, and correct bounded evidence use when present | SCN 08 | 1.25h | score is between 0 and 1, matches rubric examples, and rewards correct evidence-backed planning without depending on live web results | ✅ Completed | Person B (Ayush) |
+| JDG 02 | E05.1 | Person A | `replicalab/scoring/feasibility.py` | Implement feasibility score for budget, resources, time, staffing, compute, bookings, and deterministic tool-backed validation results | SCN 07, AGT 05 | 1.25h | score is between 0 and 1 and matches normalized constraint logic plus deterministic tool outcomes | ✅ Completed | Person B (Ayush) |
+| JDG 03 | E05.1 | Person A | `replicalab/scoring/fidelity.py` | Implement fidelity score against hidden reference spec, required steps, allowed substitutions, and supported evidence claims when present | SCN 08 | 1h | score is between 0 and 1 and matches rubric examples for plan and evidence alignment | ✅ Completed | Person B (Ayush) |
+| JDG 04 | E05.1 | Person A | `replicalab/scoring/rubric.py` | Implement total reward formula with bonuses and penalties, including deterministic penalties for invalid tool use or unsupported evidence claims | JDG 01 to JDG 03 | 0.75h | total reward formula matches agreed math and returns consistent output for plan quality and bounded tool behavior | ✅ Completed | Person B (Ayush) |
+| JDG 05 | E05.2 | Person A | `replicalab/scoring/rubric.py` | Build reward breakdown object with component scores, penalties, and tool-use diagnostics | JDG 04 | 0.5h | breakdown includes rigor, feasibility, fidelity, bonuses, penalties, and bounded tool diagnostics | ✅ Completed | Person B (Ayush) |
+| JDG 06 | E05.2 | Person A | `replicalab/agents/judge_policy.py` | Add optional plain English explanation function from reward breakdown | JDG 05 | 0.75h | explanation mirrors rubric, may reference bounded evidence or tool outcomes, and introduces no new hidden logic | ⬜ Not started | — |
+| JDG 07 | E05.1 | Person C | `replicalab/utils/logging.py` | Log reward breakdown to CSV or JSONL per episode | JDG 05, MOD 07 | 0.5h | reward file contains seed, scenario, score components, total reward, rounds, agreement, and bounded tool metrics | ⬜ Not started | — |
 | JDG 08 | E05.1 | Person A | tests | Add score determinism tests and edge case tests | JDG 01 to JDG 05 | 1h | perfect and broken protocols produce expected relative ordering | ⬜ Not started | — |
 | JDG 09 | E05.2 | Person D | UI mocks | Create mock score cards and language for frontend | JDG 05 | 0.5h | UI can display score breakdown from mock data | ⬜ Not started | — |
-| JDG 10 | E05.1 | Person B | notebook support | Expose component metrics for training plots | JDG 05, JDG 07 | 0.5h | notebook can read average rigor, feasibility, fidelity over time | ⬜ Not started | — |
+| JDG 10 | E05.1 | Person B | notebook support | Expose component metrics for training plots | JDG 05, JDG 07 | 0.5h | notebook can read average rigor, feasibility, fidelity, and bounded tool metrics over time | ⬜ Not started | — |
 | JDG 11 | E05.2 | Person A | `replicalab/scoring/rubric.py` and `replicalab/agents/judge_policy.py` | Add structured final audit payload with `judge_notes`, `verdict`, and top failure reasons derived from the rubric | JDG 05, JDG 06 | 0.75h | final judgement output is deterministic, human readable, and consumable by env, API, logs, and UI | ⬜ Not started | — |
 
 ---
@@ -516,14 +578,14 @@ As a judge, I want deterministic replay and cleanup.
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ENV 01 | E06.1 | Person A | `replicalab/env/replicalab_env.py` | Create `ReplicaLabEnv` class skeleton | MOD 04, SCN 09 | 0.5h | environment class imports and instantiates without runtime errors | ⬜ Not started | — |
-| ENV 02 | E06.1 | Person A | `replicalab/env/replicalab_env.py` | Implement `reset(seed, template, difficulty)` | ENV 01, SCN 09 | 1h | reset returns initial observations and a fresh episode state | ⬜ Not started | — |
-| ENV 03 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Implement internal Scientist turn application | ENV 02, AGT 05 | 1h | valid Scientist action updates state and history correctly | ⬜ Not started | — |
-| ENV 04 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Implement internal Lab Manager response step | ENV 03, AGT 07 | 1h | lab manager response is appended and returned in the next observation | ⬜ Not started | — |
-| ENV 05 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Implement accept, timeout, and max round logic | ENV 03, ENV 04 | 0.75h | episode terminates correctly on agreement or round limit | ⬜ Not started | — |
-| ENV 06 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Integrate reward computation at finalization and optional intermediate score previews | ENV 05, JDG 05 | 1h | final step returns total reward and breakdown info | ⬜ Not started | — |
-| ENV 07 | E06.3 | Person A | `replicalab/env/replicalab_env.py` | Implement `state()` | ENV 02 to ENV 06 | 0.5h | current environment state can be retrieved for debugging and replay | ⬜ Not started | — |
-| ENV 08 | E06.3 | Person A | `replicalab/env/replicalab_env.py` | Implement `close()` cleanup | ENV 01 | 0.25h | close frees any transient resources and does not throw | ⬜ Not started | — |
+| ENV 01 | E06.1 | Person A | `replicalab/env/replicalab_env.py` | Create `ReplicaLabEnv` class skeleton | MOD 04, SCN 09 | 0.5h | environment class imports and instantiates without runtime errors | ✅ Completed | Person B (Ayush) |
+| ENV 02 | E06.1 | Person A | `replicalab/env/replicalab_env.py` | Implement `reset(seed, template, difficulty)` | ENV 01, SCN 09 | 1h | reset returns initial observations and a fresh episode state | ✅ Completed | Person B (Ayush) |
+| ENV 03 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Implement internal Scientist turn application and bounded tool mediation | ENV 02, AGT 05 | 1h | valid Scientist action plus any allowed tool traces update state and history correctly | ✅ Completed | Person B (Ayush) |
+| ENV 04 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Implement internal Lab Manager response step with bounded validation tools | ENV 03, AGT 07 | 1h | lab manager response plus any supporting bounded tool traces are appended and returned in the next observation | ✅ Completed | Person B (Ayush) |
+| ENV 05 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Implement accept, timeout, and max round logic | ENV 03, ENV 04 | 0.75h | episode terminates correctly on agreement or round limit | ✅ Completed | Person B (Ayush) |
+| ENV 06 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Integrate reward computation at finalization and optional intermediate score previews | ENV 05, JDG 05 | 1h | final step returns total reward, breakdown info, and deterministic penalties or bonuses for bounded tool behavior | ✅ Completed | Person B (Ayush) |
+| ENV 07 | E06.3 | Person A | `replicalab/env/replicalab_env.py` | Implement `state()` | ENV 02 to ENV 06 | 0.5h | current environment state can be retrieved for debugging and replay | ✅ Completed | Person B (Ayush) |
+| ENV 08 | E06.3 | Person A | `replicalab/env/replicalab_env.py` | Implement `close()` cleanup | ENV 01 | 0.25h | close frees any transient resources and does not throw | ✅ Completed | Person B (Ayush) |
 | ENV 09 | E06.3 | Person C | `replicalab/utils/logging.py` | Write episode logs on completion | ENV 06, JDG 07 | 0.5h | completed episodes generate replayable logs automatically | ⬜ Not started | — |
 | ENV 10 | E06.1 to E06.3 | Person A | tests | Add reset, step, invalid action, timeout, and deterministic replay tests | ENV 02 to ENV 09 | 1.25h | tests pass for seeded reset, valid step, invalid step, and replay consistency | ⬜ Not started | — |
 | ENV 11 | E06.2 | Person A | `replicalab/env/replicalab_env.py` | Attach judge audit payload to final `StepResult`, terminal observations, and replay state | ENV 06, JDG 11 | 0.5h | completed episodes expose audit notes alongside reward breakdown in a stable schema | ⬜ Not started | — |
@@ -548,23 +610,23 @@ As the team, we want one click reproducible deployment to HF Spaces.
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | API 01 | E07.1 | Person C | `server/app.py` | Create FastAPI app shell and health endpoint | ENV 01 | 0.5h | `GET /health` returns 200 with simple payload | 🟡 Partial | — |
-| API 02 | E07.1 | Person C | `server/app.py` | Add `POST /reset` endpoint | ENV 02 | 0.75h | reset endpoint starts a new episode and returns initial observation | 🟡 Partial | — |
-| API 03 | E07.1 | Person C | `server/app.py` | Add `POST /step` endpoint | ENV 06 | 0.75h | step endpoint accepts valid action and returns step result | 🟡 Partial | — |
-| API 04 | E07.1 | Person C | `server/app.py` | Add `GET /scenarios` endpoint | SCN 03 to SCN 05 | 0.5h | endpoint lists available scenario families and difficulties | 🟡 Partial | — |
+| API 02 | E07.1 | Person C | `server/app.py` | Add `POST /reset` endpoint | ENV 02 | 0.75h | reset endpoint starts a new episode and returns initial observation | ✅ Completed | Person B (Ayush) |
+| API 03 | E07.1 | Person C | `server/app.py` | Add `POST /step` endpoint | ENV 06 | 0.75h | step endpoint accepts valid action and returns step result | ✅ Completed | Person B (Ayush) |
+| API 04 | E07.1 | Person C | `server/app.py` | Add `GET /scenarios` endpoint | SCN 03 to SCN 05 | 0.5h | endpoint lists available scenario families and difficulties | ✅ Completed | Person B (Ayush) |
 | API 05 | E07.1 | Person C | `server/app.py` | Add `GET /replay/{episode_id}` endpoint | ENV 09 | 0.75h | endpoint returns completed log for valid episode id | ⬜ Not started | — |
-| API 06 | E07.1 | Person C | `server/app.py` | Add WebSocket session handler | ENV 06 | 1.25h | each connection gets isolated environment state and can reset plus step | 🟡 Partial | — |
-| API 07 | E07.1 | Person C | `server/app.py` | Add idle timeout and graceful disconnect cleanup | API 06, ENV 08 | 0.75h | stale connections close cleanly and environment closes without leak | 🟡 Partial | — |
-| API 08 | E07.2 | Person C | `server/Dockerfile` | Build Dockerfile with Python app startup on port 7860 | API 01 to API 07 | 0.75h | local Docker run serves app on port 7860 | 🟡 Partial | — |
-| API 09 | E07.2 | Person C | HF config files | Add Hugging Face Space metadata and deploy instructions | API 08 | 0.5h | Space config is valid for Docker app deployment | ⬜ Not started | — |
+| API 06 | E07.1 | Person C | `server/app.py` | Add WebSocket session handler | ENV 06 | 1.25h | each connection gets isolated environment state and can reset plus step | ✅ Completed | Person B (Ayush) |
+| API 07 | E07.1 | Person C | `server/app.py` | Add idle timeout and graceful disconnect cleanup | API 06, ENV 08 | 0.75h | stale connections close cleanly and environment closes without leak | ✅ Completed | Person B (Ayush) |
+| API 08 | E07.2 | Person C | `server/Dockerfile` | Build Dockerfile with Python app startup on port 7860 | API 01 to API 07 | 0.75h | local Docker run serves app on port 7860 | ✅ Completed | Person B (Ayush) |
+| API 09 | E07.2 | Person C | HF config files | Add Hugging Face Space metadata and deploy instructions | API 08 | 0.5h | Space config is valid for Docker app deployment | ✅ Completed | Person B (Ayush) |
 | API 10 | E07.2 | Person C | deployment docs | Deploy live Space and verify health, reset, and step | API 09 | 1h | live Space responds successfully to health and one end to end episode | ⬜ Not started | — |
 | API 11 | E07.1 | Person C | tests | Add server endpoint tests and WebSocket smoke test | API 01 to API 07 | 1h | local server tests pass for health, reset, step, invalid payload, and ws connect | ⬜ Not started | — |
 | API 12 | E07.2 | Person D | docs | Capture deployment screenshots and public link for README | API 10 | 0.25h | README ready screenshots and live link are available | ⬜ Not started | — |
-| API 13 | E07.1 | Person C | `server/app.py` | Add CORS middleware configuration for frontend origins in dev and production | API 01 | 0.25h | frontend on localhost:5173 and HF Space origin can reach the API without CORS errors | 🟡 Partial | — |
+| API 13 | E07.1 | Person C | `server/app.py` | Add CORS middleware configuration for frontend origins in dev and production | API 01 | 0.25h | frontend on localhost:5173 and HF Space origin can reach the API without CORS errors | ✅ Completed | Person B (Ayush) |
 | API 14 | E07.1 | Person C | `server/app.py` | Add REST session management so each user gets isolated environment state | API 02, API 03 | 0.75h | two concurrent REST users do not share or corrupt each other's episode state | 🟡 Partial | — |
-| API 15 | E07.2 | Person C | HF Space repo | Create HF Space README.md with YAML frontmatter specifying `sdk: docker`, `app_port: 7860`, title, and emoji | API 08 | 0.25h | HF Space config is valid and Space launches correctly from the metadata | ⬜ Not started | — |
+| API 15 | E07.2 | Person C | HF Space repo | Create HF Space README.md with YAML frontmatter specifying `sdk: docker`, `app_port: 7860`, title, and emoji | API 08 | 0.25h | HF Space config is valid and Space launches correctly from the metadata | ✅ Completed | Person B (Ayush) |
 | API 16 | E07.2 | Person C | `server/Dockerfile` | Configure Docker to build frontend and serve static assets from FastAPI in a single container | API 08, UI 10 | 0.75h | single Docker container serves both API and frontend on port 7860 | ⬜ Not started | — |
-| API 17 | E07.2 | Person C | deployment docs | Document secrets and API key management for Scientist LLM access in deployment and notebook | API 09 | 0.5h | team knows how to set API keys in HF Space secrets, local env, and Colab secrets | ⬜ Not started | — |
-| API 18 | E07.1 | Person C | `server/app.py` | Include judge audit payload in REST, replay, and WebSocket responses for terminal episodes | API 03, API 05, API 06, ENV 11 | 0.5h | clients receive `judge_notes` and verdict fields without separate log file access | ⬜ Not started | — |
+| API 17 | E07.2 | Person C | deployment docs | Document secrets and API key management for hosted Scientist model access in deployment and notebook | API 09 | 0.5h | team knows how to set API keys in HF Space secrets, local env, and Colab secrets | ⬜ Not started | — |
+| API 18 | E07.1 | Person C | `server/app.py` | Include judge audit payload plus bounded tool-trace summaries in REST, replay, and WebSocket responses for terminal episodes | API 03, API 05, API 06, ENV 11 | 0.5h | clients receive `judge_notes`, verdict fields, and bounded tool audit data without separate log file access | ⬜ Not started | — |
 | API 19 | E07.2 | Person C | `openenv.yaml` and deployment docs | Expose and verify OpenEnv built in `/web` fallback route locally and on HF Space | FND 09, API 08, API 10 | 0.5h | `/web` is documented, reachable, and able to run a seeded episode when the custom UI is unavailable | ⬜ Not started | — |
 
 ---
@@ -586,21 +648,21 @@ As the team, we want a repeatable evaluation workflow for before versus after co
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TRN 01 | E08.1 | Person B | `notebooks/train_colab.ipynb` | Create notebook skeleton with setup, connect, train, and plot sections | API 10 | 0.5h | notebook has clear runnable sections in the right order | ⬜ Not started | — |
+| TRN 01 | E08.1 | Person B | `notebooks/train_colab.ipynb` | Create notebook skeleton with setup, connect, train, bounded-tool policy, and plot sections | API 10 | 0.5h | notebook has clear runnable sections in the right order and documents the bounded-tool policy | ⬜ Not started | — |
 | TRN 02 | E08.1 | Person B | notebook | Add package install and model setup cell for Unsloth or HF TRL | TRN 01 | 0.75h | notebook installs dependencies without manual edits beyond secrets | ⬜ Not started | — |
-| TRN 03 | E08.1 | Person B | notebook or `client.py` | Implement environment client wrapper for reset plus step over WebSocket or REST | API 06 | 1h | notebook can start and finish an episode against local or hosted env | ⬜ Not started | — |
-| TRN 04 | E08.1 | Person B | notebook | Implement rollout collection loop for Scientist episodes | TRN 03, AGT 01 | 1h | loop collects trajectories, rewards, and done signals | ⬜ Not started | — |
-| TRN 05 | E08.1 | Person B | notebook | Connect rollouts to GRPO or equivalent trainer | TRN 04 | 1.25h | at least one short training run completes without runtime errors | ⬜ Not started | — |
-| TRN 06 | E08.1 | Person B | notebook | Log episode reward, rigor, feasibility, fidelity, and rounds used | JDG 10, TRN 04 | 0.75h | notebook stores metrics frame across training episodes | ⬜ Not started | — |
+| TRN 03 | E08.1 | Person B | notebook or `client.py` | Implement environment client wrapper for reset plus step over WebSocket or REST | API 06 | 1h | notebook can start and finish an episode against local or hosted env and can read tool-aware step payloads | ⬜ Not started | — |
+| TRN 04 | E08.1 | Person B | notebook | Implement rollout collection loop for Scientist episodes | TRN 03, AGT 01 | 1h | loop collects trajectories, rewards, done signals, and bounded tool traces from frozen evidence packs | ⬜ Not started | — |
+| TRN 05 | E08.1 | Person B | notebook | Connect rollouts to GRPO or equivalent trainer | TRN 04 | 1.25h | at least one short training run completes without runtime errors while preserving deterministic reward and frozen evidence inputs | ⬜ Not started | — |
+| TRN 06 | E08.1 | Person B | notebook | Log episode reward, rigor, feasibility, fidelity, rounds used, and bounded tool metrics | JDG 10, TRN 04 | 0.75h | notebook stores a metrics frame across training episodes including bounded tool metrics | ⬜ Not started | — |
 | TRN 07 | E08.2 | Person B | notebook | Plot reward curve and component curves with matplotlib | TRN 06 | 0.5h | plotted image shows visible metrics and can be saved to file | ⬜ Not started | — |
-| TRN 08 | E08.2 | Person B | notebook | Add before versus after evaluation on fixed seeds | SCN 11, TRN 05 | 1h | notebook compares baseline and trained policy on the same scenarios | ⬜ Not started | — |
+| TRN 08 | E08.2 | Person B | notebook | Add before versus after evaluation on fixed seeds and frozen evidence packs | SCN 11, TRN 05 | 1h | notebook compares baseline and trained policy on the same scenarios and evidence packs | ⬜ Not started | — |
 | TRN 09 | E08.2 | Person B | `replicalab/agents/scientist_policy.py` | Add policy loading path for trained adapter or checkpoint | TRN 05 | 0.5h | evaluation can switch between baseline and trained model cleanly | ⬜ Not started | — |
 | TRN 10 | E08.2 | Person B | docs | Export plot image and sample logs to `outputs/plots` | TRN 07 | 0.25h | plots are saved and versioned for README use | ⬜ Not started | — |
 | TRN 11 | E08.1 | Person C | infra notes | Document environment URL, secrets, and connection troubleshooting | TRN 03 | 0.25h | any team member can run the notebook using the notes | ⬜ Not started | — |
 | TRN 12 | E08.2 | Person D | storytelling | Convert evaluation results into two or three clear bullet insights for judges | TRN 08 | 0.5h | README and demo can state what improved in plain English | ⬜ Not started | — |
-| TRN 13 | E08.1 | Person B | `replicalab/client.py` | Create reusable environment client module with `connect()`, `reset()`, `step()`, `close()` over REST and WebSocket | API 06 | 1h | client module can be imported by notebook and other consumers without duplicating connection logic | ⬜ Not started | — |
+| TRN 13 | E08.1 | Person B | `replicalab/client.py` | Create reusable environment client module with `connect()`, `reset()`, `step()`, `close()` over REST and WebSocket | API 06 | 1h | client module can be imported by notebook and other consumers without duplicating connection logic | ✅ Done | 2026-03-08 |
 | TRN 14 | E08.1 | Person B | notebook or docs | Select and document base model for Scientist fine tuning with rationale for size, license, and structured output capability | TRN 01 | 0.5h | base model choice is documented and all team members know which model is being trained | ⬜ Not started | — |
-| TRN 15 | E08.2 | Person B | notebook | Add agreement rate and invalid action rate aggregation to evaluation outputs and before versus after comparison | TRN 06, TRN 08, OBS 09 | 0.5h | notebook reports reward, rounds, agreement rate, and invalid action rate for baseline and trained runs | ⬜ Not started | — |
+| TRN 15 | E08.2 | Person B | notebook | Add agreement rate, invalid action rate, and invalid bounded-tool rate aggregation to evaluation outputs and before versus after comparison | TRN 06, TRN 08, OBS 09 | 0.5h | notebook reports reward, rounds, agreement rate, invalid action rate, and invalid bounded-tool rate for baseline and trained runs | ⬜ Not started | — |
 
 ---
 
@@ -661,7 +723,7 @@ As a judge, I want the same seeded scenario to be replayable.
 | OBS 03 | E10.1 | Person C | replay utilities | Add episode id generation and file naming conventions | OBS 01 | 0.25h | logs never overwrite and are easy to locate | ⬜ Not started | — |
 | OBS 04 | E10.2 | Person A | tests | Add deterministic replay test using seed and action sequence | ENV 10 | 0.75h | replay of same seed and actions matches prior state sequence | ⬜ Not started | — |
 | OBS 05 | E10.2 | Person D | UI | Surface episode id and replay link in UI | API 05, UI 08 | 0.5h | user can easily capture or revisit a past episode | ⬜ Not started | — |
-| OBS 06 | E10.1 | Person B | notebook | Log training run metadata including model, seed, scenario set, steps | TRN 06 | 0.5h | notebook exports metadata with each run for reproducibility | ⬜ Not started | — |
+| OBS 06 | E10.1 | Person B | notebook | Log training run metadata including model, seed, scenario set, steps, evidence-pack version, and bounded-tool policy | TRN 06 | 0.5h | notebook exports metadata with each run for reproducibility including evidence-pack version and bounded-tool policy | ⬜ Not started | — |
 | OBS 07 | E10.1 | Person C | scripts | Add simple local script to run one episode and dump logs | ENV 06, OBS 01 | 0.5h | one command produces a complete local sample log | ⬜ Not started | — |
 | OBS 08 | E10.2 | Person D | storytelling | Create static replay screenshots or gifs for README and video | UI 08 | 0.5h | at least two crisp visual assets are ready for docs and demo | ⬜ Not started | — |
 | OBS 09 | E10.1 | Person C | `replicalab/utils/logging.py` | Extend episode summary schema with `judge_notes`, `agreement`, `invalid_action_count`, and `invalid_action_rate` for replay and evaluation consumers | OBS 01, JDG 11, ENV 11 | 0.5h | every completed episode log contains the audit payload plus demo and evaluation metrics needed by notebook, UI, and README | ⬜ Not started | — |
@@ -685,15 +747,15 @@ As a judge, I want the system to work reliably when clicked live.
 
 | ID | Story | Owner | Module or file | Task | Depends on | Estimate | Acceptance criteria | Status | Completed by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TST 01 | E11.1 | Person A | `tests/test_env.py` | Add reset returns valid observations test | ENV 02 | 0.5h | test confirms both roles receive valid structured observations | ⬜ Not started | — |
-| TST 02 | E11.1 | Person A | `tests/test_env.py` | Add valid action step test | ENV 03 to ENV 06 | 0.5h | valid action advances round and returns correct shape | ⬜ Not started | — |
-| TST 03 | E11.1 | Person A | `tests/test_env.py` | Add invalid action handling test | MOD 05, ENV 03 | 0.5h | invalid action yields structured error and environment survives | ⬜ Not started | — |
-| TST 04 | E11.1 | Person A | `tests/test_reward.py` | Add perfect protocol high reward test | JDG 04 | 0.5h | perfect protocol scores higher than baseline and broken protocol | ⬜ Not started | — |
-| TST 05 | E11.1 | Person A | `tests/test_reward.py` | Add zero dimension or penalty behavior test | JDG 04 | 0.5h | zero feasibility or timeout lowers reward as expected | ⬜ Not started | — |
+| TST 01 | E11.1 | Person A | `tests/test_env.py` | Add reset returns valid observations test | ENV 02 | 0.5h | test confirms both roles receive valid structured observations | ✅ Completed | Person B (Ayush) |
+| TST 02 | E11.1 | Person A | `tests/test_env.py` | Add valid action step test | ENV 03 to ENV 06 | 0.5h | valid action advances round and returns correct shape | ✅ Completed | Person B (Ayush) |
+| TST 03 | E11.1 | Person A | `tests/test_env.py` | Add invalid action handling test | MOD 05, ENV 03 | 0.5h | invalid action yields structured error and environment survives | ✅ Completed | Person B (Ayush) |
+| TST 04 | E11.1 | Person A | `tests/test_reward.py` | Add perfect protocol high reward test | JDG 04 | 0.5h | perfect protocol scores higher than baseline and broken protocol | ✅ Completed | Person B (Ayush) |
+| TST 05 | E11.1 | Person A | `tests/test_reward.py` | Add zero dimension or penalty behavior test | JDG 04 | 0.5h | zero feasibility or timeout lowers reward as expected | ✅ Completed | Person B (Ayush) |
 | TST 06 | E11.1 | Person C | `tests/test_server.py` | Add health plus reset plus step endpoint tests | API 01 to API 03 | 0.75h | API tests pass locally | ⬜ Not started | — |
-| TST 07 | E11.1 | Person C | `tests/test_server.py` | Add WebSocket connection and invalid payload tests | API 06 | 0.75h | WebSocket errors are graceful and session stays isolated | ⬜ Not started | — |
+| TST 07 | E11.1 | Person C | `tests/test_server.py` | Add WebSocket connection and invalid payload tests | API 06 | 0.75h | WebSocket errors are graceful and session stays isolated | ✅ Completed | Person B (Ayush) |
 | TST 08 | E11.2 | Person D | manual checklist | Create demo smoke checklist for local and hosted builds | UI 12, API 10 | 0.5h | team can verify full demo in under five minutes | ⬜ Not started | — |
-| TST 09 | E11.2 | Person B | notebook checklist | Create notebook smoke test for fresh runtime | TRN 12 | 0.5h | training notebook runs from top with minimal edits | ⬜ Not started | — |
+| TST 09 | E11.2 | Person B | notebook checklist | Create notebook smoke test for fresh runtime | TRN 12 | 0.5h | training notebook runs from top with minimal edits and the bounded-tool path works against frozen evidence packs | ⬜ Not started | — |
 | TST 10 | E11.2 | all | full run | Execute one integrated test pass before freeze | all prior TST tasks | 1h | environment, UI, Space, and notebook all pass their smoke tests the same day | ⬜ Not started | — |
 | TST 11 | E11.1 | Person C | `tests/test_server.py` and `tests/test_env.py` | Add contract tests for judge audit payloads and invalid action metrics in terminal responses and replay logs | API 18, OBS 09 | 0.75h | tests confirm terminal payloads and replay files expose audit notes, agreement, and invalid action metrics | ⬜ Not started | — |
 | TST 12 | E11.2 | Person D | manual checklist | Add fallback `/web` smoke step plus replay slider and before versus after toggle checks to demo checklist | API 19, UI 14, UI 15 | 0.5h | checklist verifies custom UI path and fallback UI path are both demo ready | ⬜ Not started | — |
@@ -877,7 +939,7 @@ The environment client must expose:
 3. reward
 4. done
 5. final info including component scores
-6. API key or secret configuration for LLM access in both hosted and notebook environments
+6. API key or secret configuration for hosted-model access in both hosted and notebook environments
 
 ### Scenario to judge contract
 Every scenario must provide:

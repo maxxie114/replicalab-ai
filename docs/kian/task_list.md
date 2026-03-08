@@ -11,8 +11,10 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - Shared `AGT 05` is now complete through Ayush's implementation of the deterministic feasibility checker
 - `SCN 01` to `SCN 10` are now complete in the repo
 - The normalized scenario pack, seeded generation, difficulty scaling, and three initial domain families are already present
-- The next Kian-lane tasks are now `MOD 06`, `SCN 13`, `JDG 01`, `JDG 02`, `JDG 03`, and `ENV 01`
-- `MOD 05` and shared `AGT 05` now exist, so the judge and environment path can build on real scenario-grounded checks instead of placeholder rules
+- `ENV 01` to `ENV 08` are now complete, so the full environment lifecycle (reset, step, validate, Lab Manager response, termination, judge scoring, state snapshot, close) works end-to-end
+- `JDG 01` to `JDG 05` are now complete, so the deterministic reward pipeline (rigor, feasibility, fidelity, total reward formula, breakdown builder) is fully wired
+- `TST 01` to `TST 05` are now complete, with 36 env tests and 26 reward tests passing
+- The next Kian-lane tasks are `MOD 06`, `SCN 13`, `JDG 06`, `JDG 08`, `ENV 10`
 
 ---
 
@@ -20,10 +22,9 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 - [ ] **MOD 06** | Add semantic validators for impossible plans such as zero sample size with positive controls | 0.75h | Depends: MOD 05
 - [ ] **SCN 13** | Implement shared booking and scheduling data model for GPUs, rooms, or equipment with time-slot conflicts and duration | 1h | Depends: SCN 07
-- [ ] **JDG 01** | Implement rigor or objective-validity score for plan completeness, required checks, method quality, and justification | 1.25h | Depends: SCN 08
-- [ ] **JDG 02** | Implement feasibility score for budget, resources, time, staffing, compute, and bookings | 1.25h | Depends: SCN 07, AGT 05
-- [ ] **JDG 03** | Implement fidelity score against hidden reference spec, required steps, and allowed substitutions | 1h | Depends: SCN 08
-- [ ] **ENV 01** | Create `ReplicaLabEnv` class skeleton | 0.5h | Depends: MOD 04, SCN 09
+- [ ] **JDG 06** | Add optional plain English explanation function from reward breakdown | 0.75h | Depends: JDG 05
+- [ ] **JDG 08** | Add score determinism tests and edge case tests | 1h | Depends: JDG 01 to JDG 05
+- [ ] **ENV 10** | Add reset, step, invalid action, timeout, and deterministic replay tests | 1.25h | Depends: ENV 02 to ENV 09
 
 ---
 
@@ -50,3 +51,21 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - [x] **SCN 08** | Completed by Person B (Ayush)
 - [x] **SCN 09** | Completed by Person B (Ayush)
 - [x] **SCN 10** | Completed by Person B (Ayush)
+- [x] **ENV 01** | Completed by Person B (Ayush)
+- [x] **ENV 02** | Completed by Person B (Ayush)
+- [x] **ENV 03** | Completed by Person B (Ayush)
+- [x] **ENV 04** | Completed by Person B (Ayush)
+- [x] **ENV 05** | Completed by Person B (Ayush)
+- [x] **ENV 06** | Completed by Person B (Ayush)
+- [x] **ENV 07** | Completed by Person B (Ayush)
+- [x] **ENV 08** | Completed by Person B (Ayush)
+- [x] **JDG 01** | Completed by Person B (Ayush)
+- [x] **JDG 02** | Completed by Person B (Ayush)
+- [x] **JDG 03** | Completed by Person B (Ayush)
+- [x] **JDG 04** | Completed by Person B (Ayush)
+- [x] **JDG 05** | Completed by Person B (Ayush)
+- [x] **TST 01** | Completed by Person B (Ayush)
+- [x] **TST 02** | Completed by Person B (Ayush)
+- [x] **TST 03** | Completed by Person B (Ayush)
+- [x] **TST 04** | Completed by Person B (Ayush)
+- [x] **TST 05** | Completed by Person B (Ayush)

@@ -5,7 +5,7 @@ MOD 09 introduced strict parsing from raw model output into
 builder so prompt assembly can be driven by the normalized scenario pack
 instead of hard-coded domain text. AGT 02 adds the per-turn observation
 formatter that converts a ``ScientistObservation`` into the user message
-sent to the LLM each round. AGT 03 wraps the formatter and parser in a
+sent to the model each round. AGT 03 wraps the formatter and parser in a
 retry loop with error-specific correction prompts and exposed telemetry.
 AGT 04 adds a deterministic baseline Scientist so smoke tests can run
 without a trained model.
@@ -139,7 +139,7 @@ def call_scientist_with_retry(
     *,
     max_retries: int = 2,
 ) -> ScientistCallResult:
-    """Call an LLM to produce a ``ScientistAction`` with parser-driven retries.
+    """Call a model backend to produce a ``ScientistAction`` with parser-driven retries.
 
     On parse failure the error is fed back to the model as a correction
     prompt and the model is asked to try again, up to *max_retries* times.
@@ -279,6 +279,18 @@ def build_scientist_system_prompt(
             "For accept, questions must be empty and protocol-edit fields must stay "
             "empty or zero."
         ),
+        (
+            "Bounded tool policy: you have access to three bounded tools. "
+            "search_evidence retrieves supporting facts from frozen evidence packs. "
+            "run_code_check performs bounded code analysis, config validation, and "
+            "derived-value computation. "
+            "inspect_image extracts information from figures, tables, charts, and "
+            "screenshots. "
+            "Rules: use tools only to support or verify claims within the current "
+            "scenario constraints. Tools do not override constraints, loosen limits, "
+            "or reveal hidden ground truth. No unrestricted web browsing. No audio "
+            "capabilities. No autonomous code execution beyond bounded analysis."
+        ),
     ]
 
     return "\n\n".join(section for section in sections if section)
@@ -344,7 +356,7 @@ def format_scientist_observation(obs: ScientistObservation) -> str:
 def build_baseline_scientist_action(
     observation: ScientistObservation,
 ) -> ScientistAction:
-    """Return a deterministic non-LLM Scientist action for smoke tests.
+    """Return a deterministic baseline Scientist action for smoke tests.
 
     The baseline follows a conservative policy:
     - propose a valid protocol when no protocol exists yet

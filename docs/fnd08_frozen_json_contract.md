@@ -16,6 +16,17 @@ This document freezes the JSON contract for the shared ReplicaLab data models so
 - Person C API payload examples
 - Person D frontend and replay mocks
 
+## Tool-Capability Addendum
+
+The richer-capability MVP adds bounded search, code-check, and image-inspection
+support below this frozen contract.
+
+This addendum does **not** reopen the outward action schema from `FND 08`.
+The final outward actions remain `ScientistAction` and `LabManagerAction`.
+Bounded tool use will be represented through scenario or evidence metadata,
+environment-side tool traces, and `StepResult.info` or replay payloads rather
+than new outward action types for the MVP.
+
 ## Global conventions
 
 - All JSON keys use `snake_case`.
