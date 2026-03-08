@@ -24,7 +24,10 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - `TRN 03` is now complete in `replicalab/training/rollout.py`
 - `AGT 10` is now complete in `replicalab/prompts/`
 - `TRN 04` is now complete in `replicalab/training/rollout.py`
-- The next fully unblocked Ayush task is `TRN 05`
+- `TRN 01` is now complete in `notebooks/train_colab.ipynb`
+- `TRN 02` is now complete in `notebooks/train_colab.ipynb`
+- `TRN 14` is now complete in `notebooks/train_colab.ipynb` and `docs/agt11_scientist_model_selection.md`
+- The next fully unblocked Ayush tasks are `TRN 05` and `JDG 10`
 
 ---
 
@@ -63,8 +66,8 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 ## Epic E08. RL Training Pipeline
 
-- [ ] **TRN 01** | Create notebook skeleton | 0.5h | Depends: API 10
-- [ ] **TRN 02** | Add package install and model setup cell | 0.75h | Depends: TRN 01
+- [x] **TRN 01** | Create notebook skeleton | 0.5h | Depends: API 10 | Status: completed on 2026-03-08
+- [x] **TRN 02** | Add package install and model setup cell | 0.75h | Depends: TRN 01 | Status: completed on 2026-03-08
 - [x] **TRN 03** | Implement environment client wrapper | 1h | Depends: API 06 | Status: completed on 2026-03-08
 - [x] **TRN 04** | Implement rollout collection loop | 1h | Depends: TRN 03, AGT 01 | Status: completed on 2026-03-08
 - [ ] **TRN 05** | Connect rollouts to GRPO or equivalent trainer | 1.25h | Depends: TRN 04
@@ -74,7 +77,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - [ ] **TRN 09** | Add policy loading path for trained adapter | 0.5h | Depends: TRN 05
 - [ ] **TRN 10** | Export plot image and sample logs to outputs/plots | 0.25h | Depends: TRN 07
 - [x] **TRN 13** | Create reusable environment client module (client.py) | 1h | Depends: API 06 | Status: completed on 2026-03-08
-- [ ] **TRN 14** | Select and document base model (notebook side) | 0.5h | Depends: TRN 01 | Assumption: Qwen3-4B primary, Qwen3-8B H100-only stretch
+- [x] **TRN 14** | Select and document base model (notebook side) | 0.5h | Depends: TRN 01 | Status: completed on 2026-03-08 | Assumption now locked: Qwen3-8B primary, Qwen3-4B fallback
 - [ ] **TRN 15** | Add agreement rate and invalid action rate aggregation | 0.5h | Depends: TRN 06, TRN 08, OBS 09
 
 ---
@@ -102,6 +105,6 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Metric | Value |
 |--------|-------|
 | Total tasks | 29 |
-| Completed | 16 |
-| Remaining | 13 |
-| Total estimated hours | 8h |
+| Completed | 19 |
+| Remaining | 10 |
+| Total estimated hours | 6.25h |
