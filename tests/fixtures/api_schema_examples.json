@@ -178,12 +178,13 @@
           "error": null,
           "reward_breakdown": null,
           "judge_notes": null,
-          "verdict": null
+          "verdict": null,
+          "top_failure_reasons": []
         }
       },
       "response_terminal": {
         "observation": null,
-        "reward": 5.0,
+        "reward": 5.42,
         "done": true,
         "info": {
           "agreement_reached": true,
@@ -194,12 +195,11 @@
             "fidelity": 0.8,
             "efficiency_bonus": 0.2,
             "communication_bonus": 0.1,
-            "penalties": {
-              "timeout": 0.0
-            }
+            "penalties": {}
           },
-          "judge_notes": "Stub audit until judge integration lands.",
-          "verdict": "accept"
+          "judge_notes": "Rigor: 0.80 (strong) — measures structural completeness, success-criteria coverage, and required-element coverage.\nFeasibility: 0.80 (strong) — measures whether the protocol respects budget, equipment, reagent, schedule, and staffing constraints.\nFidelity: 0.80 (strong) — measures alignment with the hidden reference spec, including required elements, substitutions, and target metrics.\nEfficiency bonus: +0.20 (awarded for reaching agreement in fewer rounds).\nCommunication bonus: +0.10.\nNo penalties applied.\nTotal reward: 5.42 (formula: 10 × rigor × feasibility × fidelity + bonuses − penalties).",
+          "verdict": "accept",
+          "top_failure_reasons": []
         }
       }
     },
@@ -265,10 +265,13 @@
           "max_rounds": 6,
           "done": true,
           "agreement_reached": true,
-          "reward": 5.0,
+          "reward": 5.42,
           "rigor_score": 0.8,
           "feasibility_score": 0.8,
-          "fidelity_score": 0.8
+          "fidelity_score": 0.8,
+          "judge_notes": "Rigor: 0.80 (strong) — measures structural completeness, success-criteria coverage, and required-element coverage.\nFeasibility: 0.80 (strong) — measures whether the protocol respects budget, equipment, reagent, schedule, and staffing constraints.\nFidelity: 0.80 (strong) — measures alignment with the hidden reference spec, including required elements, substitutions, and target metrics.\nEfficiency bonus: +0.20 (awarded for reaching agreement in fewer rounds).\nCommunication bonus: +0.10.\nNo penalties applied.\nTotal reward: 5.42 (formula: 10 × rigor × feasibility × fidelity + bonuses − penalties).",
+          "verdict": "accept",
+          "top_failure_reasons": []
         },
         "transcript": [
           {
@@ -290,15 +293,14 @@
           "fidelity": 0.8,
           "efficiency_bonus": 0.2,
           "communication_bonus": 0.1,
-          "penalties": {
-            "timeout": 0.0
-          }
+          "penalties": {}
         },
-        "total_reward": 5.0,
+        "total_reward": 5.42,
         "rounds_used": 3,
         "agreement_reached": true,
-        "judge_notes": "Stub audit until judge integration lands.",
-        "verdict": "accept"
+        "judge_notes": "Rigor: 0.80 (strong) — measures structural completeness, success-criteria coverage, and required-element coverage.\nFeasibility: 0.80 (strong) — measures whether the protocol respects budget, equipment, reagent, schedule, and staffing constraints.\nFidelity: 0.80 (strong) — measures alignment with the hidden reference spec, including required elements, substitutions, and target metrics.\nEfficiency bonus: +0.20 (awarded for reaching agreement in fewer rounds).\nCommunication bonus: +0.10.\nNo penalties applied.\nTotal reward: 5.42 (formula: 10 × rigor × feasibility × fidelity + bonuses − penalties).",
+        "verdict": "accept",
+        "top_failure_reasons": []
       }
     }
   },
@@ -475,7 +477,8 @@
           "error": null,
           "reward_breakdown": null,
           "judge_notes": null,
-          "verdict": null
+          "verdict": null,
+          "top_failure_reasons": []
         }
       }
     },

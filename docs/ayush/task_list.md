@@ -21,8 +21,10 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - The scenario prerequisite bundle (`SCN 01` to `SCN 10`) is now present in the repo, so Ayush prompt work is backed by real normalized scenario packs instead of placeholders
 - `API 06` is now complete, so `TRN 03` and `TRN 13` were fully unblocked
 - `TRN 13` is now complete in `replicalab/client.py`
-- The next fully unblocked Ayush task is `TRN 03`
-- `AGT 10` now waits only on `JDG 06`
+- `TRN 03` is now complete in `replicalab/training/rollout.py`
+- `AGT 10` is now complete in `replicalab/prompts/`
+- `TRN 04` is now complete in `replicalab/training/rollout.py`
+- The next fully unblocked Ayush task is `TRN 05`
 
 ---
 
@@ -49,7 +51,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - [x] **AGT 03** | Add parse plus retry strategy for malformed model output | 0.75h | Depends: MOD 09, AGT 02 | Status: completed on 2026-03-07
 - [x] **AGT 08** | Add prompt formatting and parse tests | 0.75h | Depends: AGT 01 to AGT 04 | Status: completed on 2026-03-07
 - [x] **AGT 11** | Select and document base model for Scientist training | 0.5h | Depends: AGT 01 | Status: completed on 2026-03-08
-- [ ] **AGT 10** | Write domain-neutral prompt text files for all three roles | 0.75h | Depends: AGT 01, AGT 07, JDG 06
+- [x] **AGT 10** | Write domain-neutral prompt text files for all three roles | 0.75h | Depends: AGT 01, AGT 07, JDG 06 | Status: completed on 2026-03-08
 
 ---
 
@@ -63,8 +65,8 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 
 - [ ] **TRN 01** | Create notebook skeleton | 0.5h | Depends: API 10
 - [ ] **TRN 02** | Add package install and model setup cell | 0.75h | Depends: TRN 01
-- [ ] **TRN 03** | Implement environment client wrapper | 1h | Depends: API 06
-- [ ] **TRN 04** | Implement rollout collection loop | 1h | Depends: TRN 03, AGT 01
+- [x] **TRN 03** | Implement environment client wrapper | 1h | Depends: API 06 | Status: completed on 2026-03-08
+- [x] **TRN 04** | Implement rollout collection loop | 1h | Depends: TRN 03, AGT 01 | Status: completed on 2026-03-08
 - [ ] **TRN 05** | Connect rollouts to GRPO or equivalent trainer | 1.25h | Depends: TRN 04
 - [ ] **TRN 06** | Log episode reward, rigor, feasibility, fidelity, rounds | 0.75h | Depends: JDG 10, TRN 04
 - [ ] **TRN 07** | Plot reward curve and component curves | 0.5h | Depends: TRN 06
@@ -100,6 +102,6 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Metric | Value |
 |--------|-------|
 | Total tasks | 29 |
-| Completed | 13 |
-| Remaining | 16 |
-| Total estimated hours | 11.75h |
+| Completed | 16 |
+| Remaining | 13 |
+| Total estimated hours | 8h |

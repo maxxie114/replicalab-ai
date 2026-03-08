@@ -74,6 +74,7 @@ def validate_protocol(
     issues: list[ValidationIssue] = []
 
     _check_obvious_impossibilities(protocol, issues)
+    _check_semantic_impossibilities(protocol, issues)
     _check_duration_vs_time_limit(protocol, scenario, issues)
     _check_equipment_vocabulary(protocol, scenario, issues)
     _check_reagent_vocabulary(protocol, scenario, issues)
@@ -114,6 +115,91 @@ def _check_obvious_impossibilities(
                 severity=IssueSeverity.ERROR,
                 category="duration",
                 message="Duration must be at least 1 day.",
+            )
+        )
+
+
+def _check_semantic_impossibilities(
+    protocol: Protocol,
+    issues: list[ValidationIssue],
+) -> None:
+    """MOD 06 — catch self-contradictory or impossible plan fields."""
+
+    # 1. Zero sample size with non-empty controls
+    if protocol.sample_size < 1 and protocol.controls:
+        issues.append(
+            ValidationIssue(
+                severity=IssueSeverity.ERROR,
+                category="sample_controls",
+                message=(
+                    f"Protocol has {len(protocol.controls)} control(s) but "
+                    f"sample_size is {protocol.sample_size}; controls require "
+                    f"samples to apply to."
+                ),
+            )
+        )
+
+    # 2. Controls count >= sample size (no experimental samples remain)
+    if protocol.sample_size >= 1 and protocol.controls and len(protocol.controls) >= protocol.sample_size:
+        issues.append(
+            ValidationIssue(
+                severity=IssueSeverity.ERROR,
+                category="sample_controls",
+                message=(
+                    f"Protocol has {len(protocol.controls)} control(s) but only "
+                    f"{protocol.sample_size} sample(s); no experimental samples remain."
+                ),
+            )
+        )
+
+    # 3. Duplicate controls
+    seen_controls: set[str] = set()
+    dup_controls: list[str] = []
+    for c in protocol.controls:
+        norm = _normalize(c)
+        if norm in seen_controls:
+            dup_controls.append(c)
+        seen_controls.add(norm)
+    if dup_controls:
+        issues.append(
+            ValidationIssue(
+                severity=IssueSeverity.WARNING,
+                category="duplicate_controls",
+                message=f"Duplicate control(s): {', '.join(dup_controls)}.",
+            )
+        )
+
+    # 4. Duplicate equipment entries
+    seen_equip: set[str] = set()
+    dup_equip: list[str] = []
+    for e in protocol.required_equipment:
+        norm = _normalize(e)
+        if norm in seen_equip:
+            dup_equip.append(e)
+        seen_equip.add(norm)
+    if dup_equip:
+        issues.append(
+            ValidationIssue(
+                severity=IssueSeverity.WARNING,
+                category="duplicate_equipment",
+                message=f"Duplicate equipment: {', '.join(dup_equip)}.",
+            )
+        )
+
+    # 5. Duplicate reagent entries
+    seen_reagents: set[str] = set()
+    dup_reagents: list[str] = []
+    for r in protocol.required_reagents:
+        norm = _normalize(r)
+        if norm in seen_reagents:
+            dup_reagents.append(r)
+        seen_reagents.add(norm)
+    if dup_reagents:
+        issues.append(
+            ValidationIssue(
+                severity=IssueSeverity.WARNING,
+                category="duplicate_reagents",
+                message=f"Duplicate reagent(s): {', '.join(dup_reagents)}.",
             )
         )
 

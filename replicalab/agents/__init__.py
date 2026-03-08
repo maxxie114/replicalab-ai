@@ -1,5 +1,9 @@
 """Agent policy helpers exposed as importable modules."""
 
+from .judge_policy import (
+    JudgeAudit,
+    build_judge_audit,
+)
 from .lab_manager_policy import (
     AlternativeSuggestion,
     FeasibilityCheckResult,
@@ -22,11 +26,13 @@ from .scientist_policy import (
 __all__ = [
     "AlternativeSuggestion",
     "FeasibilityCheckResult",
+    "JudgeAudit",
     "RetryMetadata",
     "ScientistCallResult",
     "ScientistOutputParseError",
     "SuggestionChange",
     "build_baseline_scientist_action",
+    "build_judge_audit",
     "build_scientist_system_prompt",
     "call_scientist_with_retry",
     "check_feasibility",

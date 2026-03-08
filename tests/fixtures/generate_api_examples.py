@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 
 from replicalab.config import DEFAULT_DIFFICULTY, DEFAULT_SCENARIO_TEMPLATE
+from replicalab.agents.judge_policy import build_judge_audit
 from replicalab.models import (
     ConversationEntry,
     EpisodeLog,
@@ -28,6 +29,7 @@ from replicalab.models import (
     StepResult,
 )
 from replicalab.scenarios import available_scenario_families, generate_scenario
+from replicalab.scoring.rubric import compute_total_reward
 
 OUTPUT_PATH = Path(__file__).parent / "api_schema_examples.json"
 
@@ -43,6 +45,21 @@ _DIFFICULTY = DEFAULT_DIFFICULTY
 _pack = generate_scenario(seed=_SEED, template=_TEMPLATE, difficulty=_DIFFICULTY)
 _sci_obs = _pack.scientist_observation
 _lm_obs = _pack.lab_manager_observation
+_TERMINAL_BREAKDOWN = RewardBreakdown(
+    rigor=0.8,
+    feasibility=0.8,
+    fidelity=0.8,
+    efficiency_bonus=0.2,
+    communication_bonus=0.1,
+    penalties={},
+)
+_TERMINAL_AUDIT = build_judge_audit(
+    _TERMINAL_BREAKDOWN,
+    agreement_reached=True,
+    rounds_used=3,
+    max_rounds=_sci_obs.max_rounds,
+)
+_TERMINAL_REWARD = compute_total_reward(_TERMINAL_BREAKDOWN)
 
 
 def _reset_request():
@@ -156,21 +173,15 @@ def _mid_episode_step_result():
 def _terminal_step_result():
     return StepResult(
         observation=None,
-        reward=5.0,
+        reward=_TERMINAL_REWARD,
         done=True,
         info=StepInfo(
             agreement_reached=True,
             error=None,
-            reward_breakdown=RewardBreakdown(
-                rigor=0.8,
-                feasibility=0.8,
-                fidelity=0.8,
-                efficiency_bonus=0.2,
-                communication_bonus=0.1,
-                penalties={"timeout": 0.0},
-            ),
-            judge_notes="Stub audit until judge integration lands.",
-            verdict="accept",
+            reward_breakdown=_TERMINAL_BREAKDOWN,
+            judge_notes=_TERMINAL_AUDIT.judge_notes,
+            verdict=_TERMINAL_AUDIT.verdict,
+            top_failure_reasons=list(_TERMINAL_AUDIT.top_failure_reasons),
         ),
     ).model_dump()
 
@@ -204,10 +215,13 @@ def _replay_response():
             max_rounds=_sci_obs.max_rounds,
             done=True,
             agreement_reached=True,
-            reward=5.0,
-            rigor_score=0.8,
-            feasibility_score=0.8,
-            fidelity_score=0.8,
+            reward=_TERMINAL_REWARD,
+            rigor_score=_TERMINAL_BREAKDOWN.rigor,
+            feasibility_score=_TERMINAL_BREAKDOWN.feasibility,
+            fidelity_score=_TERMINAL_BREAKDOWN.fidelity,
+            judge_notes=_TERMINAL_AUDIT.judge_notes,
+            verdict=_TERMINAL_AUDIT.verdict,
+            top_failure_reasons=list(_TERMINAL_AUDIT.top_failure_reasons),
         ),
         transcript=[
             ConversationEntry(
@@ -223,19 +237,13 @@ def _replay_response():
                 action_type="report_feasibility",
             ),
         ],
-        reward_breakdown=RewardBreakdown(
-            rigor=0.8,
-            feasibility=0.8,
-            fidelity=0.8,
-            efficiency_bonus=0.2,
-            communication_bonus=0.1,
-            penalties={"timeout": 0.0},
-        ),
-        total_reward=5.0,
+        reward_breakdown=_TERMINAL_BREAKDOWN,
+        total_reward=_TERMINAL_REWARD,
         rounds_used=3,
         agreement_reached=True,
-        judge_notes="Stub audit until judge integration lands.",
-        verdict="accept",
+        judge_notes=_TERMINAL_AUDIT.judge_notes,
+        verdict=_TERMINAL_AUDIT.verdict,
+        top_failure_reasons=list(_TERMINAL_AUDIT.top_failure_reasons),
     ).model_dump()
 
 

@@ -29,6 +29,81 @@ def client():
     return TestClient(app)
 
 
+class TestHealthEndpoint:
+    """GET /health — API 01."""
+
+    def test_health_returns_200(self, client: TestClient) -> None:
+        resp = client.get("/health")
+        assert resp.status_code == 200
+
+    def test_health_payload_has_stable_keys(self, client: TestClient) -> None:
+        data = client.get("/health").json()
+        assert data["status"] == "ok"
+        assert data["env"] in ("real", "stub")
+        assert "version" in data
+
+    def test_health_version_matches_app(self, client: TestClient) -> None:
+        from server.app import app as _app
+
+        data = client.get("/health").json()
+        assert data["version"] == _app.version
+
+    def test_health_is_deterministic(self, client: TestClient) -> None:
+        r1 = client.get("/health").json()
+        r2 = client.get("/health").json()
+        assert r1 == r2
+
+
+class TestLogConfig:
+    """OBS 02 — log level configurability."""
+
+    def test_default_log_level_is_info(self) -> None:
+        from replicalab.config import LOG_LEVEL
+
+        # Default when REPLICALAB_LOG_LEVEL is not set
+        assert LOG_LEVEL in ("INFO", "DEBUG", "WARNING", "ERROR")
+
+    def test_log_level_env_var_is_respected(self, monkeypatch) -> None:
+        """REPLICALAB_LOG_LEVEL env var controls the log level."""
+        import importlib
+
+        import replicalab.config as config_mod
+
+        monkeypatch.setenv("REPLICALAB_LOG_LEVEL", "debug")
+        importlib.reload(config_mod)
+
+        assert config_mod.LOG_LEVEL == "DEBUG"
+
+        # Restore
+        monkeypatch.delenv("REPLICALAB_LOG_LEVEL", raising=False)
+        importlib.reload(config_mod)
+
+    def test_log_format_is_readable(self) -> None:
+        from replicalab.config import LOG_FORMAT
+
+        assert "%(asctime)s" in LOG_FORMAT
+        assert "%(levelname)s" in LOG_FORMAT
+        assert "%(name)s" in LOG_FORMAT
+
+
+class TestRootEndpoint:
+    """GET / — lightweight landing page for hosted backend deployments."""
+
+    def test_root_returns_200_html(self, client: TestClient) -> None:
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers["content-type"]
+
+    def test_root_mentions_core_api_endpoints(self, client: TestClient) -> None:
+        body = client.get("/").text
+        assert "ReplicaLab API" in body
+        assert "GET /health" in body
+        assert "GET /scenarios" in body
+        assert "POST /reset" in body
+        assert "POST /step" in body
+        assert "WS /ws" in body
+
+
 class TestScenariosEndpoint:
     """GET /scenarios — API 04."""
 
@@ -366,6 +441,31 @@ class TestStepEndpoint:
         assert replay["total_reward"] > 0.0
         # Not the old stub string
         assert "Stub audit" not in replay["judge_notes"]
+
+    def test_replay_includes_top_failure_reasons(self, client: TestClient) -> None:
+        """Terminal replay records persist the canonical audit reasons."""
+        reset_data = _reset(client)
+        session_id = reset_data["session_id"]
+        episode_id = reset_data["episode_id"]
+
+        # Force a timeout path so the audit builder emits failure reasons.
+        for _ in range(6):
+            resp = client.post(
+                "/step",
+                json={"session_id": session_id, "action": _good_action_payload(client)},
+            )
+            assert resp.status_code == 200
+            if resp.json()["done"]:
+                break
+
+        replay = client.get(f"/replay/{episode_id}").json()
+        assert replay["verdict"] == "timeout"
+        assert isinstance(replay["top_failure_reasons"], list)
+        assert replay["top_failure_reasons"]
+        assert any(
+            "round limit" in reason.lower() or "without agreement" in reason.lower()
+            for reason in replay["top_failure_reasons"]
+        )
 
 
 # ---------------------------------------------------------------------------

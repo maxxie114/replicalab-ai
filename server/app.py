@@ -29,6 +29,7 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from replicalab.agents import (
@@ -41,6 +42,8 @@ from replicalab.config import (
     API_PORT,
     DEFAULT_DIFFICULTY,
     DEFAULT_SCENARIO_TEMPLATE,
+    LOG_FORMAT,
+    LOG_LEVEL,
     SESSION_TTL_SECONDS,
     STUB_ACCEPT_REWARD,
     WS_IDLE_TIMEOUT_SECONDS,
@@ -70,8 +73,8 @@ from replicalab.models import (
 # ---------------------------------------------------------------------------
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    format=LOG_FORMAT,
 )
 log = logging.getLogger("replicalab.server")
 
@@ -113,6 +116,7 @@ def _build_episode_log(
         agreement_reached=info.agreement_reached,
         judge_notes=info.judge_notes or "",
         verdict=info.verdict or "",
+        top_failure_reasons=list(info.top_failure_reasons),
     )
 
 
@@ -430,9 +434,44 @@ class StepRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+@app.get("/", response_class=HTMLResponse)
+async def root() -> str:
+    env_name = "real ReplicaLabEnv" if _HAS_REAL_ENV else "stub ReplicaLabEnv"
+    return f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>ReplicaLab API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {{ font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }}
+      code {{ background: #f4f4f4; padding: 0.1rem 0.3rem; border-radius: 4px; }}
+      ul {{ padding-left: 1.25rem; }}
+    </style>
+  </head>
+  <body>
+    <h1>ReplicaLab API</h1>
+    <p>The container is running and serving the <strong>{env_name}</strong>.</p>
+    <p>This Space currently hosts the backend API. Available endpoints:</p>
+    <ul>
+      <li><code>GET /health</code></li>
+      <li><code>GET /scenarios</code></li>
+      <li><code>POST /reset</code></li>
+      <li><code>POST /step</code></li>
+      <li><code>WS /ws</code></li>
+    </ul>
+    <p>If you expected the frontend, the backend is healthy but the hosted web UI is not mounted at <code>/</code> yet.</p>
+  </body>
+</html>"""
+
+
 @app.get("/health")
 async def health():
-    return {"status": "ok", "env": "real" if _HAS_REAL_ENV else "stub"}
+    return {
+        "status": "ok",
+        "env": "real" if _HAS_REAL_ENV else "stub",
+        "version": app.version,
+    }
 
 
 @app.get("/scenarios", response_model=ScenariosResponse)
