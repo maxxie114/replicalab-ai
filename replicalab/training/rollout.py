@@ -29,6 +29,7 @@ returns a ``ScientistAction``.  The baseline from
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from inspect import signature
 from typing import Any, Callable, Iterable, Optional
 
 from replicalab.client import ReplicaLabClient
@@ -88,7 +89,7 @@ class EpisodeRecord:
 
 
 # Type alias for the policy callable
-PolicyFn = Callable[[ScientistObservation], ScientistAction]
+PolicyFn = Callable[..., ScientistAction]
 
 
 class RolloutWorker:
@@ -147,7 +148,13 @@ class RolloutWorker:
             raise RuntimeError("Reset returned no scientist observation")
 
         for step_idx in range(self._max_steps):
-            action = policy_fn(scientist_obs)
+            action = _invoke_policy(
+                policy_fn,
+                scientist_obs,
+                seed=seed,
+                scenario=scenario,
+                difficulty=difficulty,
+            )
 
             result: StepResult = self._client.step(action)
             tool_traces = _extract_tool_traces(result.info)
@@ -221,3 +228,22 @@ def _extract_tool_traces(info: StepInfo) -> list[dict[str, Any]]:
         if isinstance(item, dict):
             traces.append(dict(item))
     return traces
+
+
+def _invoke_policy(
+    policy_fn: PolicyFn,
+    observation: ScientistObservation,
+    *,
+    seed: int,
+    scenario: str,
+    difficulty: str,
+) -> ScientistAction:
+    parameters = signature(policy_fn).parameters
+    if len(parameters) <= 1:
+        return policy_fn(observation)
+    return policy_fn(
+        observation,
+        seed=seed,
+        scenario=scenario,
+        difficulty=difficulty,
+    )

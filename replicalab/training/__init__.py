@@ -1,6 +1,13 @@
 """Training utilities for ReplicaLab."""
 
 from replicalab.training.artifacts import ArtifactLayout
+from replicalab.training.art_openenv import (
+    ArtOpenEnvConfig,
+    ArtRolloutSummary,
+    ArtScenarioSpec,
+    ArtTrainingSummary,
+    run_art_openenv_training,
+)
 from replicalab.training.corpus import FrozenEvidencePack, load_frozen_evidence_packs
 from replicalab.training.datasets import (
     LabManagerSFTExample,
@@ -29,6 +36,10 @@ from replicalab.training.scientist_grpo import (
 
 __all__ = [
     "ArtifactLayout",
+    "ArtOpenEnvConfig",
+    "ArtRolloutSummary",
+    "ArtScenarioSpec",
+    "ArtTrainingSummary",
     "EpisodeRecord",
     "EvaluationCase",
     "EvaluationSummary",
@@ -47,6 +58,7 @@ __all__ = [
     "load_frozen_evidence_packs",
     "preview_lab_manager_training",
     "preview_scientist_training",
+    "run_art_openenv_training",
     "summarize_episodes",
     "train_lab_manager_sft",
     "train_scientist_grpo",

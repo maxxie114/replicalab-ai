@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Iterable, Sequence
 
+from pydantic import BaseModel, ConfigDict
+
 from replicalab.client import ReplicaLabClient
 from replicalab.models import ScientistAction, ScientistObservation
 from replicalab.training.metrics import EvaluationSummary, summarize_episodes
@@ -19,6 +21,25 @@ class EvaluationCase:
     seed: int
     scenario: str
     difficulty: str
+
+
+class PolicyComparisonRow(BaseModel):
+    """One flattened before/after comparison row."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    episode_count: int
+    average_reward: float
+    average_rounds: float
+    agreement_rate: float
+    invalid_action_rate: float
+    average_invalid_bounded_tool_rate: float
+    average_rigor: float
+    average_feasibility: float
+    average_fidelity: float
+    average_parsimony: float
+    average_tool_trace_count: float
 
 
 def build_default_evaluation_cases(
@@ -62,8 +83,38 @@ def evaluate_policy(
     return records, summarize_episodes(records)
 
 
+def compare_policies(
+    *,
+    base_url: str,
+    policies: Sequence[tuple[str, PolicyFn]],
+    cases: Sequence[EvaluationCase],
+    transport: str = "rest",
+) -> tuple[dict[str, list[EpisodeRecord]], list[PolicyComparisonRow]]:
+    """Evaluate multiple policies on the exact same case set."""
+
+    records_by_label: dict[str, list[EpisodeRecord]] = {}
+    rows: list[PolicyComparisonRow] = []
+    for label, policy_fn in policies:
+        records, summary = evaluate_policy(
+            base_url=base_url,
+            policy_fn=policy_fn,
+            cases=cases,
+            transport=transport,
+        )
+        records_by_label[label] = records
+        rows.append(
+            PolicyComparisonRow(
+                label=label,
+                **summary.model_dump(mode="json"),
+            )
+        )
+    return records_by_label, rows
+
+
 __all__ = [
     "EvaluationCase",
+    "PolicyComparisonRow",
     "build_default_evaluation_cases",
+    "compare_policies",
     "evaluate_policy",
 ]
