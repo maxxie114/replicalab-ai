@@ -118,12 +118,14 @@ By judging time, the project should demonstrate:
 
 ### Trainable model
 
-The primary shared base model for V2 is **Qwen3-8B**.
+The primary shared base model for the current training iteration is
+**Qwen3.5-9B**.
 
 | Model | Role | Rationale |
 | --- | --- | --- |
-| Qwen3-8B | Primary shared base for Scientist and Lab Manager adapters | Fits the Northflank H100 plan, provides stronger structured planning headroom, and keeps both trainable role artifacts on one model family. |
-| Qwen3-4B | Reduced-scale fallback | Use for Colab or lower-memory debug runs when faster iteration matters more than final V2 quality. |
+| Qwen3.5-9B | Primary shared base for Scientist and Lab Manager adapters | Fits the Northflank H100 plan, upgrades the repo from the older Qwen3-8B baseline, and keeps both trainable role artifacts on one model family. |
+| Qwen3.5-4B | Reduced-scale fallback | Use for Colab or lower-memory debug runs when faster iteration matters more than final V2 quality. |
+| Qwen3.5-122B-A10B | Audit-only judge candidate | Useful for qualitative post-run analysis, but not part of the deterministic training reward loop. |
 
 ### Evaluator layer
 
@@ -133,10 +135,10 @@ The training reward is always the **deterministic rubric engine** defined in E05
 
 | Role | MVP implementation | Future stretch |
 | --- | --- | --- |
-| Scientist | Trainable GRPO policy (`Qwen3-8B` + LoRA) | Larger model distillation or curriculum extensions |
-| Lab Manager | Deterministically grounded role with a trainable SFT adapter on `Qwen3-8B` | Manager orchestrator with specialist subagents and richer role-specific adapters |
+| Scientist | Trainable GRPO policy (`Qwen3.5-9B` + LoRA) | Larger model distillation or curriculum extensions |
+| Lab Manager | Deterministically grounded role with a trainable SFT adapter on `Qwen3.5-9B` | Manager orchestrator with specialist subagents and richer role-specific adapters |
 | Judge (training reward) | Deterministic rubric engine | Unchanged |
-| Judge (explanation layer) | Optional hosted frontier evaluator (Anthropic) | Extended explanation panel in UI |
+| Judge (explanation layer) | Optional large-model audit layer such as `Qwen3.5-122B-A10B` or Anthropic | Extended explanation panel in UI |
 
 ## 4.2 Domain roadmap and normalized scenario layer
 

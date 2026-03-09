@@ -11,12 +11,14 @@ from typing import Any, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from replicalab.config import MAX_COMMUNICATION_BONUS
 from replicalab.agents.scientist_policy import (
     ScientistOutputParseError,
     format_scientist_observation,
     parse_scientist_output,
 )
 from replicalab.client import ReplicaLabClient
+from replicalab.scoring import score_paper_understanding
 from replicalab.models import ScientistObservation
 from replicalab.training.artifacts import ArtifactLayout, append_jsonl, build_run_name, write_json
 from replicalab.training.corpus import (
@@ -87,6 +89,8 @@ class ArtRolloutSummary(BaseModel):
     feasibility: float = 0.0
     fidelity: float = 0.0
     parsimony: float = 1.0
+    paper_understanding: float = 0.0
+    communication_quality: float = 0.0
     artifact_step: int | None = None
     artifact_name: str | None = None
 
@@ -109,9 +113,19 @@ class ArtTrainingSummary(BaseModel):
     finished_at: str
     final_artifact_step: int | None = None
     final_artifact_name: str | None = None
+    episode_count: int = 0
     average_reward: float = 0.0
     agreement_rate: float = 0.0
     average_rounds: float = 0.0
+    invalid_action_rate: float = 0.0
+    average_invalid_bounded_tool_rate: float = 0.0
+    average_rigor: float = 0.0
+    average_feasibility: float = 0.0
+    average_fidelity: float = 0.0
+    average_parsimony: float = 1.0
+    average_tool_trace_count: float = 0.0
+    average_paper_understanding: float = 0.0
+    average_communication_quality: float = 0.0
 
 
 @dataclass
@@ -165,6 +179,8 @@ async def _run_art_openenv_training_async(
             "average_feasibility",
             "average_fidelity",
             "average_parsimony",
+            "average_paper_understanding",
+            "average_communication_quality",
             "invalid_action_rate",
         ],
     )
@@ -359,6 +375,7 @@ async def _run_art_episode(
     invalid_action_count = 0
     parse_error_count = 0
     turns: list[_TurnRecord] = []
+    understanding_scores: list[float] = []
 
     try:
         observation = await asyncio.to_thread(
@@ -398,6 +415,11 @@ async def _run_art_episode(
                 break
 
             action = parse_scientist_output(turn.raw_text)
+            action_type = getattr(action.action_type, "value", str(action.action_type))
+            if action_type != "accept":
+                understanding_scores.append(
+                    score_paper_understanding(scientist_obs, action)
+                )
             result = await asyncio.to_thread(client.step, action)
             terminal_reward = result.reward
             terminal_info = result.info
@@ -424,6 +446,9 @@ async def _run_art_episode(
                 invalid_action_count=invalid_action_count,
                 parse_error_count=parse_error_count,
                 rounds_used=len(turns),
+                paper_understanding=(
+                    _mean(understanding_scores) if understanding_scores else 0.0
+                ),
             ),
             metadata={},
             logs=[
@@ -473,6 +498,28 @@ async def _run_art_episode(
                 terminal_info.reward_breakdown.parsimony
                 if terminal_info and terminal_info.reward_breakdown
                 else 1.0
+            ),
+            paper_understanding=(
+                _mean(understanding_scores) if understanding_scores else 0.0
+            ),
+            communication_quality=(
+                round(
+                    max(
+                        0.0,
+                        min(
+                            1.0,
+                            terminal_info.reward_breakdown.communication_bonus
+                            / MAX_COMMUNICATION_BONUS,
+                        ),
+                    ),
+                    6,
+                )
+                if (
+                    terminal_info
+                    and terminal_info.reward_breakdown
+                    and MAX_COMMUNICATION_BONUS > 0
+                )
+                else 0.0
             ),
         )
         trajectory.metadata.update(summary.model_dump(mode="json"))
@@ -621,6 +668,7 @@ def _extract_terminal_metrics(
     invalid_action_count: int,
     parse_error_count: int,
     rounds_used: int,
+    paper_understanding: float,
 ) -> dict[str, float | int | bool]:
     breakdown = terminal_info.reward_breakdown if terminal_info is not None else None
     return {
@@ -634,6 +682,18 @@ def _extract_terminal_metrics(
         "feasibility": (breakdown.feasibility if breakdown is not None else 0.0),
         "fidelity": (breakdown.fidelity if breakdown is not None else 0.0),
         "parsimony": (breakdown.parsimony if breakdown is not None else 1.0),
+        "paper_understanding": paper_understanding,
+        "communication_quality": (
+            round(
+                max(
+                    0.0,
+                    min(1.0, breakdown.communication_bonus / MAX_COMMUNICATION_BONUS),
+                ),
+                6,
+            )
+            if breakdown is not None and MAX_COMMUNICATION_BONUS > 0
+            else 0.0
+        ),
     }
 
 
@@ -662,9 +722,27 @@ def _summarize_art_training(
         finished_at=finished_at,
         final_artifact_step=final_artifact_step,
         final_artifact_name=final_artifact_name,
+        episode_count=len(rollouts),
         average_reward=_mean(item.reward for item in rollouts),
         agreement_rate=_mean(1.0 if item.agreement_reached else 0.0 for item in rollouts),
         average_rounds=_mean(item.rounds_used for item in rollouts),
+        invalid_action_rate=_mean(
+            item.invalid_action_count / max(1, item.rounds_used) for item in rollouts
+        ),
+        average_invalid_bounded_tool_rate=0.0,
+        average_rigor=_mean(item.rigor for item in rollouts),
+        average_feasibility=_mean(item.feasibility for item in rollouts),
+        average_fidelity=_mean(item.fidelity for item in rollouts),
+        average_parsimony=(
+            _mean(item.parsimony for item in rollouts) if rollouts else 1.0
+        ),
+        average_tool_trace_count=0.0,
+        average_paper_understanding=_mean(
+            item.paper_understanding for item in rollouts
+        ),
+        average_communication_quality=_mean(
+            item.communication_quality for item in rollouts
+        ),
     )
 
 

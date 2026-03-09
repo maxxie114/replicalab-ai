@@ -2,50 +2,44 @@
 
 ## Decision
 
-The primary V2 training base model is **Qwen3-8B**.
+The primary Northflank and local training base for both role adapters is now
+**Qwen/Qwen3.5-9B**.
 
-The reduced-scale fallback is **Qwen3-4B** when Colab, T4, or lower-memory
-debugging is more important than maximum planning quality.
+The reduced-scale fallback is **Qwen/Qwen3.5-4B** for lower-memory smoke runs,
+faster iteration, and notebook fallback paths.
 
-The same `Qwen3-8B` base is shared across two first-class model artifacts:
+The optional audit-only judge model candidate is
+**Qwen/Qwen3.5-122B-A10B**. It is not part of the deterministic reward loop.
 
-- **Scientist**: GRPO LoRA via Unsloth
-- **Lab Manager**: SFT LoRA via Unsloth
+## Role Mapping
 
-## Why Qwen3-8B
+- **Scientist**: `Qwen/Qwen3.5-9B` + Unsloth GRPO LoRA
+- **Lab Manager / Lab Research Assistant**: `Qwen/Qwen3.5-9B` + Unsloth SFT LoRA
+- **Fallback Scientist or Lab Manager**: `Qwen/Qwen3.5-4B`
+- **Audit-only judge candidate**: `Qwen/Qwen3.5-122B-A10B`
 
-- Stronger structured planning headroom for the Scientist GRPO target while
-  still fitting comfortably on the H100 runtime the team now intends to use.
-- Large enough to support both the Scientist and Lab Manager adapters on one
-  shared base family without fragmenting the stack.
-- Open weights with a permissive Apache 2.0 license.
-- A clean fit for the current V2 architecture: keep deterministic reward and
-  feasibility truth while training two role-specific adapters on one base.
+## Why Qwen3.5-9B For The Two Trainable Roles
 
-## Why Not Smaller By Default
+- It is a cleaner fit for the current Northflank H100 path than the older
+  `Qwen3-8B` baseline and keeps both trainable roles on one family.
+- It preserves enough planning headroom for strict JSON action output,
+  paper-grounded reasoning, and negotiation under constraints.
+- It still leaves a realistic fallback to the 4B variant when the team wants
+  faster notebook iteration.
 
-- Smaller checkpoints are cheaper, but they lose headroom on multi-step
-  technical planning, strict JSON output, and richer Lab Manager narration.
-- The active runtime assumption is now a Northflank H100 GPU job rather than a
-  Colab-first compromise.
+## Why Keep The Judge Deterministic
 
-## Why Keep Qwen3-4B As Fallback
+- The reward source must stay reproducible across runs.
+- A large model judge is useful for audits, narrative analysis, and post-run
+  error review, but not for the scalar training reward.
+- This keeps benchmark history and before/after graphs comparable across runs.
 
-- The judged artifact still needs a credible notebook path even if the heavy
-  run happens on Northflank.
-- `Qwen3-4B` remains useful for smoke tests, lower-cost debugging, and any
-  reduced-scale Colab fallback.
+## Current Training Priorities
 
-## Project Usage
-
-- **Scientist primary training:** `Qwen/Qwen3-8B`
-- **Lab Manager primary training:** `Qwen/Qwen3-8B` with a separate adapter
-- **Fallback notebook/debug training:** `Qwen/Qwen3-4B`
-
-## Notes
-
-- The reward loop stays deterministic regardless of the model choice.
-- The active oracle provider remains external and API-only; Anthropic is used
-  for scenario enrichment and post-mortem features, not as the training reward.
-- `TRN 14` should mirror this decision on the notebook side and in the
-  Northflank H100 job entrypoint.
+1. Measure paper understanding explicitly on every evaluation run.
+2. Expand Scientist prompt coverage around paper understanding, constraint
+   grounding, and negotiation quality.
+3. Keep cumulative benchmark graphs updating across runs instead of only
+   saving one-off plots.
+4. Treat the execution-style lab environment as the next architecture phase,
+   not as an untracked reward change.

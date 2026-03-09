@@ -256,6 +256,11 @@ To force a full rebuild (e.g. after dependency changes):
 - **Persistent storage** — Episode replays and logs are in-memory only.
   They reset when the container restarts. This is acceptable for the
   hackathon demo.
+- **Heavy hosted models require billing-enabled hardware** — as of
+  2026-03-09, the checked HF token authenticates successfully but the backing
+  account reports `canPay=false` and has no org attached, so it is currently
+  suitable for model downloads but not for provisioning paid large-model
+  serving through HF Spaces hardware or Inference Endpoints.
 
 ---
 
@@ -297,6 +302,36 @@ northflank exec service --projectId replica-labs --serviceId replicalab-ai
 northflank upload service file --projectId replica-labs --serviceId replicalab-ai --localPath dir/file.txt --remotePath /home/file.txt
 northflank download service file --projectId replica-labs --serviceId replicalab-ai --localPath dir/file.txt --remotePath /home/file.txt
 ```
+
+### Current Northflank runtime findings (2026-03-09)
+
+- The manual training job `replicalab-train` exists in `replica-labs`, but
+  `northflank start job run --projectId replica-labs --jobId replicalab-train`
+  currently fails with `409 No deployment configured`.
+- The job still has runtime variables configured, including the older remote
+  `MODEL_NAME=Qwen/Qwen3-8B`, so even after the missing deployment is fixed the
+  runtime config should be reviewed before launching training.
+- The live service `replicalab-ai` is deployed on the same
+  `nf-gpu-hack-16-64` billing plan, but a direct probe from inside the
+  container found no `nvidia-smi` binary and no `/dev/nvidia*` device nodes.
+  Treat GPU/H100 availability as unverified until a container can prove
+  hardware visibility from inside the runtime.
+
+### Current Northflank notebook findings (2026-03-09)
+
+- There is a separate live notebook service in project `notebook-openport`:
+  `jupyter-pytorch`.
+- The active public notebook DNS is
+  `app--jupyter-pytorch--9y6g97v7czb9.code.run` on port `8888` (`/lab` for the
+  Jupyter UI).
+- Northflank reports that service with GPU config
+  `gpuType=h100-80`, `gpuCount=1`, and an in-container probe confirmed
+  `NVIDIA H100 80GB HBM3`.
+- The notebook image is `quay.io/jupyter/pytorch-notebook:cuda12-2025-08-18`.
+- The notebook currently contains a repo clone and GRPO outputs, but the saved
+  notebook/log state is not clean: training produced adapter checkpoints
+  through step 200, then later notebook evaluation/inference failed with a
+  `string indices must be integers, not 'str'` content-format error.
 
 ### Windows note
 

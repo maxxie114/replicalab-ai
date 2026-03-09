@@ -73,6 +73,8 @@ def test_episode_to_metrics_counts_invalid_actions() -> None:
     assert metrics.invalid_bounded_tool_count == 1
     assert metrics.invalid_bounded_tool_rate == 0.5
     assert metrics.agreement_reached is True
+    assert 0.0 <= metrics.paper_understanding <= 1.0
+    assert metrics.communication_quality == 0.0
 
 
 def test_summarize_episodes_aggregates_rewards() -> None:
@@ -107,3 +109,5 @@ def test_summarize_episodes_aggregates_rewards() -> None:
     assert summary.average_reward == 1.25
     assert 0.0 < summary.invalid_action_rate < 1.0
     assert summary.average_invalid_bounded_tool_rate == 0.5
+    assert 0.0 <= summary.average_paper_understanding <= 1.0
+    assert summary.average_communication_quality == 0.0

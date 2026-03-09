@@ -123,7 +123,48 @@ def plot_metrics_by_step(
     plt.close(fig)
 
 
+def plot_benchmark_history(
+    rows: Iterable[dict[str, object]],
+    *,
+    output_path: Path,
+    metric_key: str,
+    title: str,
+) -> None:
+    """Plot a cross-run metric trend grouped by label."""
+
+    matplotlib = __import__("matplotlib.pyplot", fromlist=["pyplot"])
+    plt = matplotlib
+
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for row in rows:
+        label = str(row.get("label", "unknown"))
+        grouped.setdefault(label, []).append(dict(row))
+
+    if not grouped:
+        raise ValueError("No benchmark history rows provided.")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig, ax = plt.subplots(figsize=(11, 5))
+    for label, label_rows in grouped.items():
+        ordered = sorted(label_rows, key=lambda item: str(item.get("recorded_at", "")))
+        values = [float(item.get(metric_key, 0.0) or 0.0) for item in ordered]
+        if not values:
+            continue
+        x_values = list(range(1, len(values) + 1))
+        ax.plot(x_values, values, marker="o", label=label)
+
+    ax.set_title(title)
+    ax.set_xlabel("run index")
+    ax.set_ylabel(metric_key.replace("_", " "))
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
 __all__ = [
+    "plot_benchmark_history",
     "plot_evaluation_bars",
     "plot_metrics_by_step",
     "plot_training_history",

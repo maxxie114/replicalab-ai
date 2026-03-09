@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from replicalab.models import Protocol
 from replicalab.scenarios.templates import NormalizedScenarioPack
-from replicalab.utils.text import element_tokens, normalize_label
+from replicalab.utils.text import bigram_overlap, element_tokens, normalize_label
 
 
 def score_fidelity(
@@ -120,9 +120,27 @@ def _protocol_text_blob(protocol: Protocol) -> str:
 
 
 def _text_matches(element: str, blob: str) -> bool:
-    """Check if any token from *element* appears in *blob*."""
+    """Check if element appears in blob via token, substring, or bigram matching.
+
+    Enhanced matching strategy:
+      1. Token match (original): any significant word from element in blob
+      2. Substring match: full normalized element as substring (>= 5 chars)
+      3. Bigram overlap: >= 60% shared word bigrams (catches paraphrases)
+    """
     tokens = element_tokens(element)
-    return any(token in blob for token in tokens) if tokens else False
+    if any(token in blob for token in tokens):
+        return True
+
+    # Substring match for multi-word elements
+    normalized = normalize_label(element)
+    if len(normalized) >= 5 and normalized in blob:
+        return True
+
+    # Bigram overlap for longer phrases
+    if bigram_overlap(element, blob) >= 0.6:
+        return True
+
+    return False
 
 
 def _substitution_matches(

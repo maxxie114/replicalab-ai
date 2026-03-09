@@ -40,6 +40,8 @@ class PolicyComparisonRow(BaseModel):
     average_fidelity: float
     average_parsimony: float
     average_tool_trace_count: float
+    average_paper_understanding: float
+    average_communication_quality: float
 
 
 def build_default_evaluation_cases(

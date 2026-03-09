@@ -42,11 +42,14 @@ class ArtifactLayout:
     plots_dir: Path
     reports_dir: Path
     manifests_dir: Path
+    history_dir: Path
+    history_plots_dir: Path
     hf_cache_dir: Path
     metrics_jsonl: Path
     summary_json: Path
     config_json: Path
     evidence_manifest_json: Path
+    benchmark_history_jsonl: Path
 
     @classmethod
     def create(
@@ -68,11 +71,14 @@ class ArtifactLayout:
             plots_dir=run_dir / "plots",
             reports_dir=run_dir / "reports",
             manifests_dir=run_dir / "manifests",
+            history_dir=base_root / "history",
+            history_plots_dir=base_root / "history" / "plots",
             hf_cache_dir=base_root / "hf_cache",
             metrics_jsonl=run_dir / "reports" / "metrics.jsonl",
             summary_json=run_dir / "reports" / "summary.json",
             config_json=run_dir / "manifests" / "run_config.json",
             evidence_manifest_json=run_dir / "manifests" / "evidence_packs.json",
+            benchmark_history_jsonl=base_root / "history" / "benchmark_history.jsonl",
         )
         if create_dirs:
             layout.ensure_directories()
@@ -90,6 +96,8 @@ class ArtifactLayout:
             self.plots_dir,
             self.reports_dir,
             self.manifests_dir,
+            self.history_dir,
+            self.history_plots_dir,
             self.hf_cache_dir,
         ):
             path.mkdir(parents=True, exist_ok=True)

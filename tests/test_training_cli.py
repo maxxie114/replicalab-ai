@@ -29,7 +29,7 @@ def test_scientist_preview_cli_writes_plan(tmp_path) -> None:
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
     assert payload["kind"] == "scientist_preview"
     assert payload["dataset_size"] > 0
-    assert payload["model_name"] == "Qwen/Qwen3-8B"
+    assert payload["model_name"] == "Qwen/Qwen3.5-9B"
 
 
 def test_baseline_eval_cli_writes_summary_and_metrics(tmp_path, monkeypatch) -> None:
@@ -64,6 +64,8 @@ def test_baseline_eval_cli_writes_summary_and_metrics(tmp_path, monkeypatch) -> 
         average_fidelity=0.7,
         average_parsimony=0.9,
         average_tool_trace_count=0.0,
+        average_paper_understanding=0.75,
+        average_communication_quality=0.0,
     )
 
     monkeypatch.setattr(
@@ -72,6 +74,10 @@ def test_baseline_eval_cli_writes_summary_and_metrics(tmp_path, monkeypatch) -> 
     )
     monkeypatch.setattr(
         "replicalab.training.cli.plot_evaluation_bars",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "replicalab.training.cli.plot_benchmark_history",
         lambda *args, **kwargs: None,
     )
 
@@ -90,6 +96,7 @@ def test_baseline_eval_cli_writes_summary_and_metrics(tmp_path, monkeypatch) -> 
     assert exit_code == 0
     summary_path = tmp_path / "baseline-eval-test" / "reports" / "summary.json"
     metrics_path = tmp_path / "baseline-eval-test" / "reports" / "metrics.jsonl"
+    history_path = tmp_path / "history" / "benchmark_history.jsonl"
     summary_payload = json.loads(summary_path.read_text(encoding="utf-8"))
     assert summary_payload["average_reward"] == 4.2
     metrics_lines = metrics_path.read_text(encoding="utf-8").strip().splitlines()
@@ -97,6 +104,7 @@ def test_baseline_eval_cli_writes_summary_and_metrics(tmp_path, monkeypatch) -> 
     metric = json.loads(metrics_lines[0])
     assert metric["scenario"] == "ml_benchmark"
     assert metric["agreement_reached"] is True
+    assert history_path.exists()
 
 
 def test_scientist_compare_eval_cli_writes_rows(tmp_path, monkeypatch) -> None:
@@ -134,6 +142,8 @@ def test_scientist_compare_eval_cli_writes_rows(tmp_path, monkeypatch) -> None:
             average_fidelity=0.6,
             average_parsimony=1.0,
             average_tool_trace_count=0.0,
+            average_paper_understanding=0.35,
+            average_communication_quality=0.0,
         ),
         PolicyComparisonRow(
             label="trained",
@@ -148,6 +158,8 @@ def test_scientist_compare_eval_cli_writes_rows(tmp_path, monkeypatch) -> None:
             average_fidelity=0.85,
             average_parsimony=1.0,
             average_tool_trace_count=0.0,
+            average_paper_understanding=0.78,
+            average_communication_quality=0.0,
         ),
     ]
 
@@ -164,6 +176,10 @@ def test_scientist_compare_eval_cli_writes_rows(tmp_path, monkeypatch) -> None:
     )
     monkeypatch.setattr(
         "replicalab.training.cli.plot_evaluation_bars",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "replicalab.training.cli.plot_benchmark_history",
         lambda *args, **kwargs: None,
     )
 
@@ -185,6 +201,8 @@ def test_scientist_compare_eval_cli_writes_rows(tmp_path, monkeypatch) -> None:
 
     assert exit_code == 0
     summary_path = tmp_path / "compare-eval-test" / "reports" / "summary.json"
+    history_path = tmp_path / "history" / "benchmark_history.jsonl"
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
     assert [row["label"] for row in payload["rows"]] == ["baseline", "trained"]
     assert payload["rows"][1]["average_reward"] == 3.5
+    assert history_path.exists()

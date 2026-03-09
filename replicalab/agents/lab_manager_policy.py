@@ -258,6 +258,13 @@ def suggest_alternative(
         duration = time_limit
 
     # Step 4: Reduce sample size for budget / staff pressure
+    # Cross-dimension tradeoff: reduce more aggressively when multiple dims fail
+    failing_resource_dims = sum(
+        1 for d in [check_result.budget, check_result.schedule, check_result.staff]
+        if not d.ok
+    )
+    multi_pressure = failing_resource_dims >= 2
+
     if not check_result.budget.ok or not check_result.staff.ok:
         original_sample = sample_size
         sample_size = _reduce_sample_for_budget_and_staff(
@@ -267,6 +274,7 @@ def suggest_alternative(
             reagents=reagents,
             controls=list(protocol.controls),
             scenario=scenario,
+            aggressive=multi_pressure,
         )
         if sample_size != original_sample:
             reasons = []
@@ -274,6 +282,8 @@ def suggest_alternative(
                 reasons.append("budget overrun")
             if not check_result.staff.ok:
                 reasons.append("staff overload")
+            if multi_pressure:
+                reasons.append("multiple resource constraints")
             changes.append(SuggestionChange(
                 field="sample_size",
                 original=str(original_sample),
@@ -281,6 +291,32 @@ def suggest_alternative(
                 reason=f"Reduced sample size to address {' and '.join(reasons)}.",
                 tradeoff="Smaller sample may reduce statistical power or coverage.",
             ))
+
+    # Step 4b: Cross-dimension joint optimization — reduce duration to save cost
+    if not check_result.schedule.ok and not check_result.budget.ok:
+        budget_avail = scenario.lab_manager_observation.budget_remaining
+        test_proto = Protocol(
+            sample_size=sample_size,
+            controls=list(protocol.controls),
+            technique="check",
+            duration_days=duration,
+            required_equipment=equipment,
+            required_reagents=reagents,
+            rationale="cost check",
+        )
+        cost = _estimate_protocol_cost(test_proto, scenario)
+        if cost > budget_avail and duration > 1:
+            new_dur = max(1, int(budget_avail / (cost / max(1, duration))))
+            new_dur = min(new_dur, time_limit)
+            if new_dur < duration:
+                changes.append(SuggestionChange(
+                    field="duration_days",
+                    original=str(duration),
+                    revised=str(new_dur),
+                    reason="Reduced duration to jointly address schedule and budget pressure.",
+                    tradeoff="Shorter duration requires tighter execution or reduced scope.",
+                ))
+                duration = new_dur
 
     # Build revised protocol
     revised = Protocol(
@@ -396,17 +432,22 @@ def _reduce_sample_for_budget_and_staff(
     reagents: list[str],
     controls: list[str],
     scenario: NormalizedScenarioPack,
+    aggressive: bool = False,
 ) -> int:
-    """Iteratively halve sample_size until budget and staff constraints pass."""
+    """Iteratively reduce sample_size until budget and staff constraints pass.
+
+    When *aggressive* is True (multiple resource dims failing), divide by 4
+    instead of 2 per iteration for faster convergence.
+    """
     budget = scenario.lab_manager_observation.budget_remaining
     staff_available = scenario.lab_manager_observation.staff_count
     candidate = sample_size
+    divisor = 4 if aggressive else 2
 
     for _ in range(10):  # bounded iteration
         if candidate <= 1:
             break
 
-        # Check cost
         test_protocol = Protocol(
             sample_size=candidate,
             controls=controls,
@@ -422,7 +463,7 @@ def _reduce_sample_for_budget_and_staff(
         if cost <= budget and staff_needed <= staff_available:
             break
 
-        candidate = max(1, candidate // 2)
+        candidate = max(1, candidate // divisor)
 
     return candidate
 

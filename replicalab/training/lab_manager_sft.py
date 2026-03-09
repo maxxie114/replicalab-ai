@@ -22,7 +22,7 @@ class LabManagerSFTConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    model_name: str = "Qwen/Qwen3-8B"
+    model_name: str = "Qwen/Qwen3.5-9B"
     max_seq_length: int = 3072
     load_in_4bit: bool = False
     fast_inference: bool = False
@@ -31,7 +31,7 @@ class LabManagerSFTConfig(BaseModel):
     seed: int = 3407
     templates: list[TemplateName] = Field(default_factory=lambda: list(DEFAULT_TEMPLATES))
     difficulties: list[Difficulty] = Field(default_factory=lambda: list(DEFAULT_DIFFICULTIES))
-    train_seeds: list[int] = Field(default_factory=lambda: list(range(16)))
+    train_seeds: list[int] = Field(default_factory=lambda: list(range(32)))
     learning_rate: float = 2e-5
     weight_decay: float = 0.01
     warmup_ratio: float = 0.05
