@@ -54,7 +54,14 @@ def explain_reward(breakdown: RewardBreakdown) -> str:
         )
     if breakdown.communication_bonus > 0:
         lines.append(
-            f"Communication bonus: +{breakdown.communication_bonus:.2f}."
+            f"Communication bonus: +{breakdown.communication_bonus:.2f} "
+            "(awarded for action diversity, responsiveness to feedback, "
+            "and substantive rationales)."
+        )
+    if breakdown.domain_emphasis_bonus > 0:
+        lines.append(
+            f"Domain emphasis bonus: +{breakdown.domain_emphasis_bonus:.2f} "
+            "(awarded for strong performance in this domain's priority dimensions)."
         )
 
     if breakdown.penalties:

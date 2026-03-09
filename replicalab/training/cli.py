@@ -25,6 +25,11 @@ from replicalab.training.evaluation import (
     compare_policies,
     evaluate_policy,
 )
+from replicalab.training.history import (
+    append_benchmark_history,
+    build_benchmark_history_row,
+    load_benchmark_history,
+)
 from replicalab.training.lab_manager_sft import (
     LabManagerSFTConfig,
     preview_lab_manager_training,
@@ -32,6 +37,7 @@ from replicalab.training.lab_manager_sft import (
 )
 from replicalab.training.metrics import episode_to_metrics
 from replicalab.training.plots import (
+    plot_benchmark_history,
     plot_evaluation_bars,
     plot_metrics_by_step,
     plot_training_history,
@@ -589,6 +595,11 @@ def _run_baseline_eval(args: argparse.Namespace) -> int:
     summary_payload = summary.model_dump(mode="json")
     write_json(layout.summary_json, summary_payload)
     _plot_eval_summary(summary_payload, layout=layout)
+    _append_history_and_plots(
+        layout=layout,
+        kind="baseline_eval",
+        rows=[{"label": "baseline", **summary_payload}],
+    )
     print(json.dumps(summary_payload, indent=2, sort_keys=True))
     return 0
 
@@ -663,6 +674,11 @@ def _run_scientist_compare_eval(args: argparse.Namespace) -> int:
     rows_payload = [row.model_dump(mode="json") for row in rows]
     write_json(layout.summary_json, {"rows": rows_payload})
     _plot_comparison_summary(rows_payload, layout=layout)
+    _append_history_and_plots(
+        layout=layout,
+        kind="scientist_compare_eval",
+        rows=rows_payload,
+    )
     print(json.dumps({"rows": rows_payload}, indent=2, sort_keys=True))
     return 0
 
@@ -710,6 +726,11 @@ def _run_art_scientist_train(args: argparse.Namespace) -> int:
         },
     )
     _plot_art_metrics(layout)
+    _append_history_and_plots(
+        layout=layout,
+        kind="art_scientist_train",
+        rows=[{"label": "trained", **result}],
+    )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
@@ -753,6 +774,18 @@ def _plot_eval_summary(
         metric_key="agreement_rate",
         title="Baseline agreement rate",
     )
+    plot_evaluation_bars(
+        rows,
+        output_path=layout.plots_dir / "baseline_paper_understanding.png",
+        metric_key="average_paper_understanding",
+        title="Baseline paper understanding",
+    )
+    plot_evaluation_bars(
+        rows,
+        output_path=layout.plots_dir / "baseline_communication_quality.png",
+        metric_key="average_communication_quality",
+        title="Baseline communication quality",
+    )
     if "average_invalid_bounded_tool_rate" in summary:
         plot_evaluation_bars(
             rows,
@@ -771,6 +804,16 @@ def _plot_comparison_summary(
         ("average_reward", "Before vs after average reward", "compare_average_reward.png"),
         ("agreement_rate", "Before vs after agreement rate", "compare_agreement_rate.png"),
         ("invalid_action_rate", "Before vs after invalid action rate", "compare_invalid_action_rate.png"),
+        (
+            "average_paper_understanding",
+            "Before vs after paper understanding",
+            "compare_paper_understanding.png",
+        ),
+        (
+            "average_communication_quality",
+            "Before vs after communication quality",
+            "compare_communication_quality.png",
+        ),
         (
             "average_invalid_bounded_tool_rate",
             "Before vs after invalid bounded-tool rate",
@@ -804,6 +847,8 @@ def _plot_art_metrics(layout: ArtifactLayout) -> None:
             "rigor",
             "feasibility",
             "fidelity",
+            "paper_understanding",
+            "communication_quality",
             "agreement_reached",
             "invalid_action_count",
             "parse_error_count",
@@ -813,6 +858,55 @@ def _plot_art_metrics(layout: ArtifactLayout) -> None:
 
 def _write_run_metadata(layout: ArtifactLayout, payload: dict[str, object]) -> None:
     write_json(layout.reports_dir / "run_metadata.json", payload)
+
+
+def _append_history_and_plots(
+    *,
+    layout: ArtifactLayout,
+    kind: str,
+    rows: list[dict[str, object]],
+) -> None:
+    history_rows = [
+        build_benchmark_history_row(
+            run_name=layout.run_name,
+            kind=kind,
+            label=str(row.get("label", kind)),
+            metrics=row,
+        )
+        for row in rows
+    ]
+    append_benchmark_history(layout.benchmark_history_jsonl, history_rows)
+    all_rows = [
+        row.model_dump(mode="json")
+        for row in load_benchmark_history(layout.benchmark_history_jsonl)
+    ]
+    if not all_rows:
+        return
+    for metric_key, title, filename in (
+        ("average_reward", "Benchmark history: average reward", "history_average_reward.png"),
+        ("agreement_rate", "Benchmark history: agreement rate", "history_agreement_rate.png"),
+        (
+            "average_paper_understanding",
+            "Benchmark history: paper understanding",
+            "history_paper_understanding.png",
+        ),
+        (
+            "average_communication_quality",
+            "Benchmark history: communication quality",
+            "history_communication_quality.png",
+        ),
+        (
+            "invalid_action_rate",
+            "Benchmark history: invalid action rate",
+            "history_invalid_action_rate.png",
+        ),
+    ):
+        plot_benchmark_history(
+            all_rows,
+            output_path=layout.history_plots_dir / filename,
+            metric_key=metric_key,
+            title=title,
+        )
 
 
 def _parse_art_scenario_spec(value: str) -> ArtScenarioSpec:

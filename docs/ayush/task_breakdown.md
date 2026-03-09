@@ -69,17 +69,21 @@ If work continues in this lane, it should target model improvement rather than m
 3. Add stronger warm-start or curriculum before more RL updates
 4. Execute the Lab Manager SFT path live and evaluate its effect separately
 5. Keep baseline-vs-trained comparisons on fixed seeds and frozen evidence packs
+6. Track `paper_understanding` and `communication_quality` on every eval run
+7. Keep the shared benchmark-history plots updating across runs
+8. Use `docs/training_goals.md` as the near-term model-goals reference
 
 ---
 
 ## 5. Base Model Assumptions
 
-Primary shared base: **Qwen3-8B**
+Primary shared base: **Qwen3.5-9B**
 
 1. Scientist uses the shared base with a GRPO-style trainable adapter.
 2. Lab Manager uses the same shared base with a separate SFT adapter.
-3. Anthropic remains an additive oracle and explanation layer only.
-4. The deterministic rubric remains the only training reward source.
+3. `Qwen3.5-4B` remains the lower-memory fallback.
+4. `Qwen3.5-122B-A10B` is an audit-only judge candidate, not the reward source.
+5. The deterministic rubric remains the only training reward source.
 
 ---
 

@@ -59,7 +59,7 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 - [x] **TRN 09** | Add policy loading path for trained adapter | 0.5h | Depends: TRN 05 | Status: completed on 2026-03-08
 - [x] **TRN 10** | Export plot image and sample logs to outputs/plots | 0.25h | Depends: TRN 07 | Status: completed on 2026-03-08
 - [x] **TRN 13** | Create reusable environment client module (client.py) | 1h | Depends: API 06 | Status: completed on 2026-03-08
-- [x] **TRN 14** | Select and document base model (notebook side) | 0.5h | Depends: TRN 01 | Status: completed on 2026-03-08 | Assumption locked: Qwen3-8B primary, Qwen3-4B fallback
+- [x] **TRN 14** | Select and document base model (notebook side) | 0.5h | Depends: TRN 01 | Status: completed on 2026-03-08 | Assumption now iterated to: Qwen3.5-9B primary, Qwen3.5-4B fallback, Qwen3.5-122B-A10B audit-only judge candidate
 - [x] **TRN 15** | Add agreement rate and invalid action rate aggregation | 0.5h | Depends: TRN 06, TRN 08, OBS 09 | Status: completed on 2026-03-08
 
 ---

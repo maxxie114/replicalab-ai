@@ -33,6 +33,11 @@ DEFAULT_TEMPLATES: tuple[TemplateName, ...] = (
     "ml_benchmark",
     "finance_trading",
 )
+SCIENTIST_GOAL_VARIANTS: tuple[str, ...] = (
+    "paper_understanding",
+    "constraint_grounding",
+    "negotiation_quality",
+)
 
 
 class ScientistPromptExample(BaseModel):
@@ -46,6 +51,7 @@ class ScientistPromptExample(BaseModel):
     difficulty: Difficulty
     scenario_id: str
     paper_title: str
+    goal_variant: str
     evidence_id: str | None = None
     evidence_summary: str | None = None
 
@@ -80,29 +86,47 @@ def build_scientist_prompt_examples(
     for template in templates:
         for difficulty in difficulties:
             for seed in seeds:
-                scenario_pack = generate_scenario(seed=seed, template=template, difficulty=difficulty)
-                evidence_pack = select_evidence_pack(packs, template=template, seed=seed)
-                user_message = format_scientist_observation(scenario_pack.scientist_observation)
-                if evidence_pack is not None:
-                    user_message += "\n\nFrozen evidence pack:\n" + evidence_pack.prompt_block()
-                rows.append(
-                    ScientistPromptExample(
-                        prompt=[
-                            {
-                                "role": "system",
-                                "content": build_scientist_system_prompt(scenario_pack),
-                            },
-                            {"role": "user", "content": user_message},
-                        ],
-                        seed=seed,
-                        scenario=template,
-                        difficulty=difficulty,
-                        scenario_id=scenario_pack.scenario_id,
-                        paper_title=scenario_pack.scientist_observation.paper_title,
-                        evidence_id=evidence_pack.evidence_id if evidence_pack else None,
-                        evidence_summary=evidence_pack.prompt_block() if evidence_pack else None,
-                    )
+                scenario_pack = generate_scenario(
+                    seed=seed,
+                    template=template,
+                    difficulty=difficulty,
                 )
+                evidence_pack = select_evidence_pack(packs, template=template, seed=seed)
+                user_message = format_scientist_observation(
+                    scenario_pack.scientist_observation
+                )
+                if evidence_pack is not None:
+                    user_message += (
+                        "\n\nFrozen evidence pack:\n" + evidence_pack.prompt_block()
+                    )
+                for goal_variant in SCIENTIST_GOAL_VARIANTS:
+                    rows.append(
+                        ScientistPromptExample(
+                            prompt=[
+                                {
+                                    "role": "system",
+                                    "content": build_scientist_system_prompt(scenario_pack),
+                                },
+                                {
+                                    "role": "user",
+                                    "content": _apply_scientist_goal_variant(
+                                        user_message,
+                                        goal_variant=goal_variant,
+                                    ),
+                                },
+                            ],
+                            seed=seed,
+                            scenario=template,
+                            difficulty=difficulty,
+                            scenario_id=scenario_pack.scenario_id,
+                            paper_title=scenario_pack.scientist_observation.paper_title,
+                            goal_variant=goal_variant,
+                            evidence_id=evidence_pack.evidence_id if evidence_pack else None,
+                            evidence_summary=(
+                                evidence_pack.prompt_block() if evidence_pack else None
+                            ),
+                        )
+                    )
 
     return rows
 
@@ -350,10 +374,36 @@ def _dedupe(items: Iterable[str]) -> list[str]:
     return list(seen)
 
 
+def _apply_scientist_goal_variant(message: str, *, goal_variant: str) -> str:
+    if goal_variant == "paper_understanding":
+        return (
+            message
+            + "\n\nTraining focus:"
+            + "\n- Ground your action in the visible paper hypothesis, method, key finding, and experiment goal."
+            + "\n- Do not drift into a generic plan that ignores what the paper is actually trying to show."
+        )
+    if goal_variant == "constraint_grounding":
+        return (
+            message
+            + "\n\nTraining focus:"
+            + "\n- Respect budget, time, staffing, equipment, reagents, and other visible environment constraints."
+            + "\n- Do not invent resources or capabilities that are not available in the current scenario."
+        )
+    if goal_variant == "negotiation_quality":
+        return (
+            message
+            + "\n\nTraining focus:"
+            + "\n- Communicate clearly with the Lab Manager."
+            + "\n- Ask only blocking questions, revise when grounded feedback requires it, and accept only when the plan is truly ready."
+        )
+    raise ValueError(f"Unsupported Scientist goal variant: {goal_variant}")
+
+
 __all__ = [
     "DEFAULT_DIFFICULTIES",
     "DEFAULT_TEMPLATES",
     "LabManagerSFTExample",
+    "SCIENTIST_GOAL_VARIANTS",
     "ScientistPromptExample",
     "build_lab_manager_hf_rows",
     "build_lab_manager_sft_examples",

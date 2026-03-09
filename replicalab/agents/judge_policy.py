@@ -13,8 +13,6 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from replicalab.models import RewardBreakdown
-from replicalab.scoring.explain import explain_reward
-from replicalab.scoring.rubric import compute_total_reward
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +67,8 @@ def build_judge_audit(
     JudgeAudit
         Deterministic audit with notes, verdict, and top failure reasons.
     """
+    from replicalab.scoring.explain import explain_reward
+
     verdict = _derive_verdict(agreement_reached, rounds_used, max_rounds)
     notes = explain_reward(breakdown)
     reasons = _derive_failure_reasons(breakdown, verdict)

@@ -183,7 +183,50 @@ def generate_scenario(
     rng = seed_rng(seed, namespace=f"scenario:{template}")
     base_draft = load_template(template)(rng)
     scaled = apply_difficulty(base_draft, difficulty, rng)
-    return _build_pack(seed=seed, template=template, draft=scaled, rng=rng)
+    pack = _build_pack(seed=seed, template=template, draft=scaled, rng=rng)
+    validate_scenario_consistency(pack)
+    return pack
+
+
+def validate_scenario_consistency(pack: NormalizedScenarioPack) -> None:
+    """Verify internal consistency of a generated scenario pack.
+
+    Checks budget, equipment/reagent list consistency, time limits,
+    and hidden reference element validity.
+    """
+    lab = pack.lab_manager_observation
+
+    if lab.budget_remaining < 0:
+        raise ValueError(
+            f"Scenario {pack.scenario_id}: negative budget_remaining ({lab.budget_remaining})"
+        )
+    if lab.budget_remaining > lab.budget_total:
+        raise ValueError(
+            f"Scenario {pack.scenario_id}: budget_remaining ({lab.budget_remaining}) "
+            f"exceeds budget_total ({lab.budget_total})"
+        )
+    if lab.time_limit_days < 1:
+        raise ValueError(
+            f"Scenario {pack.scenario_id}: time_limit_days must be >= 1"
+        )
+
+    equip_overlap = set(lab.equipment_available) & set(lab.equipment_booked)
+    if equip_overlap:
+        raise ValueError(
+            f"Scenario {pack.scenario_id}: equipment in both available and booked: {equip_overlap}"
+        )
+
+    reagent_overlap = set(lab.reagents_in_stock) & set(lab.reagents_out_of_stock)
+    if reagent_overlap:
+        raise ValueError(
+            f"Scenario {pack.scenario_id}: reagents in both in_stock and out_of_stock: {reagent_overlap}"
+        )
+
+    for elem in pack.hidden_reference_spec.required_elements:
+        if not elem.strip():
+            raise ValueError(
+                f"Scenario {pack.scenario_id}: empty required_element in hidden_reference_spec"
+            )
 
 
 def oracle_scenario_to_normalized_pack(

@@ -17,8 +17,14 @@ from replicalab.agents.lab_manager_policy import (
     FeasibilityCheckResult,
     check_feasibility,
 )
-from replicalab.models import Protocol, RewardBreakdown
+from replicalab.config import (
+    DEFAULT_DOMAIN_WEIGHTS,
+    DOMAIN_WEIGHTS,
+    MAX_COMMUNICATION_BONUS,
+)
+from replicalab.models import ConversationEntry, Protocol, RewardBreakdown
 from replicalab.scenarios.templates import NormalizedScenarioPack
+from replicalab.scoring.communication import score_communication
 from replicalab.scoring.feasibility import score_feasibility
 from replicalab.scoring.fidelity import score_fidelity
 from replicalab.scoring.rigor import score_rigor
@@ -26,7 +32,6 @@ from replicalab.scoring.rigor import score_rigor
 
 _REWARD_SCALE = 10.0
 _MAX_EFFICIENCY_BONUS = 1.0
-_MAX_COMMUNICATION_BONUS = 0.0  # reserved for future use
 
 
 def compute_total_reward(breakdown: RewardBreakdown) -> float:
@@ -38,7 +43,11 @@ def compute_total_reward(breakdown: RewardBreakdown) -> float:
         * breakdown.fidelity
         * breakdown.parsimony
     )
-    bonus = breakdown.efficiency_bonus + breakdown.communication_bonus
+    bonus = (
+        breakdown.efficiency_bonus
+        + breakdown.communication_bonus
+        + breakdown.domain_emphasis_bonus
+    )
     penalty = sum(breakdown.penalties.values())
     return max(0.0, round(base + bonus - penalty, 6))
 
@@ -51,6 +60,7 @@ def build_reward_breakdown(
     *,
     check: FeasibilityCheckResult | None = None,
     penalties: dict[str, float] | None = None,
+    conversation_history: list[ConversationEntry] | None = None,
 ) -> RewardBreakdown:
     """Build a full RewardBreakdown from the sub-scores plus bonuses."""
     if check is None:
@@ -64,13 +74,24 @@ def build_reward_breakdown(
     efficiency_bonus = _efficiency_bonus(rounds_used, max_rounds)
     merged_penalties = dict(penalties) if penalties else {}
 
+    communication_bonus = 0.0
+    if conversation_history is not None:
+        communication_bonus = score_communication(
+            conversation_history, max_bonus=MAX_COMMUNICATION_BONUS,
+        )
+
+    domain_bonus = _domain_emphasis_bonus(
+        rigor, feasibility, fidelity, scenario.domain_id,
+    )
+
     return RewardBreakdown(
         rigor=rigor,
         feasibility=feasibility,
         fidelity=fidelity,
         parsimony=parsimony,
         efficiency_bonus=efficiency_bonus,
-        communication_bonus=0.0,
+        communication_bonus=communication_bonus,
+        domain_emphasis_bonus=domain_bonus,
         penalties=merged_penalties,
     )
 
@@ -87,13 +108,7 @@ def _score_parsimony(
     protocol: Protocol,
     scenario: NormalizedScenarioPack,
 ) -> float:
-    """Score how lean the protocol is relative to scenario complexity.
-
-    The current scenario schema does not expose explicit "necessary resource"
-    labels, so we infer complexity from the hidden required-element count and
-    penalize plans that request far more unique controls/resources than that
-    complexity suggests.
-    """
+    """Score how lean the protocol is relative to scenario complexity."""
     required_element_count = len(scenario.hidden_reference_spec.required_elements)
     complexity_budget = max(2, required_element_count + 2)
     requested_count = (
@@ -106,3 +121,21 @@ def _score_parsimony(
 
     ratio = complexity_budget / max(complexity_budget, requested_count)
     return round(max(0.25, min(1.0, ratio)), 6)
+
+
+def _domain_emphasis_bonus(
+    rigor: float, feasibility: float, fidelity: float, domain_id: str,
+) -> float:
+    """Bonus for excelling in the domain's priority dimensions.
+
+    Returns up to 0.5 when the weighted average of sub-scores exceeds 0.7.
+    """
+    weights = DOMAIN_WEIGHTS.get(domain_id, DEFAULT_DOMAIN_WEIGHTS)
+    weighted = (
+        weights.get("rigor", 0.33) * rigor
+        + weights.get("feasibility", 0.34) * feasibility
+        + weights.get("fidelity", 0.33) * fidelity
+    )
+    if weighted >= 0.7:
+        return round(min(0.5, (weighted - 0.7) / 0.3 * 0.5), 6)
+    return 0.0
