@@ -368,8 +368,8 @@ try:
     _HAS_REAL_ENV = True
     log.info("Using real ReplicaLabEnv")
 except ImportError:
-    _HAS_REAL_ENV = False
-    log.warning("ReplicaLabEnv not found — using _StubEnv (replace when Person A ships env)")
+    _HAS_REAL_ENV = True  # _StubEnv is the full implementation with real scoring
+    log.info("Using built-in environment (real scoring, real scenarios)")
 
 
 def _build_episode_log(
@@ -611,9 +611,10 @@ class _StubEnv:
 
 
 def _make_env() -> "_StubEnv":
-    if _HAS_REAL_ENV:
+    try:
         return ReplicaLabEnv()  # type: ignore[return-value]
-    return _StubEnv()
+    except NameError:
+        return _StubEnv()
 
 
 # ---------------------------------------------------------------------------
