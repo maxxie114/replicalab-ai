@@ -1,4 +1,5 @@
 import { CheckCircle, XCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import type { JudgeAudit } from '@/types';
 import { cn, verdictColor } from '@/lib/utils';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -42,14 +43,27 @@ export default function JudgeAuditPanel({ audit, className }: JudgeAuditPanelPro
       {audit.judge_notes.length > 0 && (
         <div className="mb-3">
           <h3 className="mb-1.5 text-xs font-medium text-muted-foreground">Notes</h3>
-          <ul className="space-y-1">
+          <div className="text-sm space-y-2">
             {audit.judge_notes.map((note, i) => (
-              <li key={i} className="flex items-start gap-1.5 text-sm">
-                <CheckCircle className="mt-0.5 h-3 w-3 shrink-0 text-lab-manager" />
+              <ReactMarkdown
+                key={i}
+                components={{
+                  h1: ({ children }) => <h1 className="text-base font-bold mt-3 mb-1">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-sm font-semibold mt-2 mb-1 text-foreground">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-xs font-semibold mt-2 mb-0.5 text-muted-foreground uppercase tracking-wide">{children}</h3>,
+                  p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc list-inside space-y-0.5 ml-2">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 ml-2">{children}</ol>,
+                  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                  hr: () => <hr className="border-border my-2" />,
+                  blockquote: ({ children }) => <blockquote className="border-l-2 border-judge/50 pl-3 italic text-muted-foreground">{children}</blockquote>,
+                }}
+              >
                 {note}
-              </li>
+              </ReactMarkdown>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
