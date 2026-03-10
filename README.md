@@ -332,12 +332,12 @@ replicalab-ai/
 
 ## Deployment
 
-**Live deployment:** [`https://ayushozha-replicalab.hf.space`](https://ayushozha-replicalab.hf.space)
+**Live demo:** **[https://openenv-community-replicalab.hf.space](https://openenv-community-replicalab.hf.space)**
 
-The app is deployed on HF Spaces with `sdk: docker` on port `7860`. The multi-stage Dockerfile builds the React frontend with Node.js, then serves both the UI and API from a single Python container.
+The app is deployed on HF Spaces with `sdk: docker` on port `7860`. The multi-stage Dockerfile builds the React frontend with Node.js, then serves both the UI and API from a single Python container. The fine-tuned Scientist model runs on a dedicated GPU inference Space.
 
 ```bash
-curl https://ayushozha-replicalab.hf.space/health
+curl https://openenv-community-replicalab.hf.space/api/health
 # -> {"status":"ok","env":"real","version":"0.1.0"}
 ```
 
