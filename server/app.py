@@ -117,6 +117,9 @@ log = logging.getLogger("replicalab.server")
 # Scientist model — loaded once at startup from the GRPO checkpoint
 # ---------------------------------------------------------------------------
 
+# SCIENTIST_HF_MODEL: HuggingFace model ID (e.g. "openenv-community/replicalab-scientist-grpo-lora")
+# Takes priority over SCIENTIST_CHECKPOINT local path.
+_SCIENTIST_HF_MODEL = os.environ.get("SCIENTIST_HF_MODEL", "").strip()
 _SCIENTIST_CHECKPOINT = os.environ.get(
     "SCIENTIST_CHECKPOINT",
     "/home/jovyan/replicalab-qwen3.5-grpo/checkpoint-200",
@@ -128,21 +131,32 @@ _scientist_ready = threading.Event()  # set when load attempt completes
 
 
 def _load_scientist_model() -> None:
-    """Load the fine-tuned Qwen LoRA adapter in a background thread."""
+    """Load the fine-tuned Qwen LoRA adapter in a background thread.
+
+    Loads from SCIENTIST_HF_MODEL (HF Hub ID) if set, otherwise falls back
+    to the local SCIENTIST_CHECKPOINT path.
+    """
     global _scientist_model, _scientist_tokenizer
-    checkpoint = Path(_SCIENTIST_CHECKPOINT)
-    if not checkpoint.exists():
-        log.warning(
-            "Scientist checkpoint not found at %s — suggest endpoint will use deterministic baseline",
-            checkpoint,
-        )
-        _scientist_ready.set()
-        return
+
+    # Determine source: HF model ID takes priority over local path
+    if _SCIENTIST_HF_MODEL:
+        model_source = _SCIENTIST_HF_MODEL
+    else:
+        checkpoint = Path(_SCIENTIST_CHECKPOINT)
+        if not checkpoint.exists():
+            log.warning(
+                "Scientist checkpoint not found at %s — suggest endpoint will use deterministic baseline",
+                _SCIENTIST_CHECKPOINT,
+            )
+            _scientist_ready.set()
+            return
+        model_source = str(checkpoint)
+
     try:
         from unsloth import FastLanguageModel  # type: ignore
-        log.info("Loading Scientist model from %s …", checkpoint)
+        log.info("Loading Scientist model from %s …", model_source)
         model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name=str(checkpoint),
+            model_name=model_source,
             max_seq_length=2048,
             load_in_4bit=False,
         )
@@ -151,7 +165,7 @@ def _load_scientist_model() -> None:
         _scientist_tokenizer = tokenizer
         log.info("Scientist model loaded ✓")
     except Exception:
-        log.exception("Failed to load Scientist model — suggest endpoint will use deterministic baseline")
+        log.exception("Failed to load Scientist model from %s — suggest endpoint will use deterministic baseline", model_source)
     _scientist_ready.set()
 
 
@@ -777,6 +791,11 @@ def _resolve_scientist_action(session: dict[str, Any]) -> tuple[ScientistAction,
     runtime = get_scientist_runtime()
     if runtime == "baseline":
         action = build_baseline_scientist_action(observation.scientist)
+    elif runtime == "local":
+        # Use fine-tuned LoRA model loaded at startup
+        _scientist_ready.wait(timeout=30)
+        scenario_pack = getattr(session.get("env"), "_scenario_pack", None)
+        action = _run_scientist_inference(observation.scientist, scenario_pack)
     else:
         policy = _get_scientist_policy()
         action = policy(
@@ -795,6 +814,8 @@ def _resolve_scientist_action(session: dict[str, Any]) -> tuple[ScientistAction,
             if runtime == "anthropic"
             else get_scientist_ollama_model()
             if runtime == "ollama"
+            else (_SCIENTIST_HF_MODEL or _SCIENTIST_CHECKPOINT)
+            if runtime == "local"
             else "baseline-heuristic"
         ),
         "scientist_action": action.model_dump(mode="json"),

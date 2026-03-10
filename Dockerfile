@@ -20,12 +20,29 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system deps
+# Install system deps (curl needed for HEALTHCHECK)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies first for better layer caching
+# Install PyTorch with CUDA 12.1 support (works on T4/A10 GPU Spaces;
+# falls back to CPU silently if no GPU is present)
+RUN pip install --no-cache-dir \
+    torch \
+    --index-url https://download.pytorch.org/whl/cu121
+
+# Install unsloth + model-serving dependencies
+RUN pip install --no-cache-dir \
+    unsloth \
+    transformers \
+    peft \
+    accelerate \
+    bitsandbytes \
+    huggingface_hub
+
+# Install server dependencies
 COPY server/requirements.txt ./server/requirements.txt
 RUN pip install --no-cache-dir -r server/requirements.txt
 
