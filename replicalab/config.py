@@ -70,7 +70,7 @@ def get_scientist_runtime() -> str:
 
 
 def get_scientist_model() -> str:
-    return os.environ.get("REPLICALAB_SCIENTIST_MODEL", "claude-3-5-haiku-latest")
+    return os.environ.get("REPLICALAB_SCIENTIST_MODEL", "claude-haiku-4-5-20251001")
 
 
 def get_scientist_ollama_model() -> str:
