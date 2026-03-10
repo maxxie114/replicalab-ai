@@ -25,6 +25,11 @@ from replicalab.training.lab_manager_sft import (
     preview_lab_manager_training,
     train_lab_manager_sft,
 )
+from replicalab.training.local_eval import (
+    PaperBalancedEvaluationCase,
+    build_local_scientist_policy,
+    build_trainable_paper_cases,
+)
 from replicalab.training.metrics import EvaluationSummary, summarize_episodes
 from replicalab.training.rollout import EpisodeRecord, RolloutWorker, StepRecord
 from replicalab.training.scientist_grpo import (
@@ -46,6 +51,7 @@ __all__ = [
     "FrozenEvidencePack",
     "LabManagerSFTConfig",
     "LabManagerSFTExample",
+    "PaperBalancedEvaluationCase",
     "RolloutWorker",
     "ScientistGRPOConfig",
     "ScientistPromptExample",
@@ -55,6 +61,7 @@ __all__ = [
     "build_lab_manager_sft_examples",
     "build_scientist_prompt_examples",
     "evaluate_policy",
+    "build_local_scientist_policy",
     "load_frozen_evidence_packs",
     "preview_lab_manager_training",
     "preview_scientist_training",
@@ -62,4 +69,5 @@ __all__ = [
     "summarize_episodes",
     "train_lab_manager_sft",
     "train_scientist_grpo",
+    "build_trainable_paper_cases",
 ]

@@ -25,6 +25,15 @@ Source of truth: `ReplicaLab_Comprehensive_Task_Division.md`
 | Remaining | 0 |
 | **Completion rate** | **100.00%** |
 
+Post-MVP benchmark note:
+
+- On 2026-03-09, a live Northflank H100 first-step benchmark was added as an
+  operational post-MVP artifact under
+  `replicalab/outputs/training/h100-one-step-500-20260309/`.
+- It covers `500` total simulations (`250` shared reset cases × baseline and
+  trained first-step actions) and records paper-understanding regression data
+  for the current saved Scientist adapter.
+
 ### Completion by Person
 
 | Person | Assigned | Completed (own) | Completed (by others) | Remaining | Rate |

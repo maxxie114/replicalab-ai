@@ -84,3 +84,33 @@ Current localhost model-runtime note:
   - clamps duration to the current lab time limit
 - If the local model stalls or errors, `/agent-step` falls back to the deterministic baseline Scientist and records that in the step metadata as `scientist_runtime=ollama_fallback`.
 
+Current March 9 H100 benchmark note:
+
+- The full multi-round `scientist-local-compare-eval` path is live on the
+  Northflank H100 notebook, but the current notebook image is missing the fast
+  linear-attention path for the saved `unsloth/Qwen3.5-0.8B` adapter, so large
+  sharded rollout sweeps did not flush artifacts on a practical same-turn
+  timescale.
+- A fallback live H100 first-step benchmark was run on 2026-03-09 instead:
+  `250` shared reset cases with both baseline and trained Scientist first-step
+  actions, for `500` total simulations.
+- The merged artifact root is
+  `replicalab/outputs/training/h100-one-step-500-20260309/`.
+- The benchmark spans `34` trainable papers.
+- Summary result:
+  - baseline average first-step paper understanding: `0.61692084`
+  - trained average first-step paper understanding: `0.063866752`
+  - baseline average first-step reward: `0.3`
+  - trained average first-step reward: `0.05`
+  - trained request-info rate: `1.0`
+  - invalid-action rate stayed `0.0` for both labels
+- Scenario-level understanding:
+  - baseline `finance_trading`: `0.596033`
+  - trained `finance_trading`: `0.018182`
+  - baseline `ml_benchmark`: `0.633333`
+  - trained `ml_benchmark`: `0.099762`
+- Current interpretation: the saved `replicalab-qwen3.5-grpo` adapter is
+  materially worse than the deterministic baseline on first-step paper
+  grounding and currently behaves like a universal `request_info` policy under
+  a fast decode budget.
+

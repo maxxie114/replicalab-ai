@@ -30,6 +30,10 @@ from replicalab.training.history import (
     build_benchmark_history_row,
     load_benchmark_history,
 )
+from replicalab.training.local_eval import (
+    build_local_scientist_policy,
+    build_trainable_paper_cases,
+)
 from replicalab.training.lab_manager_sft import (
     LabManagerSFTConfig,
     preview_lab_manager_training,
@@ -67,6 +71,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_baseline_eval(args)
     if args.command == "scientist-compare-eval":
         return _run_scientist_compare_eval(args)
+    if args.command == "scientist-local-compare-eval":
+        return _run_scientist_local_compare_eval(args)
     if args.command == "art-scientist-train":
         return _run_art_scientist_train(args)
 
@@ -259,6 +265,69 @@ def _build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.0,
         help="Sampling temperature for the trained remote Scientist.",
+    )
+
+    local_compare_eval = subparsers.add_parser(
+        "scientist-local-compare-eval",
+        help="Compare baseline Scientist versus a local trained LoRA adapter.",
+    )
+    _add_common_artifact_args(local_compare_eval, prefix="eval-local-compare")
+    local_compare_eval.add_argument(
+        "--base-url",
+        default="https://ayushozha-replicalab.hf.space",
+        help="ReplicaLab environment base URL.",
+    )
+    local_compare_eval.add_argument(
+        "--transport",
+        default="rest",
+        choices=("rest", "ws"),
+        help="Transport used by ReplicaLabClient.",
+    )
+    local_compare_eval.add_argument(
+        "--adapter-dir",
+        required=True,
+        help="Path to the trained local Scientist adapter directory.",
+    )
+    local_compare_eval.add_argument(
+        "--base-model",
+        default="Qwen/Qwen3.5-9B",
+        help="Base model used by the local adapter.",
+    )
+    local_compare_eval.add_argument(
+        "--case-count",
+        type=int,
+        default=500,
+        help="Number of live rollout simulations to run.",
+    )
+    local_compare_eval.add_argument(
+        "--case-offset",
+        type=int,
+        default=0,
+        help="Starting case index for sharded live rollout runs.",
+    )
+    local_compare_eval.add_argument(
+        "--difficulties",
+        nargs="+",
+        default=["easy", "medium", "hard"],
+        help="Difficulty levels to cycle through when building the live rollout set.",
+    )
+    local_compare_eval.add_argument(
+        "--max-completion-tokens",
+        type=int,
+        default=450,
+        help="Max completion tokens for the local trained Scientist.",
+    )
+    local_compare_eval.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="Sampling temperature for the local trained Scientist.",
+    )
+    local_compare_eval.add_argument(
+        "--max-retries",
+        type=int,
+        default=2,
+        help="Maximum parse-retry attempts for the local trained Scientist.",
     )
 
     art_train = subparsers.add_parser(
@@ -680,6 +749,99 @@ def _run_scientist_compare_eval(args: argparse.Namespace) -> int:
         rows=rows_payload,
     )
     print(json.dumps({"rows": rows_payload}, indent=2, sort_keys=True))
+    return 0
+
+
+def _run_scientist_local_compare_eval(args: argparse.Namespace) -> int:
+    layout = _build_layout(
+        prefix="eval-local-compare",
+        persist_root=args.persist_root,
+        run_name=args.run_name,
+    )
+    case_specs = build_trainable_paper_cases(
+        args.case_count,
+        case_index_offset=args.case_offset,
+        difficulties=args.difficulties,
+    )
+    cases = [spec.to_evaluation_case() for spec in case_specs]
+    trained_policy = build_local_scientist_policy(
+        base_model=args.base_model,
+        adapter_dir=args.adapter_dir,
+        max_completion_tokens=args.max_completion_tokens,
+        temperature=args.temperature,
+        max_retries=args.max_retries,
+    )
+    records_by_label, rows = compare_policies(
+        base_url=args.base_url,
+        policies=[
+            ("baseline", build_baseline_scientist_action),
+            ("trained", trained_policy),
+        ],
+        cases=cases,
+        transport=args.transport,
+    )
+    write_json(
+        layout.manifests_dir / "evaluation_cases.json",
+        [spec.model_dump(mode="json") for spec in case_specs],
+    )
+    _write_run_metadata(
+        layout,
+        {
+            "kind": "scientist_local_compare_eval",
+            "base_url": args.base_url,
+            "transport": args.transport,
+            "adapter_dir": args.adapter_dir,
+            "base_model": args.base_model,
+            "case_count": args.case_count,
+            "case_offset": args.case_offset,
+            "difficulties": args.difficulties,
+            "max_retries": args.max_retries,
+            "bounded_tool_policy": [
+                "search_evidence",
+                "run_code_check",
+                "inspect_image",
+            ],
+        },
+    )
+    for label, records in records_by_label.items():
+        for spec, record in zip(case_specs, records):
+            append_jsonl(
+                layout.metrics_jsonl,
+                {
+                    "label": label,
+                    "case_index": spec.case_index,
+                    "expected_evidence_id": spec.expected_evidence_id,
+                    "expected_paper_title": spec.expected_paper_title,
+                    **episode_to_metrics(record).model_dump(mode="json"),
+                },
+            )
+    rows_payload = [row.model_dump(mode="json") for row in rows]
+    unique_papers = len({spec.expected_evidence_id for spec in case_specs})
+    write_json(
+        layout.summary_json,
+        {
+            "rows": rows_payload,
+            "case_count": len(case_specs),
+            "unique_expected_papers": unique_papers,
+        },
+    )
+    _plot_comparison_summary(rows_payload, layout=layout)
+    _append_history_and_plots(
+        layout=layout,
+        kind="scientist_local_compare_eval",
+        rows=rows_payload,
+    )
+    print(
+        json.dumps(
+            {
+                "rows": rows_payload,
+                "case_count": len(case_specs),
+                "unique_expected_papers": unique_papers,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 

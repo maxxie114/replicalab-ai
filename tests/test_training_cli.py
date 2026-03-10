@@ -206,3 +206,132 @@ def test_scientist_compare_eval_cli_writes_rows(tmp_path, monkeypatch) -> None:
     assert [row["label"] for row in payload["rows"]] == ["baseline", "trained"]
     assert payload["rows"][1]["average_reward"] == 3.5
     assert history_path.exists()
+
+
+def test_scientist_local_compare_eval_cli_writes_cases_and_metrics(tmp_path, monkeypatch) -> None:
+    baseline_record = EpisodeRecord(
+        seed=0,
+        scenario="ml_benchmark",
+        difficulty="easy",
+        episode_id="baseline-1",
+        total_reward=1.0,
+        reward_breakdown=RewardBreakdown(rigor=0.3, feasibility=0.4, fidelity=0.5),
+        verdict="timeout",
+        agreement_reached=False,
+    )
+    trained_record = EpisodeRecord(
+        seed=0,
+        scenario="ml_benchmark",
+        difficulty="easy",
+        episode_id="trained-1",
+        total_reward=2.5,
+        reward_breakdown=RewardBreakdown(rigor=0.7, feasibility=0.8, fidelity=0.75),
+        verdict="accept",
+        agreement_reached=True,
+    )
+    rows = [
+        PolicyComparisonRow(
+            label="baseline",
+            episode_count=1,
+            average_reward=1.0,
+            average_rounds=2.0,
+            agreement_rate=0.0,
+            invalid_action_rate=0.0,
+            average_invalid_bounded_tool_rate=0.0,
+            average_rigor=0.3,
+            average_feasibility=0.4,
+            average_fidelity=0.5,
+            average_parsimony=1.0,
+            average_tool_trace_count=0.0,
+            average_paper_understanding=0.2,
+            average_communication_quality=0.0,
+        ),
+        PolicyComparisonRow(
+            label="trained",
+            episode_count=1,
+            average_reward=2.5,
+            average_rounds=1.0,
+            agreement_rate=1.0,
+            invalid_action_rate=0.0,
+            average_invalid_bounded_tool_rate=0.0,
+            average_rigor=0.7,
+            average_feasibility=0.8,
+            average_fidelity=0.75,
+            average_parsimony=1.0,
+            average_tool_trace_count=0.0,
+            average_paper_understanding=0.6,
+            average_communication_quality=0.0,
+        ),
+    ]
+
+    class _CaseSpec:
+        case_index = 7
+        expected_evidence_id = "ml:paper-1"
+        expected_paper_title = "Paper 1"
+
+        def to_evaluation_case(self) -> object:
+            return object()
+
+        def model_dump(self, mode: str = "json") -> dict[str, object]:
+            return {
+                "case_index": 7,
+                "seed": 0,
+                "scenario": "ml_benchmark",
+                "difficulty": "easy",
+                "expected_evidence_id": "ml:paper-1",
+                "expected_paper_title": "Paper 1",
+            }
+
+    monkeypatch.setattr(
+        "replicalab.training.cli.build_trainable_paper_cases",
+        lambda *args, **kwargs: [_CaseSpec()],
+    )
+    monkeypatch.setattr(
+        "replicalab.training.cli.build_local_scientist_policy",
+        lambda **_: (lambda _obs: None),
+    )
+    monkeypatch.setattr(
+        "replicalab.training.cli.compare_policies",
+        lambda **_: (
+            {"baseline": [baseline_record], "trained": [trained_record]},
+            rows,
+        ),
+    )
+    monkeypatch.setattr(
+        "replicalab.training.cli.plot_evaluation_bars",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "replicalab.training.cli.plot_benchmark_history",
+        lambda *args, **kwargs: None,
+    )
+
+    exit_code = main(
+        [
+            "scientist-local-compare-eval",
+            "--persist-root",
+            str(tmp_path),
+            "--run-name",
+            "local-compare-test",
+            "--adapter-dir",
+            str(tmp_path / "adapter"),
+            "--case-count",
+            "1",
+            "--case-offset",
+            "7",
+        ]
+    )
+
+    assert exit_code == 0
+    summary_path = tmp_path / "local-compare-test" / "reports" / "summary.json"
+    metrics_path = tmp_path / "local-compare-test" / "reports" / "metrics.jsonl"
+    cases_path = tmp_path / "local-compare-test" / "manifests" / "evaluation_cases.json"
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert payload["case_count"] == 1
+    assert payload["unique_expected_papers"] == 1
+    metrics_lines = metrics_path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(metrics_lines) == 2
+    first_metric = json.loads(metrics_lines[0])
+    assert first_metric["case_index"] == 7
+    assert first_metric["expected_evidence_id"] == "ml:paper-1"
+    assert cases_path.exists()
