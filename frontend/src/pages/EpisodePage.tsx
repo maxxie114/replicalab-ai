@@ -240,11 +240,7 @@ export default function EpisodePage() {
       if (action) {
         finalAction = action;
       } else {
-        try {
-          finalAction = await suggestScientistAction(episode.session_id);
-        } catch {
-          finalAction = buildDemoScientistAction(episode, demoCase);
-        }
+        finalAction = buildDemoScientistAction(episode, demoCase);
       }
 
       if (isLastRound && !action) {
