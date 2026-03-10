@@ -25,6 +25,15 @@ from replicalab.training.evaluation import (
     compare_policies,
     evaluate_policy,
 )
+from replicalab.training.history import (
+    append_benchmark_history,
+    build_benchmark_history_row,
+    load_benchmark_history,
+)
+from replicalab.training.local_eval import (
+    build_local_scientist_policy,
+    build_trainable_paper_cases,
+)
 from replicalab.training.lab_manager_sft import (
     LabManagerSFTConfig,
     preview_lab_manager_training,
@@ -32,6 +41,7 @@ from replicalab.training.lab_manager_sft import (
 )
 from replicalab.training.metrics import episode_to_metrics
 from replicalab.training.plots import (
+    plot_benchmark_history,
     plot_evaluation_bars,
     plot_metrics_by_step,
     plot_training_history,
@@ -61,6 +71,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_baseline_eval(args)
     if args.command == "scientist-compare-eval":
         return _run_scientist_compare_eval(args)
+    if args.command == "scientist-local-compare-eval":
+        return _run_scientist_local_compare_eval(args)
     if args.command == "art-scientist-train":
         return _run_art_scientist_train(args)
 
@@ -253,6 +265,69 @@ def _build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.0,
         help="Sampling temperature for the trained remote Scientist.",
+    )
+
+    local_compare_eval = subparsers.add_parser(
+        "scientist-local-compare-eval",
+        help="Compare baseline Scientist versus a local trained LoRA adapter.",
+    )
+    _add_common_artifact_args(local_compare_eval, prefix="eval-local-compare")
+    local_compare_eval.add_argument(
+        "--base-url",
+        default="https://ayushozha-replicalab.hf.space",
+        help="ReplicaLab environment base URL.",
+    )
+    local_compare_eval.add_argument(
+        "--transport",
+        default="rest",
+        choices=("rest", "ws"),
+        help="Transport used by ReplicaLabClient.",
+    )
+    local_compare_eval.add_argument(
+        "--adapter-dir",
+        required=True,
+        help="Path to the trained local Scientist adapter directory.",
+    )
+    local_compare_eval.add_argument(
+        "--base-model",
+        default="Qwen/Qwen3.5-9B",
+        help="Base model used by the local adapter.",
+    )
+    local_compare_eval.add_argument(
+        "--case-count",
+        type=int,
+        default=500,
+        help="Number of live rollout simulations to run.",
+    )
+    local_compare_eval.add_argument(
+        "--case-offset",
+        type=int,
+        default=0,
+        help="Starting case index for sharded live rollout runs.",
+    )
+    local_compare_eval.add_argument(
+        "--difficulties",
+        nargs="+",
+        default=["easy", "medium", "hard"],
+        help="Difficulty levels to cycle through when building the live rollout set.",
+    )
+    local_compare_eval.add_argument(
+        "--max-completion-tokens",
+        type=int,
+        default=450,
+        help="Max completion tokens for the local trained Scientist.",
+    )
+    local_compare_eval.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="Sampling temperature for the local trained Scientist.",
+    )
+    local_compare_eval.add_argument(
+        "--max-retries",
+        type=int,
+        default=2,
+        help="Maximum parse-retry attempts for the local trained Scientist.",
     )
 
     art_train = subparsers.add_parser(
@@ -589,6 +664,11 @@ def _run_baseline_eval(args: argparse.Namespace) -> int:
     summary_payload = summary.model_dump(mode="json")
     write_json(layout.summary_json, summary_payload)
     _plot_eval_summary(summary_payload, layout=layout)
+    _append_history_and_plots(
+        layout=layout,
+        kind="baseline_eval",
+        rows=[{"label": "baseline", **summary_payload}],
+    )
     print(json.dumps(summary_payload, indent=2, sort_keys=True))
     return 0
 
@@ -663,7 +743,105 @@ def _run_scientist_compare_eval(args: argparse.Namespace) -> int:
     rows_payload = [row.model_dump(mode="json") for row in rows]
     write_json(layout.summary_json, {"rows": rows_payload})
     _plot_comparison_summary(rows_payload, layout=layout)
+    _append_history_and_plots(
+        layout=layout,
+        kind="scientist_compare_eval",
+        rows=rows_payload,
+    )
     print(json.dumps({"rows": rows_payload}, indent=2, sort_keys=True))
+    return 0
+
+
+def _run_scientist_local_compare_eval(args: argparse.Namespace) -> int:
+    layout = _build_layout(
+        prefix="eval-local-compare",
+        persist_root=args.persist_root,
+        run_name=args.run_name,
+    )
+    case_specs = build_trainable_paper_cases(
+        args.case_count,
+        case_index_offset=args.case_offset,
+        difficulties=args.difficulties,
+    )
+    cases = [spec.to_evaluation_case() for spec in case_specs]
+    trained_policy = build_local_scientist_policy(
+        base_model=args.base_model,
+        adapter_dir=args.adapter_dir,
+        max_completion_tokens=args.max_completion_tokens,
+        temperature=args.temperature,
+        max_retries=args.max_retries,
+    )
+    records_by_label, rows = compare_policies(
+        base_url=args.base_url,
+        policies=[
+            ("baseline", build_baseline_scientist_action),
+            ("trained", trained_policy),
+        ],
+        cases=cases,
+        transport=args.transport,
+    )
+    write_json(
+        layout.manifests_dir / "evaluation_cases.json",
+        [spec.model_dump(mode="json") for spec in case_specs],
+    )
+    _write_run_metadata(
+        layout,
+        {
+            "kind": "scientist_local_compare_eval",
+            "base_url": args.base_url,
+            "transport": args.transport,
+            "adapter_dir": args.adapter_dir,
+            "base_model": args.base_model,
+            "case_count": args.case_count,
+            "case_offset": args.case_offset,
+            "difficulties": args.difficulties,
+            "max_retries": args.max_retries,
+            "bounded_tool_policy": [
+                "search_evidence",
+                "run_code_check",
+                "inspect_image",
+            ],
+        },
+    )
+    for label, records in records_by_label.items():
+        for spec, record in zip(case_specs, records):
+            append_jsonl(
+                layout.metrics_jsonl,
+                {
+                    "label": label,
+                    "case_index": spec.case_index,
+                    "expected_evidence_id": spec.expected_evidence_id,
+                    "expected_paper_title": spec.expected_paper_title,
+                    **episode_to_metrics(record).model_dump(mode="json"),
+                },
+            )
+    rows_payload = [row.model_dump(mode="json") for row in rows]
+    unique_papers = len({spec.expected_evidence_id for spec in case_specs})
+    write_json(
+        layout.summary_json,
+        {
+            "rows": rows_payload,
+            "case_count": len(case_specs),
+            "unique_expected_papers": unique_papers,
+        },
+    )
+    _plot_comparison_summary(rows_payload, layout=layout)
+    _append_history_and_plots(
+        layout=layout,
+        kind="scientist_local_compare_eval",
+        rows=rows_payload,
+    )
+    print(
+        json.dumps(
+            {
+                "rows": rows_payload,
+                "case_count": len(case_specs),
+                "unique_expected_papers": unique_papers,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 
@@ -710,6 +888,11 @@ def _run_art_scientist_train(args: argparse.Namespace) -> int:
         },
     )
     _plot_art_metrics(layout)
+    _append_history_and_plots(
+        layout=layout,
+        kind="art_scientist_train",
+        rows=[{"label": "trained", **result}],
+    )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
@@ -753,6 +936,18 @@ def _plot_eval_summary(
         metric_key="agreement_rate",
         title="Baseline agreement rate",
     )
+    plot_evaluation_bars(
+        rows,
+        output_path=layout.plots_dir / "baseline_paper_understanding.png",
+        metric_key="average_paper_understanding",
+        title="Baseline paper understanding",
+    )
+    plot_evaluation_bars(
+        rows,
+        output_path=layout.plots_dir / "baseline_communication_quality.png",
+        metric_key="average_communication_quality",
+        title="Baseline communication quality",
+    )
     if "average_invalid_bounded_tool_rate" in summary:
         plot_evaluation_bars(
             rows,
@@ -771,6 +966,16 @@ def _plot_comparison_summary(
         ("average_reward", "Before vs after average reward", "compare_average_reward.png"),
         ("agreement_rate", "Before vs after agreement rate", "compare_agreement_rate.png"),
         ("invalid_action_rate", "Before vs after invalid action rate", "compare_invalid_action_rate.png"),
+        (
+            "average_paper_understanding",
+            "Before vs after paper understanding",
+            "compare_paper_understanding.png",
+        ),
+        (
+            "average_communication_quality",
+            "Before vs after communication quality",
+            "compare_communication_quality.png",
+        ),
         (
             "average_invalid_bounded_tool_rate",
             "Before vs after invalid bounded-tool rate",
@@ -804,6 +1009,8 @@ def _plot_art_metrics(layout: ArtifactLayout) -> None:
             "rigor",
             "feasibility",
             "fidelity",
+            "paper_understanding",
+            "communication_quality",
             "agreement_reached",
             "invalid_action_count",
             "parse_error_count",
@@ -813,6 +1020,55 @@ def _plot_art_metrics(layout: ArtifactLayout) -> None:
 
 def _write_run_metadata(layout: ArtifactLayout, payload: dict[str, object]) -> None:
     write_json(layout.reports_dir / "run_metadata.json", payload)
+
+
+def _append_history_and_plots(
+    *,
+    layout: ArtifactLayout,
+    kind: str,
+    rows: list[dict[str, object]],
+) -> None:
+    history_rows = [
+        build_benchmark_history_row(
+            run_name=layout.run_name,
+            kind=kind,
+            label=str(row.get("label", kind)),
+            metrics=row,
+        )
+        for row in rows
+    ]
+    append_benchmark_history(layout.benchmark_history_jsonl, history_rows)
+    all_rows = [
+        row.model_dump(mode="json")
+        for row in load_benchmark_history(layout.benchmark_history_jsonl)
+    ]
+    if not all_rows:
+        return
+    for metric_key, title, filename in (
+        ("average_reward", "Benchmark history: average reward", "history_average_reward.png"),
+        ("agreement_rate", "Benchmark history: agreement rate", "history_agreement_rate.png"),
+        (
+            "average_paper_understanding",
+            "Benchmark history: paper understanding",
+            "history_paper_understanding.png",
+        ),
+        (
+            "average_communication_quality",
+            "Benchmark history: communication quality",
+            "history_communication_quality.png",
+        ),
+        (
+            "invalid_action_rate",
+            "Benchmark history: invalid action rate",
+            "history_invalid_action_rate.png",
+        ),
+    ):
+        plot_benchmark_history(
+            all_rows,
+            output_path=layout.history_plots_dir / filename,
+            metric_key=metric_key,
+            title=title,
+        )
 
 
 def _parse_art_scenario_spec(value: str) -> ArtScenarioSpec:

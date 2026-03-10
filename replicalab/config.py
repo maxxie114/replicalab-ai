@@ -66,19 +66,11 @@ def get_scientist_runtime() -> str:
     configured = os.environ.get("REPLICALAB_SCIENTIST_RUNTIME")
     if configured:
         return configured.strip().lower()
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        return "anthropic"
-    if os.environ.get("OPENAI_API_KEY"):
-        return "openai"
-    return "baseline"
+    return "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "baseline"
 
 
 def get_scientist_model() -> str:
-    return os.environ.get("REPLICALAB_SCIENTIST_MODEL", "claude-3-5-haiku-latest")
-
-
-def get_scientist_openai_model() -> str:
-    return os.environ.get("REPLICALAB_SCIENTIST_OPENAI_MODEL", "gpt-5.4")
+    return os.environ.get("REPLICALAB_SCIENTIST_MODEL", "claude-haiku-4-5-20251001")
 
 
 def get_scientist_ollama_model() -> str:
@@ -97,11 +89,7 @@ def get_scientist_max_retries() -> int:
 
 
 def get_scientist_max_completion_tokens() -> int:
-    # gpt-5.x models use reasoning tokens internally before output, so the
-    # effective output budget is much smaller than max_completion_tokens.
-    # Default is 4000 to ensure the model has enough budget for both
-    # reasoning and JSON output.
-    return _get_env_int("REPLICALAB_SCIENTIST_MAX_COMPLETION_TOKENS", 4000)
+    return _get_env_int("REPLICALAB_SCIENTIST_MAX_COMPLETION_TOKENS", 450)
 
 
 def get_scientist_temperature() -> float:
@@ -125,3 +113,42 @@ STEP_INVALID_ACTION_PENALTY = 0.1
 STEP_HALLUCINATION_PENALTY = 0.05
 TERMINAL_TIMEOUT_PENALTY = 0.2
 TERMINAL_NO_AGREEMENT_PENALTY = 0.1
+
+# LLM judge toggle
+LLM_JUDGE_ENABLED = os.environ.get("REPLICALAB_LLM_JUDGE_ENABLED", "0") == "1"
+
+# Adaptive reward shaping — later rounds carry heavier penalties
+ADAPTIVE_SHAPING_ENABLED = os.environ.get("REPLICALAB_ADAPTIVE_SHAPING", "1") == "1"
+
+# Domain-specific scoring emphasis
+DOMAIN_WEIGHTS: dict[str, dict[str, float]] = {
+    "mathematics": {"rigor": 0.40, "feasibility": 0.25, "fidelity": 0.35},
+    "machine_learning": {"rigor": 0.25, "feasibility": 0.40, "fidelity": 0.35},
+    "finance_trading": {"rigor": 0.30, "feasibility": 0.35, "fidelity": 0.35},
+}
+DEFAULT_DOMAIN_WEIGHTS: dict[str, float] = {
+    "rigor": 0.33, "feasibility": 0.34, "fidelity": 0.33,
+}
+
+# Communication bonus cap
+MAX_COMMUNICATION_BONUS = 0.5
+
+
+def get_judge_runtime() -> str:
+    return os.environ.get("REPLICALAB_JUDGE_RUNTIME", "deterministic").strip().lower()
+
+
+def get_judge_model() -> str:
+    return os.environ.get(
+        "REPLICALAB_JUDGE_MODEL", "google/gemini-2.5-pro-preview-03-25",
+    )
+
+
+def get_openrouter_api_key() -> str:
+    return os.environ.get("OPENROUTER_API_KEY", "")
+
+
+def get_openrouter_base_url() -> str:
+    return os.environ.get(
+        "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1",
+    )

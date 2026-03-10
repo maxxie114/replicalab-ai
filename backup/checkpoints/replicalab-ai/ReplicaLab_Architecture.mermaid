@@ -1,0 +1,110 @@
+---
+title: ReplicaLab Architecture
+---
+flowchart TB
+    subgraph SCENARIO["Scenario Generation"]
+        direction LR
+        PT["Paper Templates<br/><i>Cell Bio · ML Benchmark · Psych</i>"]
+        CG["Constraint Generator<br/><i>Equipment · Budget · Staff · Calendar</i>"]
+        SE["Scenario Engine<br/><i>Seed → Deterministic World</i>"]
+        PT --> SE
+        CG --> SE
+    end
+
+    subgraph ENV["ReplicaLab Environment (OpenEnv)"]
+        direction TB
+        STATE["Environment State<br/><i>Paper · Constraints · Round · Budget<br/>Protocol · History · Done Flag</i>"]
+
+        subgraph AGENTS["Agent Loop"]
+            direction LR
+            SCI["🔬 Scientist Agent<br/><i>Trainable LLM Policy</i><br/><b>Actions:</b> propose · revise<br/>ask · accept"]
+            LM["🏗️ Lab Manager Agent<br/><i>Rule-Based Policy</i><br/><b>Actions:</b> report · suggest<br/>reject · accept"]
+            SCI -- "Proposal /<br/>Question" --> LM
+            LM -- "Constraint /<br/>Substitution" --> SCI
+        end
+
+        subgraph JUDGE["Judge Engine"]
+            direction LR
+            RUBRIC["Rubric Scorer<br/><i>Deterministic</i>"]
+            EXPLAIN["Explanation Layer<br/><i>Optional LLM</i>"]
+            RUBRIC --> EXPLAIN
+        end
+
+        STATE --> AGENTS
+        AGENTS -- "step()" --> STATE
+        STATE -- "Episode End" --> JUDGE
+    end
+
+    subgraph REWARD["Reward Computation"]
+        direction LR
+        R["Rigor<br/>Score"]
+        FE["Feasibility<br/>Score"]
+        FI["Fidelity<br/>Score"]
+        BONUS["Efficiency +<br/>Communication<br/>Bonus"]
+        PEN["Penalties<br/><i>Timeout · Over Budget<br/>Missing Controls</i>"]
+        TOTAL["<b>Total Reward</b><br/><i>10 × R × Fe × Fi<br/>+ Bonus − Penalties</i>"]
+        R --> TOTAL
+        FE --> TOTAL
+        FI --> TOTAL
+        BONUS --> TOTAL
+        PEN --> TOTAL
+    end
+
+    subgraph TRAINING["RL Training Pipeline"]
+        direction LR
+        COLAB["Google Colab<br/><i>TRL / Unsloth · GRPO</i>"]
+        ROLLOUT["Rollout Loop<br/><i>reset() → step() → reward</i>"]
+        CURVES["Reward Curves<br/><i>Before vs After</i>"]
+        COLAB --> ROLLOUT --> CURVES
+    end
+
+    subgraph SERVING["Deployment & Serving"]
+        direction LR
+        FASTAPI["FastAPI +<br/>WebSocket Server"]
+        DOCKER["Docker Container"]
+        HF["Hugging Face Space<br/><i>sdk: docker · port: 7860</i>"]
+        FASTAPI --> DOCKER --> HF
+    end
+
+    subgraph UI["Frontend"]
+        direction LR
+        REACT["React + Vite UI"]
+        FALLBACK["OpenEnv /web<br/><i>Fallback</i>"]
+        subgraph PANELS["Layout"]
+            direction TB
+            LEFT["Left Panel<br/><i>Paper · Seed · Round</i>"]
+            MID["Middle Panel<br/><i>Negotiation Log</i>"]
+            RIGHT["Right Panel<br/><i>Protocol · Budget · Scores</i>"]
+        end
+        REACT --> PANELS
+        FALLBACK --> PANELS
+    end
+
+    SE -- "reset(seed)" --> ENV
+    JUDGE -- "Scores" --> REWARD
+    TOTAL -- "Reward Signal" --> TRAINING
+    ROLLOUT -- "Episodes" --> ENV
+    ENV -- "API" --> FASTAPI
+    FASTAPI -- "WebSocket" --> REACT
+    FASTAPI -- "WebSocket" --> FALLBACK
+    TRAINING -. "Updated Scientist<br/>Policy Weights" .-> SCI
+
+    classDef scenario fill:#3b82f6,stroke:#1d4ed8,color:#fff
+    classDef env fill:#1e293b,stroke:#475569,color:#e2e8f0
+    classDef agent fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    classDef judge fill:#f59e0b,stroke:#d97706,color:#1e293b
+    classDef reward fill:#10b981,stroke:#059669,color:#fff
+    classDef training fill:#ef4444,stroke:#dc2626,color:#fff
+    classDef serving fill:#6366f1,stroke:#4f46e5,color:#fff
+    classDef ui fill:#ec4899,stroke:#db2777,color:#fff
+    classDef panel fill:#fdf2f8,stroke:#ec4899,color:#1e293b
+
+    class PT,CG,SE scenario
+    class STATE env
+    class SCI,LM agent
+    class RUBRIC,EXPLAIN judge
+    class R,FE,FI,BONUS,PEN,TOTAL reward
+    class COLAB,ROLLOUT,CURVES training
+    class FASTAPI,DOCKER,HF serving
+    class REACT,FALLBACK ui
+    class LEFT,MID,RIGHT panel

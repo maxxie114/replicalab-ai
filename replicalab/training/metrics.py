@@ -6,6 +6,8 @@ from statistics import mean
 
 from pydantic import BaseModel, ConfigDict
 
+from replicalab.config import MAX_COMMUNICATION_BONUS
+from replicalab.scoring import score_paper_understanding
 from replicalab.training.rollout import EpisodeRecord
 
 
@@ -30,6 +32,8 @@ class EpisodeMetrics(BaseModel):
     feasibility: float = 0.0
     fidelity: float = 0.0
     parsimony: float = 1.0
+    paper_understanding: float = 0.0
+    communication_quality: float = 0.0
 
 
 class EvaluationSummary(BaseModel):
@@ -48,6 +52,8 @@ class EvaluationSummary(BaseModel):
     average_fidelity: float
     average_parsimony: float
     average_tool_trace_count: float
+    average_paper_understanding: float
+    average_communication_quality: float
 
 
 def episode_to_metrics(record: EpisodeRecord) -> EpisodeMetrics:
@@ -58,6 +64,8 @@ def episode_to_metrics(record: EpisodeRecord) -> EpisodeMetrics:
     invalid_bounded_tools = _count_invalid_bounded_tools(record.tool_traces)
     tool_trace_count = record.tool_trace_count
     breakdown = record.reward_breakdown
+    paper_understanding = _episode_paper_understanding(record)
+    communication_quality = _communication_quality(record)
 
     return EpisodeMetrics(
         seed=record.seed,
@@ -76,6 +84,8 @@ def episode_to_metrics(record: EpisodeRecord) -> EpisodeMetrics:
         feasibility=(breakdown.feasibility if breakdown is not None else 0.0),
         fidelity=(breakdown.fidelity if breakdown is not None else 0.0),
         parsimony=(breakdown.parsimony if breakdown is not None else 1.0),
+        paper_understanding=paper_understanding,
+        communication_quality=communication_quality,
     )
 
 
@@ -96,6 +106,8 @@ def summarize_episodes(records: list[EpisodeRecord]) -> EvaluationSummary:
             average_fidelity=0.0,
             average_parsimony=1.0,
             average_tool_trace_count=0.0,
+            average_paper_understanding=0.0,
+            average_communication_quality=0.0,
         )
 
     return EvaluationSummary(
@@ -112,6 +124,10 @@ def summarize_episodes(records: list[EpisodeRecord]) -> EvaluationSummary:
         average_fidelity=mean(item.fidelity for item in metrics),
         average_parsimony=mean(item.parsimony for item in metrics),
         average_tool_trace_count=mean(item.tool_trace_count for item in metrics),
+        average_paper_understanding=mean(item.paper_understanding for item in metrics),
+        average_communication_quality=mean(
+            item.communication_quality for item in metrics
+        ),
     )
 
 
@@ -130,6 +146,37 @@ def _count_invalid_bounded_tools(traces: list[dict[str, object]]) -> int:
         if status and status not in {"ok", "success", "succeeded", "completed"}:
             invalid_count += 1
     return invalid_count
+
+
+def _episode_paper_understanding(record: EpisodeRecord) -> float:
+    scored_steps = [
+        step
+        for step in record.steps
+        if getattr(step.action.action_type, "value", str(step.action.action_type)) != "accept"
+    ]
+    if not scored_steps:
+        scored_steps = list(record.steps)
+    if not scored_steps:
+        return 0.0
+    return round(
+        mean(
+            score_paper_understanding(step.observation, step.action)
+            for step in scored_steps
+        ),
+        6,
+    )
+
+
+def _communication_quality(record: EpisodeRecord) -> float:
+    breakdown = record.reward_breakdown
+    if breakdown is None:
+        return 0.0
+    if MAX_COMMUNICATION_BONUS <= 0:
+        return 0.0
+    return round(
+        max(0.0, min(1.0, breakdown.communication_bonus / MAX_COMMUNICATION_BONUS)),
+        6,
+    )
 
 
 __all__ = [

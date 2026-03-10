@@ -18,13 +18,26 @@ def test_scientist_prompt_examples_include_frozen_evidence_when_available() -> N
         difficulties=["easy"],
     )
 
-    assert len(rows) == 2
-    math_row = next(row for row in rows if row.scenario == "math_reasoning")
-    ml_row = next(row for row in rows if row.scenario == "ml_benchmark")
+    assert len(rows) == 6
+    math_row = next(
+        row
+        for row in rows
+        if row.scenario == "math_reasoning" and row.goal_variant == "paper_understanding"
+    )
+    ml_row = next(
+        row
+        for row in rows
+        if row.scenario == "ml_benchmark" and row.goal_variant == "paper_understanding"
+    )
 
     assert math_row.evidence_id is None
     assert ml_row.evidence_id is not None
     assert "Frozen evidence pack" in ml_row.prompt[-1]["content"]
+    assert {row.goal_variant for row in rows} == {
+        "paper_understanding",
+        "constraint_grounding",
+        "negotiation_quality",
+    }
 
 
 def test_lab_manager_sft_examples_emit_valid_lab_manager_action_json() -> None:

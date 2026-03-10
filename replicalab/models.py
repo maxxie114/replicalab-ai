@@ -323,6 +323,7 @@ class RewardBreakdown(BaseModel):
     parsimony: float = Field(default=1.0, ge=0, le=1)
     efficiency_bonus: float = 0.0
     communication_bonus: float = 0.0
+    domain_emphasis_bonus: float = 0.0
     penalties: dict[str, float] = Field(default_factory=dict)
 
 

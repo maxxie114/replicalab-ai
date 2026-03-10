@@ -168,11 +168,13 @@ RL training improves the Scientist agent’s ability to negotiate effective, fea
 
 ### Selected Base Model
 
-- **Primary shared base:** `Qwen/Qwen3-8B`
-- **Scientist artifact:** `Qwen/Qwen3-8B` + Unsloth GRPO LoRA
-- **Lab Manager artifact:** `Qwen/Qwen3-8B` + Unsloth SFT LoRA
-- **Reduced-scale fallback:** `Qwen/Qwen3-4B`
+- **Primary shared base:** `Qwen/Qwen3.5-9B`
+- **Scientist artifact:** `Qwen/Qwen3.5-9B` + Unsloth GRPO LoRA
+- **Lab Manager artifact:** `Qwen/Qwen3.5-9B` + Unsloth SFT LoRA
+- **Reduced-scale fallback:** `Qwen/Qwen3.5-4B`
+- **Audit-only judge candidate:** `Qwen/Qwen3.5-122B-A10B`
 - **Decision record:** `docs/agt11_scientist_model_selection.md`
+- **Training goals:** `docs/training_goals.md`
 
 ### Training Path
 
@@ -183,7 +185,9 @@ RL training improves the Scientist agent’s ability to negotiate effective, fea
 5. Save separate Scientist and Lab Manager adapters plus:
    - reward curves
    - component curves
+   - paper-understanding and communication metrics
    - before/after evaluation metrics
+   - cumulative benchmark history plots across runs
    - replay and plot artifacts
 
 ### Training Loop
@@ -195,6 +199,7 @@ reset -> Scientist acts -> Lab Manager responds -> ... -> episode ends -> determ
 ### Target Behaviors Over Training
 
 - Ask better questions before committing to a plan
+- Understand the paper brief before proposing a protocol
 - Preserve critical checks, assumptions, and required steps
 - Choose realistic substitutions when preferred resources are unavailable
 - Reach agreement in fewer rounds

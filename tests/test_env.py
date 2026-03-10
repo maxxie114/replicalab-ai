@@ -599,9 +599,10 @@ class TestRubric:
         breakdown = build_reward_breakdown(protocol, scenario, rounds_used=2, max_rounds=6)
         total = compute_total_reward(breakdown)
         expected = (
-            10.0 * breakdown.rigor * breakdown.feasibility * breakdown.fidelity
+            10.0 * breakdown.rigor * breakdown.feasibility * breakdown.fidelity * breakdown.parsimony
             + breakdown.efficiency_bonus
             + breakdown.communication_bonus
+            + breakdown.domain_emphasis_bonus
             - sum(breakdown.penalties.values())
         )
         assert abs(total - expected) < 0.0001

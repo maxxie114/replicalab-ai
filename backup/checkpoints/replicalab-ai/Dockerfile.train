@@ -1,0 +1,59 @@
+# Training Dockerfile for Northflank GPU jobs.
+#
+# Uses CUDA base image + installs Unsloth, TRL, vLLM for
+# Scientist GRPO and Lab Manager SFT training.
+#
+# Build:  docker build -f Dockerfile.train -t replicalab-train .
+# Run:    docker run --gpus all -e MODE=train replicalab-train
+
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-dev python3.11-venv python3-pip \
+    build-essential git curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3
+
+# Upgrade pip
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install server deps first (better layer caching)
+COPY server/requirements.txt ./server/requirements.txt
+RUN pip install --no-cache-dir -r server/requirements.txt
+
+# Install training deps (heavy — torch, unsloth, trl, vllm)
+COPY requirements-train.txt ./requirements-train.txt
+RUN pip install --no-cache-dir -r requirements-train.txt
+
+# Copy full project
+COPY replicalab/ ./replicalab/
+COPY server/ ./server/
+COPY data/ ./data/
+COPY scripts/ ./scripts/
+COPY pyproject.toml ./
+COPY ReplicaLab_50_Scenarios_Training_Plan.md ./
+
+# Install replicalab package
+RUN pip install --no-cache-dir . --no-deps
+
+# Make scripts executable
+RUN chmod +x scripts/train.sh
+
+# Default env vars
+ENV MODE=server
+ENV REPLICALAB_PERSIST_ROOT=/app/outputs/training
+ENV SEED_COUNT=8
+ENV MAX_STEPS=300
+ENV MODEL_NAME=Qwen/Qwen3-8B
+
+EXPOSE 7860
+
+# Entrypoint dispatches based on MODE env var
+CMD ["bash", "scripts/train.sh"]

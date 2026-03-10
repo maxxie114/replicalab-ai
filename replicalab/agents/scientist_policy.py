@@ -714,58 +714,6 @@ def _baseline_defaults_for_domain(domain: str) -> dict[str, Any]:
     }
 
 
-def build_openai_scientist_policy(
-    *,
-    api_key: str,
-    model: str,
-    max_completion_tokens: int = 450,
-    temperature: float = 0.0,
-    max_retries: int = 2,
-    timeout_seconds: float = 60.0,
-) -> Callable[[ScientistObservation], ScientistAction]:
-    """Create a sync Scientist policy callable backed by OpenAI Chat Completions API."""
-
-    try:
-        import openai as _openai  # type: ignore
-    except ImportError as exc:
-        raise RuntimeError(
-            "openai package required for openai scientist runtime. "
-            "Install it with: pip install openai"
-        ) from exc
-
-    client = _openai.OpenAI(api_key=api_key, timeout=timeout_seconds)
-
-    def generate_fn(messages: list[dict[str, str]]) -> str:
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,  # type: ignore[arg-type]
-            max_completion_tokens=max_completion_tokens,
-            temperature=temperature,
-        )
-        return _extract_message_content(response.choices[0].message.content)
-
-    def policy_fn(
-        observation: ScientistObservation,
-        *,
-        seed: int | None = None,
-        scenario: str | None = None,
-        difficulty: str | None = None,
-    ) -> ScientistAction:
-        result = call_scientist_with_retry(
-            generate_fn,
-            _build_live_scientist_system_prompt(
-                observation,
-                difficulty=difficulty,
-                scenario=scenario,
-            ),
-            observation,
-            max_retries=max_retries,
-        )
-        return result.action
-
-    return policy_fn
-
-
 def build_remote_scientist_policy(
     *,
     project: str,

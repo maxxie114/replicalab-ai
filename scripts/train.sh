@@ -16,7 +16,7 @@ set -euo pipefail
 MODE="${MODE:-server}"
 SEED_COUNT="${SEED_COUNT:-8}"
 MAX_STEPS="${MAX_STEPS:-300}"
-MODEL_NAME="${MODEL_NAME:-Qwen/Qwen3-8B}"
+MODEL_NAME="${MODEL_NAME:-Qwen/Qwen3.5-9B}"
 PERSIST_ROOT="${REPLICALAB_PERSIST_ROOT:-/app/outputs/training}"
 BASE_URL="http://localhost:7860"
 
